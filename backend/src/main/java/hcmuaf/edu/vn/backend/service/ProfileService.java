@@ -1,10 +1,10 @@
 package hcmuaf.edu.vn.backend.service;
 
-import com.mongodb.DuplicateKeyException;
 import hcmuaf.edu.vn.backend.document.ProfileDocument;
 import hcmuaf.edu.vn.backend.dto.ProfileDTO;
 import hcmuaf.edu.vn.backend.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -26,11 +26,8 @@ public class ProfileService {
                 .build();
 
 
-        try {
-            profile = profileRepository.save(profile);
-        } catch (DuplicateKeyException e) {
-            throw new RuntimeException("email already exist");
-        }
+        profile = profileRepository.save(profile);
+
 
         return ProfileDTO.builder()
                 .id(profile.getId())
@@ -39,7 +36,7 @@ public class ProfileService {
                 .firstName(profile.getFirstName())
                 .lastName(profile.getLastName())
                 .photoUrl(profile.getPhotoUrl())
-                .credits(profile.getCredits() )
+                .credits(profile.getCredits())
                 .createdAt(Instant.now())
                 .build();
     }
