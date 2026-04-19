@@ -1,7 +1,9 @@
 import { SIDE_MENU_DATA } from "../assets/data";
+import {useUser} from "@clerk/clerk-react"
+import { useNavigate } from "react-router-dom";
 
 const SideMenu = (activeMenu) => {
-    const {user} = userUser();
+    const {user} = useUser();
     const navigate = useNavigate();
     return (
         <div className="w-64 h-[calc(100vh-61px)] bg-while border-r border-gray-200/50 p-5 sticky top-[61px] z-20">

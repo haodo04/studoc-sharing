@@ -1,3 +1,5 @@
+import { LayoutDashboard, Upload, Files, CreditCard, Receipt} from "lucide-react";
+
 export const features = [
   {
     iconName: "ArrowUpCircle",
