@@ -1,6 +1,10 @@
+import DashboardLayout from "../components/layout/DashboardLayout";
+
 const Transaction = () => {
     return (
-        <div>Transaction</div>
+        <DashboardLayout activeMenu="Transactions">
+            <div>Transactions</div>
+        </DashboardLayout>
     )
 }
 
