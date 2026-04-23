@@ -59,6 +59,7 @@ public class ClerkWebhookController {
     private void handleUserDeleted(JsonNode data) {
         String clerkId = data.path("id").asText();
         profileService.deleteProfile(clerkId);
+        userCreditsService.deleteUserCredits(clerkId);
     }
 
     private void handleUserUpdated(JsonNode data) {

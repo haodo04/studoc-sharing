@@ -12,6 +12,11 @@ public class UserCreditsService {
     private final UserCreditsRepository userCreditsRepository;
 
     public UserCredits createInitialCredits(String clerkId) {
+
+        if (userCreditsRepository.existsByClerkId(clerkId)) {
+            return userCreditsRepository.findByClerkId(clerkId);
+        }
+
         UserCredits userCredits = UserCredits.builder()
                 .clerkId(clerkId)
                 .credits(5)
@@ -19,6 +24,12 @@ public class UserCreditsService {
                 .build();
 
         return userCreditsRepository.save(userCredits);
+    }
+
+    public void deleteUserCredits(String clerkId) {
+        if (userCreditsRepository.existsByClerkId(clerkId)) {
+            userCreditsRepository.deleteByClerkId(clerkId);
+        }
     }
 
 }

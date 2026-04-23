@@ -37,6 +37,7 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
 
         if (request.getRequestURI().contains("/webhooks")) {
             filterChain.doFilter(request, response);
+            return;
         }
 
         String authHeader = request.getHeader("Authorization");
@@ -60,6 +61,7 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
 
             if (!headerNode.has("kid")) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Token header is missing kid");
+                return;
             }
 
             String kid = headerNode.get("kid").asText();
