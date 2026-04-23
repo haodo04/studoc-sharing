@@ -2,6 +2,7 @@ package hcmuaf.edu.vn.backend.controller;
 
 import hcmuaf.edu.vn.backend.dto.ProfileDTO;
 import hcmuaf.edu.vn.backend.service.ProfileService;
+import hcmuaf.edu.vn.backend.service.UserCreditsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,8 @@ public class ClerkWebhookController {
     private String webhookSecret;
 
     private final ProfileService profileService;
+
+    private final UserCreditsService userCreditsService;
 
     @PostMapping("clerk")
     public ResponseEntity<?> handleClerkWebhook(@RequestHeader("svix-id") String svixId,
@@ -104,6 +107,8 @@ public class ClerkWebhookController {
                 .photoUrl(photoUrl)
                 .build();
         profileService.createProfile(newProfile);
+
+        userCreditsService.createInitialCredits(clerkId);
     }
 
     private boolean verifyWebhookSignature(String svixId, String svixTimestamp, String svixSignature, String payload) {
