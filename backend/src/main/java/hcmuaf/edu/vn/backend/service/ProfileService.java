@@ -34,14 +34,13 @@ public class ProfileService {
 
 
         return ProfileDTO.builder()
-                .id(profile.getId())
                 .clerkId(profile.getClerkId())
                 .email(profile.getEmail())
                 .firstName(profile.getFirstName())
                 .lastName(profile.getLastName())
                 .photoUrl(profile.getPhotoUrl())
                 .credits(profile.getCredits())
-                .createdAt(Instant.now())
+                .createdAt(profile.getCreatedAt())
                 .build();
     }
 
@@ -49,7 +48,6 @@ public class ProfileService {
         ProfileDocument existingProfile = profileRepository.findByClerkId(profileDTO.getClerkId());
 
         if (existingProfile != null) {
-            // update fields if provided
             if (profileDTO.getEmail() != null && !profileDTO.getEmail().isEmpty()) {
                 existingProfile.setEmail(profileDTO.getEmail());
             }
@@ -65,13 +63,11 @@ public class ProfileService {
             if (profileDTO.getPhotoUrl() != null && !profileDTO.getPhotoUrl().isEmpty()) {
                 existingProfile.setPhotoUrl(profileDTO.getPhotoUrl());
             }
-
-
         }
+
         profileRepository.save(existingProfile);
 
         return ProfileDTO.builder()
-                .id(existingProfile.getId())
                 .email(existingProfile.getEmail())
                 .clerkId(existingProfile.getClerkId())
                 .firstName(existingProfile.getFirstName())
@@ -82,13 +78,15 @@ public class ProfileService {
                 .build();
     }
 
+
+
     public boolean existsByClerkId(String clerkId) {
         return profileRepository.existsByClerkId(clerkId);
     }
 
     public void deleteProfile(String clerkId) {
         ProfileDocument existingProfile = profileRepository.findByClerkId(clerkId);
-        if (existingProfile == null) {
+        if (existingProfile != null) {
             profileRepository.delete(existingProfile);
         }
     }
