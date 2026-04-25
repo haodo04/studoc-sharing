@@ -4,6 +4,8 @@ import hcmuaf.edu.vn.backend.document.ProfileDocument;
 import hcmuaf.edu.vn.backend.dto.ProfileDTO;
 import hcmuaf.edu.vn.backend.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -79,7 +81,6 @@ public class ProfileService {
     }
 
 
-
     public boolean existsByClerkId(String clerkId) {
         return profileRepository.existsByClerkId(clerkId);
     }
@@ -89,5 +90,14 @@ public class ProfileService {
         if (existingProfile != null) {
             profileRepository.delete(existingProfile);
         }
+    }
+
+    public ProfileDocument getCurrentProfile() {
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            throw new UsernameNotFoundException("User not authenticated");
+        }
+
+        String clerkId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return profileRepository.findByClerkId(clerkId);
     }
 }
