@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -83,6 +84,22 @@ public class ProfileService {
 
     public boolean existsByClerkId(String clerkId) {
         return profileRepository.existsByClerkId(clerkId);
+    }
+
+    public List<ProfileDTO> getAllProfiles() {
+        List<ProfileDocument> profiles = profileRepository.findAll();
+
+        return profiles.stream()
+                .map(profile -> ProfileDTO.builder()
+                        .clerkId(profile.getClerkId())
+                        .email(profile.getEmail())
+                        .firstName(profile.getFirstName())
+                        .lastName(profile.getLastName())
+                        .credits(profile.getCredits())
+                        .photoUrl(profile.getPhotoUrl())
+                        .createdAt(profile.getCreatedAt())
+                        .build())
+                .toList();
     }
 
     public void deleteProfile(String clerkId) {
