@@ -1,7 +1,7 @@
 import { Copy, Download, Eye, FileIcon, FileText, Globe, Image, Lock, Music, Trash2, Video } from "lucide-react";
 import { useState } from "react";
 
-const FileCard = ({ file }) => {
+const FileCard = ({ file, onDelete, onTogglePublic, onDownload, onShareLink }) => {
   const [showActions, setShowActions] = useState(false);
 
   const getFileIcon = (file) => {
@@ -39,7 +39,7 @@ const FileCard = ({ file }) => {
   return (
     <div
       onMouseEnter={() => setShowActions(true)}
-      onMouseLeft={() => setShowActions(false)}
+      onMouseLeave={() => setShowActions(false)}
       className="relative group overflow-hidden rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100"
     >
       {/* File preview area */}
@@ -76,8 +76,9 @@ const FileCard = ({ file }) => {
         <div className="flex gap-3 w-full justify-center">
             {file.isPublic && (
                 <button 
+                onClick={() => onShareLink(file.id)}
                 title="Share Link"
-                className="p-2 bg-white/90 rounded-full hover:bg-white transition-colors text-purple-500 hover:text-purple-600">
+                className="p-2 cursor-pointer bg-white/90 rounded-full hover:bg-white transition-colors text-purple-500 hover:text-purple-600">
                 <Copy size={18}/>
                 </button>
             )}
@@ -89,17 +90,21 @@ const FileCard = ({ file }) => {
             )}
 
             <button
+            onClick={() => onDownload(file)}
             title="Download" 
             className="p-2 bg-white/90 rounded-full hover:bg-white cursor-pointer transition-colors text-green-600  hover:text-green-700">
             <Download size={18}/>
             </button>
+
             <button
+            onClick={() => onTogglePublic(file)}
             title={file.isPublic ? "Make Private" : "Make Public"} 
             className="p-2 bg-white/90 rounded-full hover:bg-white cursor-pointer transition-colors text-amber-600  hover:text-amber-700">
             {file.isPublic ? <Lock size={18}/> : <Globe size={18}/>}
             </button>
 
             <button
+            onClick={() => onDelete(file.id)}
             title="Delete" 
             className="p-2 bg-white/90 rounded-full hover:bg-white cursor-pointer transition-colors text-red-600 hover:text-red-700">
             <Trash2 size={18}/>

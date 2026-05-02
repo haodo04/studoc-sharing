@@ -20,6 +20,7 @@ import toast from "react-hot-toast";
 import { data, Link, useNavigate } from "react-router-dom";
 import FileCard from "../components/FileCard";
 import ConfirmationDialog from "../components/confirmationDialog";
+import LinkShareModal from "../components/LinkShareModal";
 
 const MyFiles = () => {
   const [files, setFiles] = useState([]);
@@ -30,6 +31,12 @@ const MyFiles = () => {
     isOpen: false,
     fileId: null
   });
+
+  const [shareModal, setShareModal] = useState({
+    isOpen: false,
+    fileId: null,
+    link: ""
+  }); 
 
   // fetching the files for a logged in user
 
@@ -97,6 +104,25 @@ const MyFiles = () => {
         isOpen: true,
         fileId
     })
+  }
+
+  // opens share link modal
+  const openShareModal = (fileId) => {
+    const link = `${window.location.origin}/file/${fileId}`;
+    setShareModal({
+        isOpen: true,
+        fileId,
+        link
+    });
+  }
+
+  // close the share link modal
+  const closeShareModal = () => {
+    setShareModal({
+        isOpen: false,
+        fileId: null,
+        link: ""
+    });
   }
 
   // Delete a file after confirmation
@@ -183,7 +209,11 @@ const MyFiles = () => {
                 <FileCard 
                 key={file.id}
                 file={file}
-
+                onDelete={openDeleteConfirmation}
+                onTogglePublic={togglePublic}
+                onDownload={handleDownload}
+                onShareLink={openShareModal}
+                
                 />
             ))}
           </div>
@@ -249,7 +279,9 @@ const MyFiles = () => {
                           )}
                         </button>
                         {file.isPublic && (
-                          <button className="flex items-center gap-2 cursor-pointer group text-blue-600">
+                          <button 
+                            onClick={() => openShareModal(file.id)}
+                          className="flex items-center gap-2 cursor-pointer group text-blue-600">
                             <Copy size={16} />
                             <span className="group-hover:underline">
                               Share Link
@@ -312,6 +344,15 @@ const MyFiles = () => {
             onConfirm={handleDelete}
             confirmButtonClass="bg-red-600 hover:bg-red-700"
         />
+
+        {/* Share link modal */}
+        <LinkShareModal
+            isOpen={shareModal.isOpen}
+            onClose={closeShareModal}
+            link={shareModal.link}
+            title="Share File"
+        />
+
       </div>
     </DashboardLayout>
   );
