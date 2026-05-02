@@ -7,9 +7,11 @@ import Subscription from "./pages/Subscription"
 import Transaction from "./pages/Transaction"
 import { RedirectToSignIn, SignedIn, SignedOut, SignIn } from "@clerk/clerk-react"
 import {Toaster} from "react-hot-toast"
+import UserCreditsContext, { UserCreditsProvider } from "./components/context/UserCreditsContext"
 
 function App() {
   return (
+    <UserCreditsProvider>
     <BrowserRouter>
     <Toaster/>
       <Routes>
@@ -47,6 +49,7 @@ function App() {
         <Route path="/*" element={<RedirectToSignIn/>}/>
       </Routes>
     </BrowserRouter>
+    </UserCreditsProvider>
   )
 }
 
