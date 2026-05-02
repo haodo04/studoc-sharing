@@ -19,12 +19,17 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { data, Link, useNavigate } from "react-router-dom";
 import FileCard from "../components/FileCard";
+import ConfirmationDialog from "../components/confirmationDialog";
 
 const MyFiles = () => {
   const [files, setFiles] = useState([]);
   const [viewMode, setViewMode] = useState("list");
   const { getToken } = useAuth();
   const navigate = useNavigate();
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    isOpen: false,
+    fileId: null
+  });
 
   // fetching the files for a logged in user
 
@@ -77,6 +82,43 @@ const MyFiles = () => {
         toast.error('Error downloading file', error.message);
     }
   }
+
+  // Closes the delete confirmation modal
+  const closeDeleteConfirmation = () => {
+    setDeleteConfirmation({
+        isOpen: false,
+        fileId: null
+    })
+  }
+
+  // Opens the delete confirmation modal
+  const openDeleteConfirmation = (fileId) => {
+    setDeleteConfirmation({
+        isOpen: true,
+        fileId
+    })
+  }
+
+  // Delete a file after confirmation
+  const handleDelete = async () => {
+    const fileId = deleteConfirmation.fileId;
+    if (!fileId) return;
+
+    try {
+        const token = await getToken();
+        const response = await axios.delete(apiEndpoints.DELETE_FILE(fileId), {headers: {Authorization: `Bearer ${token}`}})
+        if (response.status === 204) {
+            setFiles(files.filter((file) => file.id !== fileId));
+            closeDeleteConfirmation();
+        } else {
+            toast.error('Error deleting file');
+        }
+    } catch (error) {
+        console.log('Error deleting file', error);
+        toast.error('Error deleting file', error.message);
+    }
+  }
+
 
   useEffect(() => {
     fetchFiles();
@@ -229,6 +271,7 @@ const MyFiles = () => {
                         </div>
                         <div className="flex justify-center">
                           <button
+                            onClick={() => openDeleteConfirmation(file.id)}
                             title="Delete"
                             className="text-gray-500 hover:text-red-600"
                           >
@@ -258,6 +301,17 @@ const MyFiles = () => {
             </table>
           </div>
         )}
+        {/* Delete confirmation dialog */}
+        <ConfirmationDialog
+            isOpen={deleteConfirmation.isOpen}
+            onClose={closeDeleteConfirmation}
+            title="Delete File"
+            message="Are you sure want to delete this file? This action cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+            onConfirm={handleDelete}
+            confirmButtonClass="bg-red-600 hover:bg-red-700"
+        />
       </div>
     </DashboardLayout>
   );

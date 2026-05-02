@@ -4,6 +4,7 @@ const apiEndpoints = {
     FETCH_FILES: `${BASE_URL}/files/my`,
     TOGGLE_FILE: (id) => `${BASE_URL}/files/${id}/toggle-public`,
     DOWNLOAD_FILE: (id) => `${BASE_URL}/files/download/${id}`,
+    DELETE_FILE: (id) => `${BASE_URL}/files/${id}`,
 }
 
 export default apiEndpoints;
