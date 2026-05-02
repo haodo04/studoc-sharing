@@ -12,10 +12,12 @@ import {
   List,
   Lock,
   Trash2,
+  FileIcon, FileText, Image, Music, Video
 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { data, Link, useNavigate } from "react-router-dom";
+import FileCard from "../components/FileCard";
 
 const MyFiles = () => {
   const [files, setFiles] = useState([]);
@@ -42,6 +44,23 @@ const MyFiles = () => {
   useEffect(() => {
     fetchFiles();
   }, [getToken]);
+
+  const getFileIcon = (file) => {
+    const extension = file.name.split(".").pop().toLowerCase();
+    if (["jpg", "jpeg", "png", "gif", "svg", "webp"].includes(extension)) {
+      return <Image size={24} className="text-purple-500" />;
+    }
+    if (["mp4", "webm", "mav", "avi", "mkv"].includes(extension)) {
+      return <Video size={24} className="text-blue-500" />;
+    }
+    if (["mp3", "wav", "ogg", "flac", "m4a"].includes(extension)) {
+      return <Music size={24} className="text-green-500" />;
+    }
+    if (["pdf", "doc", "docx", "txt", "rtf"].includes(extension)) {
+      return <FileText size={24} className="text-amber-500" />;
+    }
+    return <FileIcon size={24} className="text-purple-500" />;
+  };
 
   return (
     <DashboardLayout activeMenu="My Files">
@@ -80,7 +99,15 @@ const MyFiles = () => {
             </button>
           </div>
         ) : viewMode === "grid" ? (
-          <div>Grid view</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {files.map((file) => (
+                <FileCard 
+                key={file.id}
+                file={file}
+
+                />
+            ))}
+          </div>
         ) : (
           <div className="overflow-auto bg-white rounded-lg shadow">
             <table className="min-w-full">
@@ -111,7 +138,7 @@ const MyFiles = () => {
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
                       <div className="flex items-center gap-2">
-                        <File size={20} className="text-blue-600" />
+                        {getFileIcon(file)}
                         {file.name}
                       </div>
                     </td>
