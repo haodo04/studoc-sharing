@@ -25,6 +25,8 @@ const MyFiles = () => {
   const { getToken } = useAuth();
   const navigate = useNavigate();
 
+  // fetching the files for a logged in user
+
   const fetchFiles = async () => {
     try {
       const token = await getToken();
@@ -40,6 +42,19 @@ const MyFiles = () => {
       toast.error("Error fetching the files from server: ", error.message);
     }
   };
+
+  // Toggle the public/private status of a file
+  const togglePublic = async (fileToUpdate) => {
+    try {
+        const token = await getToken();
+        await axios.patch(`http://localhost:8080/api/v1.0/files/${fileToUpdate.id}/toggle-public`, {}, {headers: {Authorization: `Bearer ${token}`}});
+        
+        setFiles(files.map((file) => file.id === fileToUpdate.id ? {...file, isPublic: !file.isPublic} : file))
+    } catch (error) {
+        console.error('Error toggling file status', error);
+        toast.error('Error toggling files status: ', error.message);
+    }
+  }
 
   useEffect(() => {
     fetchFiles();
@@ -150,7 +165,9 @@ const MyFiles = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       <div className="flex items-center gap-4">
-                        <button className="flex items-center gap-2 cursor-pointer group">
+                        <button 
+                        onClick={() => togglePublic(file)}
+                        className="flex items-center gap-2 cursor-pointer group">
                           {file.isPublic ? (
                             <>
                               <Globe size={16} className="text-green-500" />
@@ -197,12 +214,15 @@ const MyFiles = () => {
                         </div>
                         <div className="flex-justify-center">
                           {file.isPublic ? (
-                            <Link
-                              to={`/file/${file.id}`}
+                            <a
+                              href={`/file/${file.id}`}
+                              title="View File"
+                              target="_blank"
+                              rel="noreferrer"
                               className="text-gray-500 hover:text-blue-600"
                             >
                               <Eye size={18} />
-                            </Link>
+                            </a>
                           ) : (
                             <span className="w-[18px]"></span>
                           )}
