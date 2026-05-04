@@ -5,7 +5,7 @@ import UserCreditsContext from "../components/context/UserCreditsContext";
 import { AlertCircle } from "lucide-react";
 import axios from "axios";
 import apiEndpoints from "../util/apiEndpoint";
-import toast from "react-hot-toast";
+import UploadBox from "../components/UploadBox";
 
 const Upload = () => {
     const [files, setFiles] = useState([]);
@@ -90,7 +90,7 @@ const Upload = () => {
                     </div>
                 )}
 
-                <Upload
+                <UploadBox
                     files = {files}
                     onFileChange={handleFileChange}
                     onUpload={handleUpload}
