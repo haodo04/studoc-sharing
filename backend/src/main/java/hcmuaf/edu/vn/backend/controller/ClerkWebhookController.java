@@ -68,7 +68,7 @@ public class ClerkWebhookController {
         String email = "";
         JsonNode emailAddresses = data.path("email_addresses");
         if (emailAddresses.isArray() && emailAddresses.size() > 0) {
-            email = emailAddresses.get(0).path("email_addresses").asText();
+            email = emailAddresses.get(0).path("email_address").asText();
         }
         String firstName = data.path("first_name").asText("");
         String lastName = data.path("last_name").asText("");
@@ -94,7 +94,7 @@ public class ClerkWebhookController {
         String email = "";
         JsonNode emailAddresses = data.path("email_addresses");
         if (emailAddresses.isArray() && emailAddresses.size() > 0) {
-            email = emailAddresses.get(0).path("email_addresses").asText();
+            email = emailAddresses.get(0).path("email_address").asText();
         }
         String firstName = data.path("first_name").asText("");
         String lastName = data.path("last_name").asText("");
