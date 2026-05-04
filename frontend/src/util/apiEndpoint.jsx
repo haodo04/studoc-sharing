@@ -7,6 +7,7 @@ const apiEndpoints = {
     DOWNLOAD_FILE: (id) => `${BASE_URL}/files/download/${id}`,
     DELETE_FILE: (id) => `${BASE_URL}/files/${id}`,
     UPLOAD_FILE: `${BASE_URL}/files/upload`,
+    PUBLIC_VIEW_FILE: (fileId) => `${BASE_URL}/files/public/${fileId}`
 }
 
 export default apiEndpoints;
