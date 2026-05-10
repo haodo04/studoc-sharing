@@ -1,4 +1,4 @@
-import { LayoutDashboard, Upload, Files, CreditCard, Receipt} from "lucide-react";
+import { LayoutDashboard, Upload, Files, CreditCard, Receipt, Star, Trash2, Share} from "lucide-react";
 
 export const features = [
   {
@@ -147,5 +147,23 @@ export const SIDE_MENU_DATA = [
     label: "Transactions",
     icon: Receipt,
     path: "/transactions",
+  },
+  {
+    id: "06",
+    label: "Shared",
+    icon: Share,
+    path: "/shared",
+  },
+  {
+    id: "07",
+    label: "Favorites",
+    icon: Star,
+    path: "/favorites",
+  },
+  {
+    id: "08",
+    label: "Trash",
+    icon: Trash2,
+    path: "/trash",
   },
 ];
