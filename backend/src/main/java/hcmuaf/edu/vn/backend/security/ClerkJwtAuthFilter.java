@@ -37,6 +37,7 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
 
         if (request.getRequestURI().contains("/webhooks") ||
                 request.getRequestURI().contains("/public") ||
+                request.getRequestURI().contains("/register") ||
                     request.getRequestURI().contains("/download")) {
             filterChain.doFilter(request, response);
             return;

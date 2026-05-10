@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
 import { Menu, Share2, X } from "lucide-react";
 import SideMenu from "./SideMenu";
 import CreditsDisplay from './CreditsDisplay';
+import UserCreditsContext from "./context/UserCreditsContext";
 
 const Navbar = ({activeMenu}) => {
     const [openSideMenu, setOpenSideMenu] = useState(false);
+    const {credits, fetchUserCredits} = useContext(UserCreditsContext);
+
+    useEffect(() => {
+        fetchUserCredits();
+    }, [fetchUserCredits]);
+
     return (
         <div className="flex items-center justify-between gap-5 bg-white border border-b border-gray-200/50 backdrop-blur-[2px] py-4 px-4 sm:px-7 sticky top-0 z-30">
             {/* L- menuBt and title */}
@@ -33,7 +40,7 @@ const Navbar = ({activeMenu}) => {
             <SignedIn>
                 <div className="flex items-center gap-4">
                     <Link to="/subscriptions">
-                        <CreditsDisplay credits={5} />
+                        <CreditsDisplay credits={credits} />
                     </Link>
                     <div className="relative">
                         <UserButton />

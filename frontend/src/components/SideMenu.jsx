@@ -1,5 +1,6 @@
 import { SIDE_MENU_DATA } from "../assets/data";
 import {useUser} from "@clerk/clerk-react"
+import { User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { User } from "lucide-react";
 
