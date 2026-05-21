@@ -6,6 +6,9 @@ import MyFiles from "./pages/MyFiles"
 import Subscription from "./pages/Subscription"
 import Transaction from "./pages/Transaction"
 import { RedirectToSignIn, SignedIn, SignedOut, SignIn } from "@clerk/clerk-react"
+import SharedPage from "./pages/Shared" 
+import FavoritesPage from "./pages/Favorites"
+import TrashPage from "./pages/Trash"
 import {Toaster} from "react-hot-toast"
 import UserCreditsContext, { UserCreditsProvider } from "./components/context/UserCreditsContext"
 import PublicFileView from "./pages/PublicFileView"
@@ -47,9 +50,27 @@ function App() {
             <SignedOut><RedirectToSignIn/></SignedOut>
           </>
         }/>
+        <Route path="/shared" element={
+          <>
+            <SignedIn><SharedPage/></SignedIn>
+            <SignedOut><RedirectToSignIn/></SignedOut>
+          </>
+        }/>
+        <Route path="/favorites" element={
+          <>
+            <SignedIn><FavoritesPage/></SignedIn>
+            <SignedOut><RedirectToSignIn/></SignedOut>
+          </>
+        }/>
+        <Route path="/trash" element={
+          <>
+            <SignedIn><TrashPage/></SignedIn>
+            <SignedOut><RedirectToSignIn/></SignedOut>
+          </>
+        }/>
         <Route path="file/:fileId" element={
         <>
-           <PublicFileView/>
+          <PublicFileView/>
         </>
         }/>
         <Route path="/*" element={<RedirectToSignIn/>}/>

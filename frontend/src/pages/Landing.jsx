@@ -1,41 +1,40 @@
 import { features, pricingPlans, testimonials } from "../assets/data";
-import {useClerk, useUser} from "@clerk/clerk-react"
-import {useNavigate} from "react-router-dom"
+import { useUser } from "@clerk/clerk-react";
 import CTASection from "../components/landing/CTASection";
 import FeatureSection from "../components/landing/FeatureSection";
 import Footer from "../components/landing/Footer";
 import HeroSection from "../components/landing/HeroSection";
 import PricingSection from "../components/landing/PricingSection";
 import TestimonialsSection from "../components/landing/TestimonialsSection";
-import { useEffect } from "react";
 
 const Landing = () => {
-    const {openSignIn, openSignUp} = useClerk();
-    const {isSignIn} = useUser();
-    const navigate = useNavigate();
+    const { isLoaded } = useUser();
 
-    useEffect(() => {
-        if (isSignIn) {
-            navigate("/dashboard")
-        }
-    }, [isSignIn, navigate])
+    // Đợi Clerk tải xong trạng thái Session 5 phút của bạn
+    if (!isLoaded) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
 
     return (
-        <div className="landing-page bg-gradient-to-b from-gray-50 to-gray-100">
-            {/* Hero Section */}
-            <HeroSection openSignIn={openSignIn} openSignUp={openSignUp}/>
-            {/* Feature Section */}
-            <FeatureSection features={features}/>
-            {/* Pricing Section */}
-            <PricingSection pricingPlans={pricingPlans} openSignUp={openSignUp}/>
-            {/* Testimonials Section */}
-            <TestimonialsSection testimonials={testimonials}/>
-            {/* CTA Section */}
-            <CTASection openSignUp={openSignUp}/>
-            {/* Footer Section */}
-            <Footer/>
+        <div className="landing-page bg-slate-50 min-h-screen text-slate-800 antialiased selection:bg-indigo-500 selection:text-white relative">
+            {/* Hero Section tự quản lý Auth */}
+            <HeroSection />
+            
+            <FeatureSection features={features} />
+            
+            <PricingSection pricingPlans={pricingPlans} />
+            
+            <TestimonialsSection testimonials={testimonials} />
+            
+            <CTASection />
+            
+            <Footer />
         </div>
-    )
-}
+    );
+};
 
 export default Landing;

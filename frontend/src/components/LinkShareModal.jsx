@@ -15,83 +15,81 @@ const LinkShareModal = ({ isOpen, onClose, link = "", title = "Share File" }) =>
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
-      toast.success("Link copied to clipboard");
+      toast.success("Đã sao chép liên kết vào bộ nhớ tạm");
     } catch (error) {
-      toast.error("Failed to copy link");
+      toast.error("Không thể sao chép liên kết");
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[2px] px-4">
-      <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3">
-          <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] px-4">
+      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        
+        {/* Header Modal */}
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 bg-slate-50/50">
+          <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-100 transition-colors"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
-        <div className="px-5 py-4">
-          <p className="mb-3 text-sm text-gray-600">
-            Share this link with others to give them access to this file.
-          </p>
-
+        {/* Body Modal Input */}
+        <div className="p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <div className="flex-1 rounded-md border-2 border-purple-500 bg-white px-3 py-2">
-              <input
-                type="text"
-                value={link || ""}
-                readOnly
-                className="w-full bg-transparent text-sm text-gray-700 outline-none"
-              />
-            </div>
-
+            <input
+              type="text"
+              readOnly
+              value={link}
+              className="h-10 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs text-slate-600 focus:outline-none"
+            />
             <button
               onClick={handleCopy}
-              className={`flex h-10 w-10 items-center justify-center rounded-md border ${
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-all active:scale-95 ${
                 copied
-                  ? "border-green-200 bg-green-50 text-green-600"
-                  : "border-gray-200 bg-white text-gray-500 hover:text-purple-600"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                  : "border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:bg-slate-50"
               }`}
             >
-              {copied ? <Check size={18} /> : <Copy size={18} />}
+              {copied ? <Check size={16} /> : <Copy size={16} />}
             </button>
           </div>
 
           {copied && (
-            <p className="mt-2 flex items-center gap-1 text-sm text-green-600">
-              <Check size={14} />
-              Link copied to clipboard
+            <p className="flex items-center gap-1 text-xs font-medium text-emerald-600 animate-in slide-in-from-top-1 duration-200">
+              <Check size={12} />
+              Đã sao chép đường dẫn liên kết thành công.
             </p>
           )}
 
-          <p className="mt-3 text-sm text-gray-500">
-            Anyone with this link can access this file.
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Bất kỳ ai nhận được đường liên kết này đều có quyền truy cập trực tiếp và tải xuống tài liệu được chia sẻ.
           </p>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-5 py-3">
+        {/* Footer Actions Button */}
+        <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-3.5 bg-slate-50/30">
           <button
             onClick={onClose}
-            className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+            className="rounded-lg bg-slate-100 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
           >
-            Close
+            Đóng lại
           </button>
 
           <button
             onClick={handleCopy}
-            className={`rounded-md px-4 py-2 text-sm font-medium text-white ${
+            className={`rounded-lg px-4 py-2 text-xs font-semibold text-white transition-all shadow-sm ${
               copied
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-purple-600 hover:bg-purple-700"
+                ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100"
+                : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100"
             }`}
           >
-            {copied ? "Copied!" : "Copy"}
+            {copied ? "Đã sao chép" : "Sao chép Link"}
           </button>
         </div>
+
       </div>
     </div>
   );

@@ -12,17 +12,55 @@
 }
 
 .landing-page-content {
-  @apply overflow-visible
+  @apply overflow-visible;
 }
 
 .card-btn {
-  @apply flex items-center gap-3 text-[12px] font-medium text-gray-600 hover:text-purple-500
+  @apply flex items-center gap-3 text-[12px] font-medium text-gray-600 hover:text-indigo-600 transition-colors duration-200;
 }
 
 .add-btn {
-  @apply flex items-center gap-1.5 text-xs md:text-sm font-medium text-green-700 whitespace-nowrap
+  @apply flex items-center gap-1.5 text-xs md:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded shadow-sm transition-all duration-200;
 }
 
-.add-btn-fill {
-  @apply text-white bg-purple-600;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@layer utilities {
+  .bg-grid-pattern {
+    background-size: 4rem 4rem;
+    background-image: 
+      linear-gradient(to right, rgba(226, 232, 240, 0.2) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(226, 232, 240, 0.2) 1px, transparent 1px);
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9; 
+}
+ 
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; 
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; 
 }

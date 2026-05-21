@@ -1,35 +1,38 @@
 import DashboardLayout from "../components/layout/DashboardLayout";
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import Transaction from "./Transaction";
-import apiEndpoints from "../util/apiEndpoint"
+import apiEndpoints from "../util/apiEndpoint";
 import {
   Copy,
   Download,
   Eye,
-  File,
-  Globe,
   Grid,
   List,
   Lock,
+  Globe,
   Trash2,
-  FileIcon, FileText, Image, Music, Video
+  Search,
+  FolderOpen,
+  Loader2
 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { data, Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import FileCard from "../components/FileCard";
 import ConfirmationDialog from "../components/confirmationDialog";
 import LinkShareModal from "../components/LinkShareModal";
 
 const MyFiles = () => {
   const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState("list");
+  const [searchTerm, setSearchTerm] = useState("");
   const { getToken } = useAuth();
   const navigate = useNavigate();
+  
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     isOpen: false,
-    fileId: null
+    selectedFile: null 
   });
 
   const [shareModal, setShareModal] = useState({
@@ -38,319 +41,295 @@ const MyFiles = () => {
     link: ""
   }); 
 
-  // fetching the files for a logged in user
-
   const fetchFiles = async () => {
+    setLoading(true);
     try {
       const token = await getToken();
-      const response = await axios.get(
-        apiEndpoints.FETCH_FILES,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await axios.get(apiEndpoints.FETCH_FILES, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (response.status === 200) {
-        setFiles(response.data);
+        setFiles(Array.isArray(response.data) ? response.data : response.data.files || []);
       }
     } catch (error) {
-      console.log("Error fetching the files form sever: ", error);
-      toast.error("Error fetching the files from server: ", error.message);
+      console.error("Error fetching files:", error);
+      toast.error("Không thể kết nối danh mục file từ máy chủ.");
+    } finally {
+      setLoading(false);
     }
   };
-
-  // Toggle the public/private status of a file
-  const togglePublic = async (fileToUpdate) => {
-    try {
-        const token = await getToken();
-        await axios.patch(apiEndpoints.TOGGLE_FILE(fileToUpdate.id), {}, {headers: {Authorization: `Bearer ${token}`}});
-        
-        setFiles(files.map((file) => file.id === fileToUpdate.id ? {...file, isPublic: !file.isPublic} : file))
-    } catch (error) {
-        console.error('Error toggling file status', error);
-        toast.error('Error toggling files status: ', error.message);
-    }
-  }
-
-  //Handle file download
-  const handleDownload = async (file) => {
-    try {
-        const token = await getToken();
-        const response = await axios.get(apiEndpoints.DOWNLOAD_FILE(file.id), {headers: {Authorization: `Bearer ${token}`}, responseType: 'blob'});
-
-        // create a blob url and trigger download
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", file.name);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url); // clean up the object url
-    } catch (error) {
-        console.log("Download failed", error);
-        toast.error('Error downloading file', error.message);
-    }
-  }
-
-  // Closes the delete confirmation modal
-  const closeDeleteConfirmation = () => {
-    setDeleteConfirmation({
-        isOpen: false,
-        fileId: null
-    })
-  }
-
-  // Opens the delete confirmation modal
-  const openDeleteConfirmation = (fileId) => {
-    setDeleteConfirmation({
-        isOpen: true,
-        fileId
-    })
-  }
-
-  // opens share link modal
-  const openShareModal = (fileId) => {
-    const link = `${window.location.origin}/file/${fileId}`;
-    setShareModal({
-        isOpen: true,
-        fileId,
-        link
-    });
-  }
-
-  // close the share link modal
-  const closeShareModal = () => {
-    setShareModal({
-        isOpen: false,
-        fileId: null,
-        link: ""
-    });
-  }
-
-  // Delete a file after confirmation
-  const handleDelete = async () => {
-    const fileId = deleteConfirmation.fileId;
-    if (!fileId) return;
-
-    try {
-        const token = await getToken();
-        const response = await axios.delete(apiEndpoints.DELETE_FILE(fileId), {headers: {Authorization: `Bearer ${token}`}})
-        if (response.status === 204) {
-            setFiles(files.filter((file) => file.id !== fileId));
-            closeDeleteConfirmation();
-        } else {
-            toast.error('Error deleting file');
-        }
-    } catch (error) {
-        console.log('Error deleting file', error);
-        toast.error('Error deleting file', error.message);
-    }
-  }
-
 
   useEffect(() => {
     fetchFiles();
   }, [getToken]);
 
-  const getFileIcon = (file) => {
-    const extension = file.name.split(".").pop().toLowerCase();
-    if (["jpg", "jpeg", "png", "gif", "svg", "webp"].includes(extension)) {
-      return <Image size={24} className="text-purple-500" />;
+  const handleTogglePublic = async (id) => {
+    try {
+      const token = await getToken();
+      const response = await axios.put(apiEndpoints.TOGGLE_FILE(id), {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.status === 200) {
+        toast.success("Cập nhật quyền hạn tài liệu thành công!");
+        setFiles((prevFiles) =>
+          prevFiles.map((file) =>
+            (file.id === id || file._id === id) ? { ...file, isPublic: !file.isPublic } : file
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error toggling privacy:", error);
+      toast.error("Lỗi cập nhật trạng thái riêng tư.");
     }
-    if (["mp4", "webm", "mav", "avi", "mkv"].includes(extension)) {
-      return <Video size={24} className="text-blue-500" />;
-    }
-    if (["mp3", "wav", "ogg", "flac", "m4a"].includes(extension)) {
-      return <Music size={24} className="text-green-500" />;
-    }
-    if (["pdf", "doc", "docx", "txt", "rtf"].includes(extension)) {
-      return <FileText size={24} className="text-amber-500" />;
-    }
-    return <FileIcon size={24} className="text-purple-500" />;
   };
+
+  const openDeleteConfirmation = (file) => {
+    setDeleteConfirmation({ isOpen: true, selectedFile: file });
+  };
+
+  const closeDeleteConfirmation = () => {
+    setDeleteConfirmation({ isOpen: false, selectedFile: null });
+  };
+
+  const handleDelete = async () => {
+  const fileTarget = deleteConfirmation.selectedFile;
+  if (!fileTarget) return;
+
+  const targetId = fileTarget.id || fileTarget._id;
+  
+  try {
+    const token = await getToken();
+    const response = await axios.delete(apiEndpoints.DELETE_FILE(targetId), {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.status === 200 || response.status === 204) {
+      toast.success("Đã xóa tài liệu khỏi hệ thống!");
+      
+      setFiles((prevFiles) => 
+        prevFiles.filter((file) => {
+          const fileId = file.id || file._id;
+          return fileId !== targetId; 
+        })
+      );
+    }
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    toast.error("Quá trình xóa tài liệu thất bại.");
+  } finally {
+    closeDeleteConfirmation();
+  }
+};
+
+  const openShareModal = (file) => {
+    const fileId = file.id || file._id;
+    const shareLink = `${window.location.origin}/file/${fileId}`;
+    setShareModal({ isOpen: true, fileId: fileId, link: shareLink });
+  };
+
+  const closeShareModal = () => {
+    setShareModal({ isOpen: false, fileId: null, link: "" });
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes && bytes !== 0) return "-";
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  };
+
+  const filteredFiles = files.filter(file => 
+    (file.name || file.title || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <DashboardLayout activeMenu="My Files">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">My Files {files.length}</h2>
-          <div className="flex items-center gap-3">
-            <List
-              onClick={() => setViewMode("list")}
-              size={24}
-              className={`cursor-pointer transition-colors ${viewMode === "list" ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
-            />
-            <Grid
-              size={24}
-              onClick={() => setViewMode("grid")}
-              className={`cursor-pointer transition-colors ${viewMode === "grid" ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
+      <div className="py-6 max-w-[1400px] mx-auto space-y-6">
+        
+        {/* TOP INTERACTIVE HUB */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/80 p-4 rounded-xl shadow-sm">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm tài liệu của bạn..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-700 transition-all"
             />
           </div>
-        </div>
-        {files.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-12 flex flex-col items-center justify-center">
-            <File size={60} className="text-purple-300 mb-4" />
-            <h3 className="text-xl font-medium text-gray-700 mb-2">
-              No file uploaded yet
-            </h3>
-            <p className="text-gray-500 text-gray-center max-w-md mb-6">
-              Start uploading file to see them listed here. you can upload
-              documents, images, and other files to share and manage them
-              securely.
-            </p>
+
+          <div className="flex items-center gap-1.5 self-end sm:self-center border border-slate-200 p-1 bg-slate-50/50 rounded-lg">
             <button
-              onClick={() => navigate("/upload")}
-              className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-color"
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-md transition-all ${viewMode === "list" ? "bg-white text-indigo-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600"}`}
+              title="Xem dạng danh sách"
             >
-              Go to upload
+              <List size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-md transition-all ${viewMode === "grid" ? "bg-white text-indigo-600 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600"}`}
+              title="Xem dạng lưới ô vuông"
+            >
+              <Grid size={16} />
             </button>
           </div>
+        </div>
+
+        {loading ? (
+          <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-16 flex flex-col items-center justify-center text-center">
+            <Loader2 className="text-indigo-600 animate-spin mb-4" size={36} />
+            <p className="text-sm font-medium text-slate-700">Đang đồng bộ dữ liệu kho lưu trữ...</p>
+          </div>
+        ) : filteredFiles.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-16 flex flex-col items-center justify-center text-center">
+            <div className="p-4 bg-slate-50 border border-slate-100 rounded-full text-slate-400 mb-3">
+              <FolderOpen size={28} />
+            </div>
+            <p className="text-sm font-semibold text-slate-700">Kho tài liệu trống</p>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm">
+              Bạn chưa tải lên tài liệu nào hoặc không khớp với từ khóa tìm kiếm.
+            </p>
+          </div>
         ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {files.map((file) => (
-                <FileCard 
-                key={file.id}
-                file={file}
-                onDelete={openDeleteConfirmation}
-                onTogglePublic={togglePublic}
-                onDownload={handleDownload}
-                onShareLink={openShareModal}
-                
+          /* GRID VIEW RENDER */
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {filteredFiles.map((file) => {
+              const fileId = file.id || file._id;
+              return (
+                <FileCard
+                  key={fileId}
+                  file={file}
+                  onDelete={() => openDeleteConfirmation(file)}
+                  onTogglePublic={() => handleTogglePublic(fileId)}
+                  onShare={() => openShareModal(file)}
                 />
-            ))}
+              );
+            })}
           </div>
         ) : (
-          <div className="overflow-auto bg-white rounded-lg shadow">
-            <table className="min-w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Size
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Upload
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sharing
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+          <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/70">
+                  <th className="px-6 py-3.5 text-xs font-semibold uppercase text-slate-500">Tên tài liệu</th>
+                  <th className="px-4 py-3.5 text-xs font-semibold uppercase text-slate-500">Dung lượng</th>
+                  <th className="px-4 py-3.5 text-xs font-semibold uppercase text-slate-500">Người sở hữu</th>
+                  <th className="px-4 py-3.5 text-xs font-semibold uppercase text-slate-500">Ngày tải lên</th>
+                  <th className="px-4 py-3.5 text-xs font-semibold uppercase text-slate-500">Trạng thái</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold uppercase text-slate-500 text-center">Tác vụ nhanh</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {files.map((file) => (
-                  <tr
-                    key={file.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                      <div className="flex items-center gap-2">
-                        {getFileIcon(file)}
-                        {file.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {(file.size / 1024).toFixed(1)} Kb
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(file.uploadAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <div className="flex items-center gap-4">
-                        <button 
-                        onClick={() => togglePublic(file)}
-                        className="flex items-center gap-2 cursor-pointer group">
+              <tbody className="divide-y divide-slate-100">
+                {filteredFiles.map((file) => {
+                  const fileId = file.id || file._id;
+                  return (
+                    <tr key={fileId} className="hover:bg-slate-50/60 transition-colors group">
+                      <td className="px-6 py-4 font-medium text-slate-700 max-w-[240px] truncate" title={file.name || file.title}>
+                        {file.name || file.title}
+                      </td>
+                      <td className="px-4 py-4 text-xs font-mono text-slate-500">
+                        {formatFileSize(file.size)}
+                      </td>
+                      <td className="px-4 py-4 text-xs text-slate-600">Bạn</td>
+                      <td className="px-4 py-4 text-xs text-slate-500">
+                        {formatDate(file.uploadedAt || file.createdAt)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <button
+                          onClick={() => handleTogglePublic(fileId)}
+                          className="inline-flex items-center text-[11px] font-semibold rounded-full border transition-all cursor-pointer active:scale-95 overflow-hidden"
+                        >
                           {file.isPublic ? (
-                            <>
-                              <Globe size={16} className="text-green-500" />
-                              <span className="group-hover:underline">
-                                Public
-                              </span>
-                            </>
+                            <div className="flex items-center gap-1 text-emerald-700 bg-emerald-50 border-emerald-100 px-2.5 py-1">
+                              <Globe size={12} />
+                              <span>Công khai</span>
+                            </div>
                           ) : (
-                            <>
-                              <Lock size={16} className="text-gray-500" />
-                              <span className="group-hover:underline">
-                                Private
-                              </span>
-                            </>
+                            <div className="flex items-center gap-1 text-slate-600 bg-slate-50 border-slate-200/60 px-2.5 py-1">
+                              <Lock size={12} />
+                              <span>Riêng tư</span>
+                            </div>
                           )}
                         </button>
-                        {file.isPublic && (
-                          <button 
-                            onClick={() => openShareModal(file.id)}
-                          className="flex items-center gap-2 cursor-pointer group text-blue-600">
-                            <Copy size={16} />
-                            <span className="group-hover:underline">
-                              Share Link
-                            </span>
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="flex justify-center">
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => handleDownload(file)}
-                            title="Download"
-                            className="text-gray-500 hover:text-blue-600"
+                            onClick={() => openShareModal(file)}
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Chia sẻ liên kết"
                           >
-                            <Download size={18} />
+                            <Copy size={15} />
                           </button>
-                        </div>
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => openDeleteConfirmation(file.id)}
-                            title="Delete"
-                            className="text-gray-500 hover:text-red-600"
+                          
+                          <a
+                            href={apiEndpoints.DOWNLOAD_FILE(fileId)}
+                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center justify-center"
+                            title="Tải về máy"
                           >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                        <div className="flex-justify-center">
-                          {file.isPublic ? (
+                            <Download size={15} />
+                          </a>
+
+                          {fileId ? (
                             <a
-                              href={`/file/${file.id}`}
-                              title="View File"
+                              href={`/file/${fileId}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-gray-500 hover:text-blue-600"
+                              className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors flex items-center justify-center"
+                              title="Xem chi tiết"
                             >
-                              <Eye size={18} />
+                              <Eye size={15} />
                             </a>
                           ) : (
-                            <span className="w-[18px]"></span>
+                            <span className="w-8"></span>
                           )}
+
+                          <button
+                            onClick={() => openDeleteConfirmation(file)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Xóa tài liệu"
+                          >
+                            <Trash2 size={15} />
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
-        {/* Delete confirmation dialog */}
+
         <ConfirmationDialog
             isOpen={deleteConfirmation.isOpen}
             onClose={closeDeleteConfirmation}
-            title="Delete File"
-            message="Are you sure want to delete this file? This action cannot be undone."
-            confirmText="Delete"
-            cancelText="Cancel"
+            title="Xóa tài liệu hệ thống"
+            message="Bạn có chắc chắn muốn loại bỏ vĩnh viễn tệp tin này? Hành động này sẽ không thể hoàn tác dữ liệu."
+            confirmText="Xác nhận xóa"
+            cancelText="Hủy bỏ"
             onConfirm={handleDelete}
-            confirmButtonClass="bg-red-600 hover:bg-red-700"
+            confirmButtonClass="bg-red-600 hover:bg-red-700 text-white font-semibold shadow-sm rounded-lg"
         />
 
-        {/* Share link modal */}
         <LinkShareModal
             isOpen={shareModal.isOpen}
             onClose={closeShareModal}
             link={shareModal.link}
-            title="Share File"
+            title="Chia sẻ tài liệu học tập"
         />
 
       </div>

@@ -5,12 +5,12 @@ import {
   FileText,
   Share2,
   Shield,
-  Wallet,
 } from "lucide-react";
 
 const FeatureSection = ({ features }) => {
   const renderIcon = (iconName, iconColor) => {
-    const iconProps = { size: 25, className: iconColor };
+    const updatedColor = iconColor?.includes('purple') ? 'text-indigo-600' : iconColor;
+    const iconProps = { size: 24, className: updatedColor };
 
     switch (iconName) {
       case "ArrowUpCircle":
@@ -29,38 +29,39 @@ const FeatureSection = ({ features }) => {
         return <FileText {...iconProps} />;
     }
   };
+
   return (
-    <div className="py-16 bg-white">
+    <div className="py-24 bg-slate-50 relative border-y border-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Everything you need for the file sharing
+        <div className="text-center max-w-3xl mx-auto">
+          <h2 className="text-3xl font-extrabold text-slate-900 sm:text-4xl tracking-tight">
+            Everything you need for file sharing
           </h2>
-          <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-500">
-            CloudShare provides all the tools you need to manage your digital
-            content
+          <p className="mt-4 text-lg text-slate-500">
+            CloudShare provides all the tools you need to manage, secure, and distribute your digital content seamlessly.
           </p>
         </div>
 
-        <div className="mt-16">
+        <div className="mt-20">
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="pt-5 border border-gray-100 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 bg-white"
+                className="group relative bg-white p-8 rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-xl hover:border-transparent transition-all duration-300 hover:-translate-y-1"
               >
-                <div className="flow-root bg-gray-50 rounded-lg px-6 pb-8">
-                  <div className="-mt-6">
-                    <div className="inline-flex items-center justify-center p-3 bg-white rounded-md shadow-lg">
-                      {renderIcon(feature.iconName, feature.iconColor)}
-                    </div>
-                    <h3 className="mt-5 text-lg font-medium text-gray-900 tracking-tight">
-                      {feature.title}
-                    </h3>
-                    <p className="mt-2 text-base text-gray-500">
-                      {feature.description}
-                    </p>
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-teal-50/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"></div>
+                
+                <div className="relative z-10">
+                  <div className="inline-flex items-center justify-center p-3 bg-slate-50 group-hover:bg-indigo-50 rounded-xl shadow-sm border border-slate-100 transition-colors duration-300">
+                    {renderIcon(feature.iconName, feature.iconColor)}
                   </div>
+                  <h3 className="mt-6 text-lg font-bold text-slate-900 tracking-tight">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-3 text-base text-slate-500 leading-relaxed">
+                    {feature.description}
+                  </p>
                 </div>
               </div>
             ))}
