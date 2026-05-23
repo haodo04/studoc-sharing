@@ -12,6 +12,7 @@ import TrashPage from "./pages/Trash"
 import {Toaster} from "react-hot-toast"
 import UserCreditsContext, { UserCreditsProvider } from "./components/context/UserCreditsContext"
 import PublicFileView from "./pages/PublicFileView"
+import ExplorePage from "./pages/Explore"
 
 function App() {
   return (
@@ -20,6 +21,12 @@ function App() {
     <Toaster/>
       <Routes>
         <Route path="/" element={<Landing />}/>
+        <Route path="/explore" element={
+          <>
+            <SignedIn><ExplorePage/></SignedIn>
+            <SignedOut><RedirectToSignIn/></SignedOut>
+          </>
+        }/>
         <Route path="/dashboard" element={
           <>
             <SignedIn><Dashboard/></SignedIn>
