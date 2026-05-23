@@ -44,7 +44,7 @@ function App() {
             <SignedOut><RedirectToSignIn/></SignedOut>
           </>
         }/>
-        <Route path="/transaction" element={
+        <Route path="/transactions" element={
           <>
             <SignedIn><Transaction/></SignedIn>
             <SignedOut><RedirectToSignIn/></SignedOut>
