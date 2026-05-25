@@ -1,4 +1,4 @@
-import { LayoutDashboard, Upload, Files, CreditCard, Receipt, Star, Trash2, Share} from "lucide-react";
+import { LayoutDashboard, Upload, Files, CreditCard, Receipt, Star, Trash2, Share, Compass } from "lucide-react";
 
 export const features = [
   {
@@ -120,48 +120,54 @@ export const testimonials = [
 export const SIDE_MENU_DATA = [
   {
     id: "01",
+    label: "Khám phá",
+    path: "/explore",
+    icon: Compass
+  },
+  {
+    id: "02",
     label: "Dashboard",
     icon: LayoutDashboard,
     path: "/Dashboard",
   },
   {
-    id: "02",
+    id: "03",
     label: "Upload",
     icon: Upload,
     path: "/upload",
   },
   {
-    id: "03",
+    id: "04",
     label: "My Files",
     icon: Files,
     path: "/my-files",
   },
   {
-    id: "04",
-    label: "Subscription",
+    id: "05",
+    label: "Subscriptions",
     icon: CreditCard,
-    path: "/subscription",
+    path: "/subscriptions",
   },
   {
-    id: "05",
+    id: "06",
     label: "Transactions",
     icon: Receipt,
     path: "/transactions",
   },
   {
-    id: "06",
+    id: "07",
     label: "Shared",
     icon: Share,
     path: "/shared",
   },
   {
-    id: "07",
+    id: "08",
     label: "Favorites",
     icon: Star,
     path: "/favorites",
   },
   {
-    id: "08",
+    id: "09",
     label: "Trash",
     icon: Trash2,
     path: "/trash",

@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
-import { Menu, Share2, X, Coins } from "lucide-react";
+import { Menu, Share2, X, Download } from "lucide-react"; 
 import SideMenu from "./SideMenu";
 import { UserCreditsContext } from "./context/UserCreditsContext";
 
@@ -39,19 +39,21 @@ const Navbar = ({ activeMenu }) => {
           </Link>
         </div>
 
-        {/* R- CREDITS BADGE & CLERK USER BUTTON */}
+        {/* R- DOWNLOADS BADGE & CLERK USER BUTTON */}
         <SignedIn>
           <div className="flex items-center gap-4">
             
-            {/* UPGRADED COINS/CREDITS DISPLAY BADGE */}
+            {/* UPGRADED DOWNLOADS DISPLAY BADGE */}
             <Link to="/subscriptions">
               <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200/70 px-3.5 py-1.5 rounded-full shadow-sm transition-all duration-200 group active:scale-95">
-                <Coins size={14} className="text-amber-500 group-hover:rotate-12 transition-transform stroke-[2.5]" />
+                {/* Đổi icon thành Download và hiệu ứng nhún xuống khi hover */}
+                <Download size={14} className="text-amber-500 group-hover:translate-y-0.5 transition-transform stroke-[2.5]" />
                 <span className="text-xs font-bold text-amber-700 font-mono">
                   {credits ?? 0}
                 </span>
+                {/* Đổi chữ thành Lượt tải */}
                 <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider hidden sm:inline">
-                  Credits
+                  Lượt tải
                 </span>
               </div>
             </Link>
