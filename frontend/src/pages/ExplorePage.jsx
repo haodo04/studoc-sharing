@@ -1,13 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SignedIn, SignedOut, UserButton, useUser, SignInButton } from "@clerk/clerk-react";
+import { 
+  BookOpen, 
+  Users, 
+  Zap, 
+  MessageSquare, 
+  Search, 
+  Flame, 
+  GraduationCap, 
+  Star, 
+  Download,
+  MapPin,
+  Mail,
+  Crown,
+  Award,
+  Feather,
+  Coins,
+  Laptop,
+  TrendingUp,
+  Scale,
+  Stethoscope,
+  Globe,
+  Ruler,
+  Book,
+  Palette,
+  Settings,
+  FileText,
+  Clock,
+  Sparkles
+} from 'lucide-react';
 
-// DỮ LIỆU MẪU MỞ RỘNG MỚI (PHONG PHÚ & SINH ĐỘNG)
+// DỮ LIỆU MẪU MỞ RỘNG MỚI
 const QUICK_STATS = [
-  { label: "Tài liệu chia sẻ", count: "145,200+", icon: "📚" },
-  { label: "Sinh viên hoạt động", count: "89,400+", icon: "👨‍🎓" },
-  { label: "Lượt tải thành công", count: "612,000+", icon: "⚡" },
-  { label: "Trao đổi sôi nổi", count: "14,500+", icon: "💬" }
+  { label: "Tài liệu chia sẻ", count: "145,200+", icon: BookOpen },
+  { label: "Sinh viên hoạt động", count: "89,400+", icon: Users },
+  { label: "Lượt tải thành công", count: "612,000+", icon: Zap },
+  { label: "Trao đổi sôi nổi", count: "14,500+", icon: MessageSquare }
 ];
 
 const SLIDER_BANNERS = [
@@ -38,31 +67,31 @@ const SLIDER_BANNERS = [
 ];
 
 const UNIVERSITIES = [
-  { name: "ĐH Bách Khoa Hà Nội", short: "HUST", logo: "🏛️", count: "42,150 tài liệu" },
-  { name: "ĐH Kinh tế Quốc dân", short: "NEU", logo: "📊", count: "31,800 tài liệu" },
-  { name: "ĐH Công nghệ - VNU", short: "UET", logo: "💻", count: "19,500 tài liệu" },
-  { name: "ĐH Ngoại Thương", short: "FTU", logo: "🌐", count: "22,400 tài liệu" },
-  { name: "Học viện Ngân hàng", short: "BA", logo: "💰", count: "15,200 tài liệu" },
-  { name: "ĐH Kinh tế TP.HCM", short: "UEH", logo: "📈", count: "12,900 tài liệu" }
+  { name: "ĐH Bách Khoa Hà Nội", short: "HUST", logo: Crown, count: "42,150 tài liệu" },
+  { name: "ĐH Kinh tế Quốc dân", short: "NEU", logo: Award, count: "31,800 tài liệu" },
+  { name: "ĐH Công nghệ - VNU", short: "UET", logo: Feather, count: "19,500 tài liệu" },
+  { name: "ĐH Ngoại Thương", short: "FTU", logo: Star, count: "22,400 tài liệu" },
+  { name: "Học viện Ngân hàng", short: "BA", logo: Coins, count: "15,200 tài liệu" },
+  { name: "ĐH Kinh tế TP.HCM", short: "UEH", logo: Flame, count: "12,900 tài liệu" }
 ];
 
 const CATEGORIES = [
-  { id: "it", name: "Công Nghệ Thông Tin", icon: "💻", desc: "Cấu trúc dữ liệu, Thuật toán, Lập trình Web/App, AI, Code mẫu..." },
-  { id: "eco", name: "Kinh Tế - Kế Toán", icon: "📊", desc: "Kinh tế vĩ mô, Vi mô, Tài chính doanh nghiệp, Marketing..." },
-  { id: "law", name: "Pháp Luật Đại Cương", icon: "⚖️", desc: "Luật dân sự, Luật hình sự, Hiến pháp, Luật thương mại..." },
-  { id: "med", name: "Y Dược - Điều Dưỡng", icon: "🩺", desc: "Giải phẫu học, Dược lý lâm sàng, Hóa sinh, Bệnh học..." },
-  { id: "lang", name: "Ngoại Ngữ & Ngôn Ngữ", icon: "🗣️", desc: "Tài liệu ôn thi IELTS, TOEIC, Tiếng Anh chuyên ngành, Tiếng Trung..." },
-  { id: "math", name: "Toán & Khoa Học Cơ Bản", icon: "📐", desc: "Giải tích 1-2-3, Đại số tuyến tính, Vật lý đại cương, Triết học..." },
-  { id: "poly", name: "Chính Trị & Tư Tưởng", icon: "📕", desc: "Triết học Mác-Lênin, Tư tưởng Hồ Chí Minh, Lịch sử Đảng..." },
-  { id: "art", name: "Kiến Trúc & Đồ Họa", icon: "🎨", desc: "Thiết kế đồ họa, Bản vẽ kỹ thuật, Autocad, Photoshop cơ bản..." },
-  { id: "eng", name: "Khối Kỹ Thuật & Điện Tử", icon: "⚙️", desc: "Điện tử số, Cơ điện tử, Bản vẽ mạch, Vi điều khiển, IoT..." }
+  { id: "it", name: "Công Nghệ Thông Tin", icon: Laptop, desc: "Cấu trúc dữ liệu, Thuật toán, Lập trình Web/App, AI, Code mẫu..." },
+  { id: "eco", name: "Kinh Tế - Kế Toán", icon: TrendingUp, desc: "Kinh tế vĩ mô, Vi mô, Tài chính doanh nghiệp, Marketing..." },
+  { id: "law", name: "Pháp Luật Đại Cương", icon: Scale, desc: "Luật dân sự, Luật hình sự, Hiến pháp, Luật thương mại..." },
+  { id: "med", name: "Y Dược - Điều Dưỡng", icon: Stethoscope, desc: "Giải phẫu học, Dược lý lâm sàng, Hóa sinh, Bệnh học..." },
+  { id: "lang", name: "Ngoại Ngữ & Ngôn Ngữ", icon: Globe, desc: "Tài liệu ôn thi IELTS, TOEIC, Tiếng Anh chuyên ngành, Tiếng Trung..." },
+  { id: "math", name: "Toán & Khoa Học Cơ Bản", icon: Ruler, desc: "Giải tích 1-2-3, Đại số tuyến tính, Vật lý đại cương, Triết học..." },
+  { id: "poly", name: "Chính Trị & Tư Tưởng", icon: Book, desc: "Triết học Mác-Lênin, Tư tưởng Hồ Chí Minh, Lịch sử Đảng..." },
+  { id: "art", name: "Kiến Trúc & Đồ Họa", icon: Palette, desc: "Thiết kế đồ họa, Bản vẽ kỹ thuật, Autocad, Photoshop cơ bản..." },
+  { id: "eng", name: "Khối Kỹ Thuật & Điện Tử", icon: Settings, desc: "Điện tử số, Cơ điện tử, Bản vẽ mạch, Vi điều khiển, IoT..." }
 ];
 
 const TRENDING_DOCS = [
   { id: "doc-1", title: "Bộ đề thi cuối kỳ môn Giải tích 1 - Viện Toán ứng dụng HUST (Có đáp án giải chi tiết từng bước)", school: "HUST", subject: "Giải tích 1", downloads: 2420, rating: 4.9, reviews: 48, credits: 1, type: "Đề thi", size: "3.4 MB", author: "Nguyễn Văn Hùng", thumbnail: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=500&auto=format&fit=crop&q=60" },
   { id: "doc-2", title: "Slide bài giảng trọn bộ Hệ quản trị Cơ sở dữ liệu - PGS.TS Trần Đức giảng dạy", school: "UET", subject: "Cơ sở dữ liệu", downloads: 1890, rating: 5.0, reviews: 32, credits: 2, type: "Bài giảng", size: "12.8 MB", author: "Trần Minh Thư", thumbnail: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500&auto=format&fit=crop&q=60" },
   { id: "doc-3", title: "Báo cáo Thực tập tốt nghiệp xuất sắc ngành Phân tích dữ liệu tại FPT Software", school: "NEU", subject: "Thực tập", downloads: 1350, rating: 4.8, reviews: 19, credits: 1, type: "Báo cáo", size: "5.1 MB", author: "Lê Hoàng Nam", thumbnail: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=500&auto=format&fit=crop&q=60" },
-  { id: "doc-4", title: "Đề cương ôn tập chi tiết môn Kinh tế vĩ mô - Học kỳ 2024.1 (Bám sát ngân hàng câu hỏi mới)", school: "FTU", subject: "Kinh tế vĩ mô", downloads: 1120, rating: 4.7, reviews: 26, credits: 1, type: "Đề cương", size: "2.2 MB", author: "Vũ Phương Thảo", thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&auto=format&fit=crop&q=60" }
+  { id: "doc-4", title: "Đề cương ôn tập chi tiết môn Kinh tế vĩ mô - Học kỳ 2024.1 (Bám sát ngân hàng câu hỏi mới)", school: "FTU", subject: "Kinh tế vĩ mô", downloads: 1120, rating: 4.7, reviews: 26, credits: 1, type: "Đề cương", size: "2.2 MB", author: "Vũ Phương Thảo", thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&auto=format&fit=crop&q=80" }
 ];
 
 const HIGH_RATED_DOCS = [
@@ -72,97 +101,94 @@ const HIGH_RATED_DOCS = [
   { id: "doc-8", title: "Tổng hợp Đề thi và Đáp án Pháp luật đại cương các kỳ thi gần nhất từ 2021 đến 2024", school: "BA", subject: "Pháp luật đại cương", downloads: 2150, rating: 4.9, reviews: 56, credits: 1, type: "Đề thi", size: "4.0 MB", author: "Đỗ Thùy Linh", thumbnail: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=500&auto=format&fit=crop&q=60" }
 ];
 
+const NEW_DOCS = [
+  { id: "new-1", title: "Báo cáo thực tập chuyên ngành Kỹ thuật phần mềm 2024", school: "HUST", subject: "Đồ án", downloads: 12, rating: 5.0, reviews: 2, credits: 0, type: "Báo cáo", size: "2.1 MB", author: "Trần Bảo", thumbnail: "https://images.unsplash.com/photo-1517842645767-c639042777db?w=500&auto=format&fit=crop&q=60" },
+  { id: "new-2", title: "Slide ôn thi cuối kỳ Mạng máy tính và Truyền thông", school: "UET", subject: "Mạng máy tính", downloads: 45, rating: 4.5, reviews: 8, credits: 1, type: "Slide", size: "5.5 MB", author: "Lê Cường", thumbnail: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=500&auto=format&fit=crop&q=60" },
+  { id: "new-3", title: "Bài tập lớn môn Trí tuệ nhân tạo (AI) kèm Source Code Python", school: "FPT", subject: "AI", downloads: 89, rating: 4.8, reviews: 12, credits: 2, type: "Bài tập", size: "15.0 MB", author: "Vũ Nam", thumbnail: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=500&auto=format&fit=crop&q=60" },
+  { id: "new-4", title: "Tài liệu tự học TOEIC 750+ (Bản PDF màu + Audio)", school: "NEU", subject: "Tiếng Anh", downloads: 320, rating: 4.9, reviews: 45, credits: 0, type: "Giáo trình", size: "120 MB", author: "Minh Trang", thumbnail: "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=500&auto=format&fit=crop&q=60" }
+];
+
 const DISCUSSION_THREADS = [
   { id: "t-1", title: "Cần xin file code mẫu Socket Java Chat Room cho bài tập lớn tuần 14", category: "Công Nghệ Thông Tin", user: "TuAn_Hust", replies: 14, views: 245, badge: "Cần trợ giúp" },
-  { id: "t-2", title: "Ai có mẹo nhớ nhanh các định lý trong Triết học Mác-Lênin không, sắp thi rồi cứu em!", category: "Chính Trị", user: "LyLy_Neu", replies: 28, views: 412, badge: "Thảo luận hot" },
-  { id: "t-3", title: "Lập nhóm tự học ôn thi IELTS mục tiêu 7.5 từ gốc, học qua Google Meet mỗi tối", category: "Ngoại Ngữ", user: "HoangNam_Ftu", replies: 9, views: 188, badge: "Tìm đồng đội" },
-  { id: "t-4", title: "Giải đáp thắc mắc câu hỏi phân loại tích phân suy rộng đề thi K67 Giải tích 1", category: "Toán Cơ Bản", user: "ThayGiaoToan", replies: 35, views: 670, badge: "Lời giải hay" }
-];
-
-// 2 DANH MỤC MỚI BỔ SUNG THÊM Ở PHÍA DƯỚI BANNER QUẢNG CÁO THEO YÊU CẦU
-const MOST_VIEWED_DOCS = [
-  { id: "doc-9", title: "Báo cáo tiểu luận môn Tư tưởng Hồ Chí Minh - Đề tài Công nghiệp hóa hiện đại hóa nông thôn", school: "NEU", subject: "Tư tưởng HCM", views: 12450, credits: 1, type: "Tiểu luận", size: "1.8 MB", author: "Phạm Thu Trang", thumbnail: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=500&auto=format&fit=crop&q=60" },
-  { id: "doc-10", title: "Tổng hợp bộ câu hỏi trắc nghiệm ôn tập Triết học Mác Lênin chuẩn xác (Chương 1, 2, 3)", school: "BA", subject: "Triết học", views: 9840, credits: 1, type: "Trắc nghiệm", size: "2.5 MB", author: "Lê Minh Tuấn", thumbnail: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=500&auto=format&fit=crop&q=60" }
-];
-
-const FLASH_EXAM_PREP = [
-  { id: "doc-11", title: "Đề cương ôn thi cấp tốc Đại số tuyến tính trong 24h - Bí kíp qua môn chống trượt tẹt ga", school: "HUST", subject: "Đại số tuyến tính", downloads: 4120, credits: 1, type: "Cấp tốc", size: "950 KB", author: "Anh K65 Bách Khoa", thumbnail: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=500&auto=format&fit=crop&q=60" },
-  { id: "doc-12", title: "Tóm tắt cốt lõi kiến thức môn Kinh tế vi mô - Ôn tập nhanh trước giờ G (Đầy đủ sơ đồ đồ thị)", school: "FTU", subject: "Kinh tế vi mô", downloads: 3180, credits: 2, type: "Cấp tốc", size: "1.4 MB", author: "CLB Hỗ trợ học tập", thumbnail: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=500&auto=format&fit=crop&q=60" }
+  { id: "t-2", title: "Ai có mẹo nhớ nhanh các định lý trong Triết học Mác Lênin không ạ? Sắp thi rồi cứu em!", category: "Chính Trị & Tư Tưởng", user: "LinhNga_Neu", replies: 29, views: 412, badge: "Thảo luận hot" },
+  { id: "t-3", title: "Giải đáp thắc mắc câu hỏi số 4 trang 52 sách bài tập Kinh tế vi mô thầy Long", category: "Kinh Tế - Kế Toán", user: "PhuongThao_Ftu", replies: 8, views: 118, badge: "Đã có lời giải" }
 ];
 
 export default function ExplorePage() {
   const navigate = useNavigate();
   const { user } = useUser();
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentBanner, setCurrentBanner] = useState(0);
 
-  // Tự động chuyển slide sau mỗi 5 giây
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % SLIDER_BANNERS.length);
+      setCurrentBanner((prev) => (prev + 1) % SLIDER_BANNERS.length);
     }, 5000);
     return () => clearInterval(timer);
   }, []);
 
-  const handleSeeMore = (categoryName) => {
-    alert(`Hệ thống đang điều hướng sang trang Danh Mục (/category) lọc nâng cao cho chuyên mục: ${categoryName}`);
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/home?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
   };
 
-  const handleViewDetail = (id) => {
-    navigate(`/document/${id}`);
+  const handleCategoryClick = (catName) => {
+    navigate(`/home?category=${encodeURIComponent(catName)}`);
+  };
+
+  const handleUniversityClick = (uniShort) => {
+    navigate(`/home?school=${encodeURIComponent(uniShort)}`);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
       
-      {/* ================= HEADER STICKY TÍCH HỢP Ô TÌM KIẾM TẬP TRUNG ================= */}
-      <header className="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800 px-4 md:px-6 py-3 text-white shadow-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      {/* 1. HEADER NAVBAR (CẬP NHẬT LOGO VÀ THANH ĐIỀU HƯỚNG TABS) */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
-          {/* Cụm trái: Logo */}
-          <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate('/home')}>
-            <span className="text-2xl">📚</span>
-            <span className="text-lg font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-300 hidden sm:inline">
-              Studoc-Share
-            </span>
-          </div>
-
-          {/* Cụm trung tâm: Ô TÌM KIẾM TRÊN HEADER */}
-          <div className="flex-1 max-w-xl relative">
-            <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 focus-within:border-indigo-500 transition-all shadow-inner">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input 
-                type="text" 
-                placeholder="Tìm đề thi Giải tích, mã môn, trường học..." 
-                className="bg-transparent text-xs md:text-sm text-white w-full focus:outline-none placeholder-slate-500 font-medium"
-              />
+          {/* Logo Mới */}
+          <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+            <div className="flex items-center gap-2 font-extrabold text-xl text-slate-900 tracking-tight">
+              <span className="p-2 bg-indigo-600 rounded-lg text-white text-sm w-8 h-8 flex items-center justify-center">S</span>
+              <span>StudocShare</span>
             </div>
           </div>
 
-          {/* Cụm phải: Gói Premium, Menu điều hướng, Auth User */}
-          <div className="flex items-center gap-3 md:gap-5 shrink-0">
-            <nav className="hidden lg:flex items-center gap-5 text-xs md:text-sm font-semibold text-slate-300">
-              <span onClick={() => navigate('/home')} className="text-white cursor-pointer hover:text-white transition-colors">Khám phá</span>
-              <span onClick={() => navigate('/dashboard')} className="cursor-pointer hover:text-white transition-colors">Dashboard</span>
-              <span onClick={() => navigate('/upload')} className="cursor-pointer hover:text-white transition-colors">Tải Lên</span>
-            </nav>
+          {/* Navigation Tabs (Thay thế Search Bar) */}
+          <nav className="hidden md:flex items-center gap-8 text-[13px] font-bold text-slate-600">
+            <span onClick={() => navigate('/')} className="text-indigo-600 cursor-pointer transition-colors border-b-2 border-indigo-600 py-5">Khám phá</span>
+            <span onClick={() => navigate('/home')} className="hover:text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-transparent hover:border-indigo-600">Tài liệu</span>
+            <span className="hover:text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-transparent hover:border-indigo-600">Cộng đồng</span>
+            <span className="hover:text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-transparent hover:border-indigo-600">Bảng xếp hạng</span>
+            <span onClick={() => navigate('/subscriptions')} className="text-amber-600 hover:text-amber-700 cursor-pointer transition-colors flex items-center gap-1">
+              <Sparkles className="w-4 h-4" /> Premium
+            </span>
+          </nav>
 
-            {/* Gói hội viên Premium kế bên Profile */}
-            <button 
-              onClick={() => navigate('/subscriptions')}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-[10px] md:text-xs px-2.5 md:px-3.5 py-1.5 md:py-2 rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-1 shrink-0"
-            >
-              👑 <span className="hidden xs:inline">Gói</span> Premium
-            </button>
-
+          {/* User Actions */}
+          <div className="flex items-center gap-4">
             <SignedIn>
-              <UserButton afterSignOutUrl="/" />
+              <button 
+                onClick={() => navigate('/dashboard')}
+                className="hidden sm:inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-colors shadow-sm"
+              >
+                Vào Dashboard
+              </button>
+              <UserButton afterSignOutUrl="/explore" />
             </SignedIn>
+            
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all">
+                <button className="text-xs font-bold text-slate-700 hover:text-indigo-600 transition-colors">
                   Đăng nhập
+                </button>
+              </SignInButton>
+              <SignInButton mode="modal">
+                <button className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-full transition-colors shadow-sm">
+                  Đăng ký
                 </button>
               </SignInButton>
             </SignedOut>
@@ -170,385 +196,469 @@ export default function ExplorePage() {
         </div>
       </header>
 
-      {/* ================= HỆ THỐNG SLIDER BANNER FULL-WIDTH & HEIGHT TO LÊN ================= */}
-      <div className="bg-slate-950 text-white relative h-72 md:h-[380px] overflow-hidden border-b border-slate-800 group">
-        {SLIDER_BANNERS.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out flex flex-col justify-end p-8 md:p-16 ${
-              index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
-            }`}
-          >
-            {/* Ảnh nền phủ rộng lớn */}
-            <div className="absolute inset-0">
-              <img src={slide.bgImage} alt={slide.title} className="w-full h-full object-cover opacity-35 group-hover:scale-105 transition-transform duration-[8000ms]" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-transparent to-transparent hidden md:block"></div>
+      {/* MAIN CONTENT CONTAINER */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+        
+        {/* 2. HERO SEARCH & SLIDER BANNER */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          {/* Left Text & Search */}
+          <div className="lg:col-span-5 space-y-5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[11px] font-bold rounded-md">
+              <Flame className="w-3.5 h-3.5" /> Nền tảng chia sẻ tài liệu số 1 sinh viên
             </div>
-            
-            {/* Khối chữ giới thiệu chiến dịch */}
-            <div className="relative z-10 space-y-3 md:space-y-4 max-w-2xl text-left">
-              <span className="inline-block bg-indigo-500/20 text-indigo-300 text-[10px] md:text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-indigo-500/30">
-                Sự kiện tiêu điểm số {slide.id}
-              </span>
-              <h2 className="text-xl md:text-4xl font-black text-white tracking-tight leading-tight">{slide.title}</h2>
-              <p className="text-xs md:text-base text-slate-300 font-normal leading-relaxed font-light line-clamp-2 md:line-clamp-none">{slide.desc}</p>
-              <div className="pt-2">
-                <button 
-                  onClick={() => navigate(slide.link)} 
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs md:text-sm px-5 py-3 rounded-xl transition-all shadow-lg active:scale-95"
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight tracking-tight">
+              Khám phá kho tri thức khổng lồ từ các trường đại học
+            </h1>
+            <p className="text-slate-600 text-sm font-medium leading-relaxed">
+              Hơn 140,000+ Slide bài giảng, đề cương ôn tập, đề thi mẫu có đáp án chi tiết được đóng góp bởi cộng đồng sinh viên giỏi toàn quốc.
+            </p>
+
+            {/* Big Search Form */}
+            <form onSubmit={handleSearchSubmit} className="space-y-2 max-w-md">
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  placeholder="Nhập tên môn học, mã học phần (ví dụ: MI1110)..."
+                  className="w-full bg-white border border-slate-300 text-slate-900 rounded-xl py-3 pl-11 pr-24 text-[13px] font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-sm transition-all placeholder:text-slate-400"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <Search className="w-4 h-4 text-slate-500 absolute left-4" />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1.5 bottom-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 text-xs font-bold rounded-lg transition-colors shadow-sm"
                 >
-                  {slide.btnText} &rarr;
+                  Tìm kiếm
+                </button>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium px-1">
+                <span>Tìm kiếm nhiều:</span>
+                <span onClick={() => { setSearchQuery('Giải tích 1'); navigate('/home?search=Giải tích 1') }} className="text-slate-700 hover:text-indigo-600 cursor-pointer underline decoration-slate-300">Giải tích 1</span>
+                <span onClick={() => { setSearchQuery('Kinh tế vi mô'); navigate('/home?search=Kinh tế vi mô') }} className="text-slate-700 hover:text-indigo-600 cursor-pointer underline decoration-slate-300">Kinh tế vi mô</span>
+              </div>
+            </form>
+          </div>
+
+          {/* Right Slider Banner */}
+          <div className="lg:col-span-7 relative rounded-2xl overflow-hidden aspect-[21/9] lg:aspect-[16/8] bg-slate-900 shadow-xl border border-slate-200">
+            <div 
+              className="absolute inset-0 bg-cover bg-center transition-all duration-500"
+              style={{ backgroundImage: `url(${SLIDER_BANNERS[currentBanner].bgImage})` }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/50 to-transparent" />
+
+            {/* Banner Content */}
+            <div className="absolute inset-0 p-6 flex flex-col justify-end text-white space-y-2 max-w-xl">
+              <h3 className="text-base sm:text-xl font-extrabold tracking-tight text-white">{SLIDER_BANNERS[currentBanner].title}</h3>
+              <p className="text-xs text-slate-200 font-medium line-clamp-2 leading-relaxed">{SLIDER_BANNERS[currentBanner].desc}</p>
+              <div className="pt-2">
+                <button
+                  onClick={() => navigate(SLIDER_BANNERS[currentBanner].link)}
+                  className="px-4 py-2 bg-white text-slate-900 hover:bg-slate-100 text-xs font-bold rounded-lg shadow-sm transition-colors"
+                >
+                  {SLIDER_BANNERS[currentBanner].btnText}
                 </button>
               </div>
             </div>
-          </div>
-        ))}
-        
-        {/* Thanh điều hướng chấm tròn góc dưới phải */}
-        <div className="absolute bottom-6 right-8 z-20 flex gap-2">
-          {SLIDER_BANNERS.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentSlide(idx)}
-              className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentSlide ? "bg-indigo-500 w-6" : "bg-slate-700 hover:bg-slate-500"}`}
-            ></button>
-          ))}
-        </div>
-      </div>
 
-      {/* Chỉ số đếm thống kê nhỏ gọn bên dưới Slider */}
-      <div className="max-w-7xl mx-auto px-4 -mt-6 relative z-20">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white p-4 rounded-xl shadow-lg border border-slate-200/60">
-          {QUICK_STATS.map((stat, idx) => (
-            <div key={idx} className="flex items-center gap-3 border-r last:border-0 border-slate-100 justify-center">
-              <span className="text-2xl">{stat.icon}</span>
-              <div>
-                <div className="text-base md:text-lg font-black text-slate-900">{stat.count}</div>
-                <div className="text-[11px] md:text-xs text-slate-400 font-semibold">{stat.label}</div>
-              </div>
+            {/* Slider Dots */}
+            <div className="absolute bottom-4 right-4 flex items-center gap-1.5">
+              {SLIDER_BANNERS.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentBanner(index)}
+                  className={`h-1.5 rounded-full transition-all ${index === currentBanner ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`}
+                />
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </section>
 
-      {/* ================= KHÔNG GIAN NỘI DUNG CHÍNH CUỘN DỌC ================= */}
-      <div className="max-w-7xl mx-auto px-4 mt-12 space-y-12">
-        
-        {/* MỤC 1: TÀI LIỆU THEO TRƯỜNG HỌC */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-            <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span className="w-1.5 h-5.5 bg-indigo-600 rounded-full"></span> Tài liệu phân loại theo Trường học
-            </h2>
-            <button onClick={() => handleSeeMore("Các Trường Học")} className="text-indigo-600 hover:text-indigo-800 text-xs font-bold uppercase tracking-wider transition-colors">
-              Xem tất cả trường &rarr;
-            </button>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            {UNIVERSITIES.map((uni, idx) => (
-              <div 
-                key={idx}
-                onClick={() => handleSeeMore(uni.name)}
-                className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-500 hover:shadow-md cursor-pointer transition-all text-center group"
-              >
-                <div className="text-xl mb-1.5 w-9 h-9 mx-auto bg-slate-50 rounded-full flex items-center justify-center group-hover:bg-indigo-50 transition-colors">{uni.logo}</div>
-                <div className="font-extrabold text-slate-900 text-xs md:text-sm">{uni.short}</div>
-                <div className="text-[11px] font-bold text-indigo-600 mt-1 bg-indigo-50/50 py-0.5 rounded-md">{uni.count}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ================= MỤC 2: BANNER QUẢNG CÁO XEN KẼ CHUYÊN NGHIỆP ================= */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl p-6 flex flex-col justify-between shadow relative overflow-hidden">
-            <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none text-7xl">📝</div>
-            <div className="space-y-2">
-              <span className="bg-white/20 text-white font-bold text-[9px] uppercase px-2 py-0.5 rounded">Tin tức Học đường</span>
-              <h3 className="text-base md:text-lg font-black leading-tight">Đăng ký tham gia Kỳ Thi Thử Online Đại Học Học Kỳ mới</h3>
-              <p className="text-xs text-blue-100 font-light leading-snug">Cọ xát kiến thức môn Giải tích, Vật lý đại cương với ngân hàng đề thi chuẩn của các thầy cô, nhận quà Credit lớn.</p>
-            </div>
-            <button onClick={() => alert("Chuyển sang trang Đăng ký thi thử")} className="mt-4 bg-white text-indigo-700 font-bold text-xs px-4 py-2 rounded-lg shadow self-start hover:bg-slate-100 transition-all">
-              Đăng ký miễn phí
-            </button>
-          </div>
-
-          <div className="bg-gradient-to-r from-slate-900 to-purple-950 text-white rounded-xl p-6 flex flex-col justify-between shadow relative overflow-hidden border border-slate-800">
-            <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none text-7xl">💰</div>
-            <div className="space-y-2">
-              <span className="bg-purple-500/30 text-purple-300 font-bold text-[9px] uppercase px-2 py-0.5 rounded border border-purple-500/20">Cơ chế Đại sứ tri thức</span>
-              <h3 className="text-base md:text-lg font-black leading-tight">Trở thành Người Đóng Góp - Rút tiền mặt từ kho tài liệu</h3>
-              <p className="text-xs text-purple-200 font-light leading-snug">Khi tài liệu chất lượng của bạn đạt mốc trên 500+ lượt tải về từ cộng đồng, bạn có thể quy đổi Credit tích lũy thành ví điện tử Momo hoặc ATM.</p>
-            </div>
-            <button onClick={() => navigate('/upload')} className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow self-start transition-all">
-              Bắt đầu upload tài liệu
-            </button>
-          </div>
-        </div>
-
-        {/* ================= MỤC LƯỢT XEM KHỦNG KỲ QUA (DANH MỤC MỚI BỔ SUNG DƯỚI BANNER) ================= */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-            <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span className="w-1.5 h-5.5 bg-cyan-500 rounded-full"></span> Tài liệu đạt Lượt xem lớn nhất tuần
-            </h2>
-            <button onClick={() => handleSeeMore("Xem nhiều nhất")} className="text-indigo-600 hover:text-indigo-800 text-xs font-bold uppercase tracking-wider shrink-0">
-              Xem thêm &rarr;
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {MOST_VIEWED_DOCS.map((doc) => (
-              <div key={doc.id} onClick={() => handleViewDetail(doc.id)} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-all flex gap-4 items-center group">
-                <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-slate-100">
-                  <img src={doc.thumbnail} alt={doc.title} className="w-full h-full object-cover group-hover:scale-105 transition-all" />
+        {/* 3. QUICK STATS */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {QUICK_STATS.map((stat, idx) => {
+            const StatIcon = stat.icon;
+            return (
+              <div key={idx} className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-11 h-11 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <StatIcon className="w-5 h-5" />
                 </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
-                    <span>{doc.type} • {doc.school}</span>
-                    <span className="text-cyan-600">👁️ {doc.views.toLocaleString()} xem</span>
+                <div>
+                  <span className="block text-xl font-extrabold text-slate-900 tracking-tight">{stat.count}</span>
+                  <span className="block text-[11px] text-slate-500 font-bold uppercase tracking-wider">{stat.label}</span>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+
+        {/* 4. UNIVERSITIES */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <GraduationCap className="w-6 h-6 text-indigo-600" /> Tài liệu theo trường đại học
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {UNIVERSITIES.map((uni, idx) => {
+              const UniIcon = uni.logo;
+              return (
+                <div
+                  key={idx}
+                  onClick={() => handleUniversityClick(uni.short)}
+                  className="bg-white border border-slate-200 rounded-xl p-4 text-center cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group"
+                >
+                  <div className="flex justify-center mb-2 text-slate-500 group-hover:text-indigo-600 transition-colors"><UniIcon className="w-7 h-7" /></div>
+                  <span className="block font-extrabold text-[13px] text-slate-900 tracking-tight">{uni.short}</span>
+                  <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">{uni.name}</p>
+                  <span className="inline-block text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full mt-2 group-hover:bg-indigo-50 group-hover:text-indigo-700 transition-colors">
+                    {uni.count}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 5. CATEGORIES */}
+        <section className="space-y-4">
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <BookOpen className="w-6 h-6 text-indigo-600" /> Danh mục ngành học chính
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {CATEGORIES.map((cat) => {
+              const CatIcon = cat.icon;
+              return (
+                <div
+                  key={cat.id}
+                  onClick={() => handleCategoryClick(cat.name)}
+                  className="bg-white border border-slate-200 rounded-xl p-4 flex items-start gap-4 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group"
+                >
+                  <div className="p-2.5 bg-slate-50 rounded-lg text-slate-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                    <CatIcon className="w-5 h-5" />
                   </div>
-                  <h4 className="font-bold text-slate-900 text-xs md:text-sm line-clamp-2 group-hover:text-indigo-600 transition-colors">
-                    {doc.title}
-                  </h4>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-[13px] sm:text-sm text-slate-900 tracking-tight group-hover:text-indigo-700 transition-colors">{cat.name}</h3>
+                    <p className="text-[11px] text-slate-500 font-medium line-clamp-2 leading-relaxed">{cat.desc}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </div>
+        </section>
 
-        {/* MỤC 3: TRA CỨU THEO KHỐI NGÀNH CHUYÊN MÔN (ĐẦY ĐỦ 9 MỤC) */}
-        <div className="space-y-4">
-          <div className="border-b border-slate-200 pb-2">
-            <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span className="w-1.5 h-5.5 bg-indigo-600 rounded-full"></span> Tra cứu theo Khối ngành chuyên môn
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {CATEGORIES.map((cat) => (
-              <div 
-                key={cat.id} 
-                onClick={() => handleSeeMore(cat.name)}
-                className="p-4 rounded-xl border border-slate-200 cursor-pointer bg-white hover:border-indigo-400 hover:shadow-md transition-all flex items-start gap-3 group"
-              >
-                <span className="text-2xl bg-slate-50 p-2.5 rounded-xl group-hover:bg-indigo-50 transition-colors shrink-0">{cat.icon}</span>
-                <div className="space-y-0.5">
-                  <h3 className="font-bold text-slate-950 text-xs md:text-sm group-hover:text-indigo-600 transition-colors">{cat.name}</h3>
-                  <p className="text-[11px] text-slate-400 leading-tight font-medium line-clamp-1">{cat.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* 6. TRENDING DOCUMENTS */}
+        <section className="space-y-4">
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <Flame className="w-6 h-6 text-amber-500" /> Xu hướng tải xuống tuần này
+          </h2>
 
-        {/* MỤC 4: XU HƯỚNG TẢI VỀ NHIỀU NHẤT */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-            <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span className="w-1.5 h-5.5 bg-indigo-600 rounded-full"></span> Xu hướng tải về nhiều nhất tuần qua
-            </h2>
-            <button onClick={() => handleSeeMore("Xu hướng")} className="text-indigo-600 hover:text-indigo-800 text-xs font-bold uppercase tracking-wider shrink-0">
-              Xem tất cả &rarr;
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {TRENDING_DOCS.map((doc) => (
-              <div key={doc.id} onClick={() => handleViewDetail(doc.id)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:border-indigo-400 transition-all cursor-pointer flex flex-col justify-between group">
-                <div className="h-40 w-full overflow-hidden relative bg-slate-100 border-b border-slate-100">
-                  <img src={doc.thumbnail} alt={doc.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  <span className="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded">
-                    {doc.size}
+              <div key={doc.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer">
+                <div className="aspect-[16/10] bg-slate-100 relative overflow-hidden">
+                  <img src={doc.thumbnail} alt={doc.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <span className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md">
+                    {doc.type}
+                  </span>
+                  <span className="absolute bottom-2 right-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">
+                    {doc.credits} Credit
                   </span>
                 </div>
-                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                   <div className="space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <span className="bg-indigo-50 text-indigo-700 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded">
-                        {doc.type}
-                      </span>
-                      <span className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">{doc.school}</span>
+                    <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                      <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">{doc.school}</span>
+                      <span className="truncate max-w-[120px]">{doc.subject}</span>
                     </div>
-                    <h4 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                    <h3 className="font-bold text-[13px] text-slate-900 line-clamp-2 leading-snug tracking-tight group-hover:text-indigo-600 transition-colors">
                       {doc.title}
-                    </h4>
+                    </h3>
                   </div>
-                  <div className="grid grid-cols-2 border-t border-slate-100 pt-2 text-xs text-slate-500 font-medium">
-                    <div>🔥 {doc.downloads} tải</div>
-                    <div className="text-right text-amber-500">⭐ {doc.rating}</div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                      <span className="text-slate-800">{doc.rating}</span>
+                      <span>({doc.reviews})</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Download className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{doc.downloads.toLocaleString()}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="bg-slate-50 px-4 py-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-medium">
-                  <span className="truncate max-w-[110px]">Bởi: {doc.author}</span>
-                  <span className="text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded text-[11px]">{doc.credits} Credit</span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* ================= ĐỀ CƯƠNG ÔN THI CẤP TỐC CHỐNG TRƯỢT (DANH MỤC THỨ 2 BỔ SUNG THÊM) ================= */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-            <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span className="w-1.5 h-5.5 bg-red-500 rounded-full"></span> ⚡ Đề cương Cấp tốc - Cứu nguy mùa thi cử
+        {/* MỤC MỚI BỔ SUNG: TÀI LIỆU MỚI TẢI LÊN */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <Clock className="w-6 h-6 text-indigo-500" /> Mới tải lên gần đây
             </h2>
-            <button onClick={() => handleSeeMore("Ôn cấp tốc")} className="text-red-600 hover:text-red-800 text-xs font-bold uppercase tracking-wider shrink-0">
-              Vào tủ sách cấp tốc &rarr;
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {FLASH_EXAM_PREP.map((doc) => (
-              <div key={doc.id} onClick={() => handleViewDetail(doc.id)} className="bg-gradient-to-r from-red-50/50 to-amber-50/30 p-5 rounded-2xl border border-red-100/70 hover:border-red-300 shadow-sm hover:shadow-md cursor-pointer transition-all flex flex-col justify-between space-y-4 group">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-[10px] font-extrabold text-red-600 uppercase tracking-wider">
-                    <span>🔥 {doc.type} • TRƯỜNG {doc.school}</span>
-                    <span>📥 {doc.downloads} lượt tải</span>
-                  </div>
-                  <h4 className="font-black text-slate-950 text-sm md:text-base leading-snug group-hover:text-red-600 transition-colors">
-                    {doc.title}
-                  </h4>
-                </div>
-                <div className="flex items-center justify-between text-xs text-slate-400 border-t border-red-100/50 pt-2.5 font-medium">
-                  <span>Tác giả: {doc.author}</span>
-                  <span className="text-red-600 bg-red-100/50 px-2.5 py-0.5 rounded-full font-bold text-[11px]">{doc.credits} Credit</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* MỤC 5: DIỄN ĐÀN THẢO LUẬN TRAO ĐỔI SÔI NỔI */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-            <div>
-              <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span className="w-1.5 h-5.5 bg-pink-500 rounded-full"></span> Góc Trao Đổi Học Tập & Thảo Luận Sinh Viên
-              </h2>
-            </div>
-            <button onClick={() => alert("Chuyển sang Diễn Đàn")} className="text-pink-600 hover:text-pink-800 text-xs font-bold uppercase tracking-wider shrink-0">
-              Vào diễn đàn &rarr;
-            </button>
+            <button className="text-[13px] font-bold text-indigo-600 hover:text-indigo-700">Xem tất cả &rarr;</button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {DISCUSSION_THREADS.map((thread) => (
-              <div key={thread.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-3">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded ${
-                      thread.badge === "Cần trợ giúp" ? "bg-rose-50 text-rose-600 border border-rose-100" :
-                      thread.badge === "Thảo luận hot" ? "bg-amber-50 text-amber-600 border border-amber-100" : "bg-blue-50 text-blue-600 border border-blue-100"
-                    }`}>
-                      {thread.badge}
-                    </span>
-                    <span className="text-slate-400 text-xs font-medium">Khối ngành: {thread.category}</span>
-                  </div>
-                  <h4 className="font-bold text-slate-900 text-sm md:text-base leading-snug hover:text-indigo-600 cursor-pointer transition-colors line-clamp-2">
-                    {thread.title}
-                  </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {NEW_DOCS.map((doc) => (
+              <div key={doc.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer">
+                <div className="aspect-[16/10] bg-slate-100 relative overflow-hidden">
+                  <img src={doc.thumbnail} alt={doc.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <span className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md">
+                    {doc.type}
+                  </span>
+                  <span className={`absolute bottom-2 right-2 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm ${doc.credits === 0 ? 'bg-emerald-500' : 'bg-indigo-600'}`}>
+                    {doc.credits === 0 ? 'Miễn phí' : `${doc.credits} Credit`}
+                  </span>
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-100 font-medium">
-                  <span>Đăng bởi: <strong className="text-slate-600">@{thread.user}</strong></span>
-                  <div className="flex items-center gap-3">
-                    <span>💬 {thread.replies} trả lời</span>
-                    <span>👁️ {thread.views} xem</span>
+
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                      <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">{doc.school}</span>
+                      <span className="truncate max-w-[120px]">{doc.subject}</span>
+                    </div>
+                    <h3 className="font-bold text-[13px] text-slate-900 line-clamp-2 leading-snug tracking-tight group-hover:text-indigo-600 transition-colors">
+                      {doc.title}
+                    </h3>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                      <span className="text-slate-800">{doc.rating}</span>
+                      <span>({doc.reviews})</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Download className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{doc.downloads.toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* MỤC 6: TÀI LIỆU ĐÁNH GIÁ 5 SAO CHẤT LƯỢNG CAO */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-            <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span className="w-1.5 h-5.5 bg-emerald-600 rounded-full"></span> Tài liệu 5★ Đóng góp Chất lượng cao
-            </h2>
-            <button onClick={() => handleSeeMore("Đánh giá cao")} className="text-indigo-600 hover:text-indigo-800 text-xs font-bold uppercase tracking-wider shrink-0">
-              Xem tất cả &rarr;
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        {/* 7. HIGH RATED DOCUMENTS */}
+        <section className="space-y-4">
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <Star className="w-6 h-6 text-amber-400 fill-amber-400" /> Tài liệu đánh giá 5★ tuyệt đối
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {HIGH_RATED_DOCS.map((doc) => (
-              <div key={doc.id} onClick={() => handleViewDetail(doc.id)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:border-emerald-400 transition-all cursor-pointer flex flex-col justify-between group">
-                <div className="h-44 w-full overflow-hidden relative bg-slate-100 border-b border-slate-100">
-                  <img src={doc.thumbnail} alt={doc.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  <span className="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded">
-                    {doc.size}
+              <div key={doc.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer">
+                <div className="aspect-[16/10] bg-slate-100 relative overflow-hidden">
+                  <img src={doc.thumbnail} alt={doc.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <span className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md">
+                    {doc.type}
+                  </span>
+                  <span className="absolute bottom-2 right-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">
+                    {doc.credits} Credit
                   </span>
                 </div>
-                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                   <div className="space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded">
-                        {doc.type}
-                      </span>
-                      <span className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">{doc.school}</span>
+                    <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                      <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">{doc.school}</span>
+                      <span className="truncate max-w-[120px]">{doc.subject}</span>
                     </div>
-                    <h4 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 group-hover:text-emerald-600 transition-colors">
+                    <h3 className="font-bold text-[13px] text-slate-900 line-clamp-2 leading-snug tracking-tight group-hover:text-indigo-600 transition-colors">
                       {doc.title}
-                    </h4>
+                    </h3>
                   </div>
-                  <div className="grid grid-cols-2 border-t border-slate-100 pt-2 text-xs text-slate-500 font-medium">
-                    <div>📥 {doc.downloads} tải</div>
-                    <div className="text-right text-emerald-600 font-bold">⭐ {doc.rating}</div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                      <span className="text-slate-800">{doc.rating}</span>
+                      <span>({doc.reviews})</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Download className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{doc.downloads.toLocaleString()}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="bg-slate-50 px-4 py-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-medium">
-                  <span className="truncate max-w-[110px]">Bởi: {doc.author}</span>
-                  <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded text-[11px]">{doc.credits} Credit</span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-      </div>
+        {/* MỤC MỚI BỔ SUNG: BANNER QUẢNG CÁO CALL TO ACTION */}
+        <section className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-700 rounded-2xl p-8 sm:p-10 text-white flex flex-col md:flex-row items-center justify-between shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white opacity-5 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-32 h-32 bg-indigo-400 opacity-20 rounded-full blur-xl"></div>
+          
+          <div className="relative z-10 text-center md:text-left max-w-2xl space-y-3">
+            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Mở khóa toàn bộ đặc quyền với Premium 💎</h3>
+            <p className="text-indigo-100 text-[13px] sm:text-sm font-medium leading-relaxed">
+              Tải không giới hạn hơn 140,000+ tài liệu, không chứa quảng cáo, ưu tiên hỗ trợ tìm tài liệu khó. Đăng ký ngay hôm nay để nhận ưu đãi giảm 35% cho sinh viên.
+            </p>
+          </div>
+          <div className="relative z-10 mt-6 md:mt-0 flex-shrink-0">
+            <button 
+              onClick={() => navigate('/subscriptions')}
+              className="px-8 py-3.5 bg-white text-indigo-700 text-sm font-extrabold rounded-xl hover:bg-indigo-50 hover:shadow-lg transition-all"
+            >
+              Nâng cấp ngay
+            </button>
+          </div>
+        </section>
 
-      {/* ================= FOOTER ĐỒNG BỘ LANDING CHÍNH ================= */}
-      <footer className="bg-slate-900 text-slate-400 text-xs md:text-sm pt-16 pb-8 px-6 mt-24 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 pb-12 border-b border-slate-800">
+        {/* 8. DISCUSSIONS & COMMUNITY */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Threads List */}
+          <div className="lg:col-span-2 space-y-4">
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <MessageSquare className="w-6 h-6 text-indigo-600" /> Sinh viên hỏi đáp - Xin tài liệu
+            </h2>
+
+            <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden shadow-sm">
+              {DISCUSSION_THREADS.map((thread) => (
+                <div key={thread.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider">
+                      <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded">{thread.category}</span>
+                      <span className="text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">{thread.badge}</span>
+                    </div>
+                    <h4 className="text-[13px] sm:text-sm font-bold text-slate-900 tracking-tight line-clamp-1 hover:text-indigo-600 cursor-pointer transition-colors">{thread.title}</h4>
+                    <span className="block text-[11px] text-slate-500 font-medium">Đăng bởi: <span className="font-bold text-slate-700">@{thread.user}</span></span>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-[11px] text-slate-500 font-bold flex-shrink-0 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                    <div className="text-center min-w-[32px]">
+                      <span className="block text-slate-800 text-[13px]">{thread.replies}</span>
+                      <span className="block text-[9px] font-medium text-slate-500 uppercase">Phản hồi</span>
+                    </div>
+                    <div className="w-px h-6 bg-slate-200"></div>
+                    <div className="text-center min-w-[32px]">
+                      <span className="block text-slate-800 text-[13px]">{thread.views}</span>
+                      <span className="block text-[9px] font-medium text-slate-500 uppercase">Xem</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Top Contributors Card */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">🏆 Bảng vàng đóng góp</h2>
+            
+            <div className="bg-indigo-950 rounded-xl p-5 text-white shadow-xl space-y-4 relative overflow-hidden">
+              {/* Trang trí nền */}
+              <div className="absolute top-0 right-0 opacity-10 text-white transform translate-x-4 -translate-y-4">
+                <Crown className="w-32 h-32" />
+              </div>
+
+              <div className="space-y-2.5 relative z-10">
+                <div className="flex items-center justify-between bg-white/10 p-3 rounded-xl border border-white/10 backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-amber-400 text-slate-950 text-[11px] font-extrabold rounded-full flex items-center justify-center shadow-md">1</div>
+                    <div>
+                      <span className="block text-[13px] font-bold tracking-tight">Trần Minh Quân</span>
+                      <span className="block text-[10px] text-indigo-200 font-medium">ĐH Bách Khoa Hà Nội</span>
+                    </div>
+                  </div>
+                  <span className="text-[13px] font-extrabold text-amber-400">+1,420 file</span>
+                </div>
+
+                <div className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-slate-300 text-slate-950 text-[11px] font-extrabold rounded-full flex items-center justify-center shadow-md">2</div>
+                    <div>
+                      <span className="block text-[13px] font-bold tracking-tight">Lê Phương Thảo</span>
+                      <span className="block text-[10px] text-indigo-200 font-medium">ĐH Ngoại Thương</span>
+                    </div>
+                  </div>
+                  <span className="text-[13px] font-extrabold text-slate-300">+980 file</span>
+                </div>
+
+                <div className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-amber-700 text-white text-[11px] font-extrabold rounded-full flex items-center justify-center shadow-md">3</div>
+                    <div>
+                      <span className="block text-[13px] font-bold tracking-tight">Nguyễn Tiến Đạt</span>
+                      <span className="block text-[10px] text-indigo-200 font-medium">ĐH Kinh tế Quốc dân</span>
+                    </div>
+                  </div>
+                  <span className="text-[13px] font-extrabold text-amber-500">+850 file</span>
+                </div>
+              </div>
+
+              <div className="text-center pt-2 relative z-10 border-t border-white/10">
+                <span className="text-[11px] text-indigo-200 font-medium">Phần thưởng X2 Credit tự động trao ngày 30 hàng tháng</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* 9. FOOTER */}
+      <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-white">
-              <span className="text-2xl">📚</span>
-              <span className="text-lg font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-300">Studoc-Share</span>
+              <span className="p-1.5 bg-indigo-600 rounded-lg text-white text-xs w-7 h-7 flex items-center justify-center font-bold">S</span>
+              <span className="text-lg font-extrabold tracking-tight">StudocShare</span>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed font-medium">
-              Nền tảng chia sẻ và lưu trữ tài liệu học tập tối ưu, kết nối hàng ngàn tài liệu hữu ích từ sinh viên trên khắp các trường Đại học lớn tại Việt Nam.
+            <p className="text-[12px] leading-relaxed font-medium text-slate-400">
+              Sứ mệnh của chúng tôi là xã hội hóa và tự do hóa tài liệu học tập, giúp sinh viên mọi miền tổ quốc tiếp cận tri thức chất lượng cao một cách bình đẳng và dễ dàng nhất.
             </p>
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Khám phá</h4>
-            <ul className="space-y-2 text-xs font-medium">
-              <li><span onClick={() => handleSeeMore("Tài liệu hot")} className="hover:text-white cursor-pointer transition-colors">Tài liệu thịnh hành</span></li>
-              <li><span onClick={() => handleSeeMore("Đề thi")} className="hover:text-white cursor-pointer transition-colors">Đề thi mẫu cuối kỳ</span></li>
+            <h4 className="text-[11px] font-bold text-white uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Tài liệu nổi bật</h4>
+            <ul className="space-y-2 text-[13px] font-medium">
+              <li><span className="hover:text-white cursor-pointer transition-colors flex items-center gap-1.5"><FileText className="w-4 h-4 text-slate-500" /> Slide bài giảng mẫu</span></li>
+              <li><span className="hover:text-white cursor-pointer transition-colors flex items-center gap-1.5"><FileText className="w-4 h-4 text-slate-500" /> Đề cương ôn thi học phần</span></li>
+              <li><span className="hover:text-white cursor-pointer transition-colors flex items-center gap-1.5"><FileText className="w-4 h-4 text-slate-500" /> Đề thi mẫu cuối kỳ</span></li>
             </ul>
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Chính sách & Hỗ trợ</h4>
-            <ul className="space-y-2 text-xs font-medium">
+            <h4 className="text-[11px] font-bold text-white uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Chính sách & Hỗ trợ</h4>
+            <ul className="space-y-2 text-[13px] font-medium">
               <li><span className="hover:text-white cursor-pointer transition-colors">Điều khoản dịch vụ mở</span></li>
               <li><span className="hover:text-white cursor-pointer transition-colors">Bảo mật thông tin tài khoản</span></li>
+              <li><span className="hover:text-white cursor-pointer transition-colors">Trung tâm trợ giúp</span></li>
             </ul>
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Thông tin Liên Hệ</h4>
-            <ul className="space-y-2 text-xs font-medium text-slate-500">
-              <li>📍 Địa chỉ: <span className="text-slate-400">Đại học Bách Khoa Hà Nội</span></li>
-              <li>📧 Email: <span className="text-slate-400">support@studocshare.vn</span></li>
+            <h4 className="text-[11px] font-bold text-white uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Thông tin Liên Hệ</h4>
+            <ul className="space-y-2 text-[13px] font-medium text-slate-400">
+              <li className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-indigo-400" />
+                <span>Địa chỉ: <span className="text-slate-300">Đại học Bách Khoa Hà Nội</span></span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-indigo-400" />
+                <span>Email: <span className="text-slate-300">support@studocshare.vn</span></span>
+              </li>
             </ul>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto pt-6 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 font-medium gap-4">
+        <div className="max-w-7xl mx-auto pt-6 pb-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 font-medium gap-4 px-4">
           <div>
-            &copy; {new Date().getFullYear()} Studoc-Share. Toàn bộ quyền nội dung được bảo lưu bởi nhóm phát triển đồ án.
+            © {new Date().getFullYear()} StudocShare Inc. Bản quyền thuộc về đội ngũ phát triển dự án.
+          </div>
+          <div className="flex gap-5">
+            <span className="hover:text-slate-300 cursor-pointer transition-colors">Facebook</span>
+            <span className="hover:text-slate-300 cursor-pointer transition-colors">Github</span>
+            <span className="hover:text-slate-300 cursor-pointer transition-colors">Cộng đồng</span>
           </div>
         </div>
       </footer>

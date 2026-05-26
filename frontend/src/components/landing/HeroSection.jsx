@@ -94,10 +94,10 @@ const HeroSection = () => {
 
                         <SignedIn>
                             <button 
-                                onClick={() => navigate("/dashboard")}
+                                onClick={() => navigate("/home")}
                                 className="w-full sm:w-auto flex items-center justify-center px-10 py-4 border border-transparent text-base font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-all duration-200 shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 hover:-translate-y-0.5"
                             >
-                                Go to Dashboard
+                                Get Started
                             </button>
                         </SignedIn>
                     </div>
