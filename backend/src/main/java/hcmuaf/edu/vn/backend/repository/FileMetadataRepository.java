@@ -10,4 +10,12 @@ public interface FileMetadataRepository extends MongoRepository<FileMetadataDocu
 
     long countByClerkId(String clerkId);
 
+//    Lọc theo trường học
+    List<FileMetadataDocument> findByIsPublicTrueAndUniversityId(String universityId);
+
+//    Lọc theo ngành học
+    List<FileMetadataDocument> findByIsPublicTrueAndCategoryId(String categoryId);
+
+//    Lọc theo từ khóa tìm kiếm
+    List<FileMetadataDocument> findByIsPublicTrueAndTitleRegexIgnoreCase(String keyword);
 }
