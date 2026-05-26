@@ -3,7 +3,9 @@ package hcmuaf.edu.vn.backend.service;
 import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
 import hcmuaf.edu.vn.backend.document.ProfileDocument;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
+import hcmuaf.edu.vn.backend.dto.response.FileDetailResponseDTO;
 import hcmuaf.edu.vn.backend.repository.FileMetadataRepository;
+import hcmuaf.edu.vn.backend.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -28,6 +30,7 @@ public class FileMetadataService {
     private final ProfileService profileService;
     private final UserCreditsService userCreditsService;
     private final FileMetadataRepository fileMetadataRepository;
+    private final ProfileRepository profileRepository;
 
     public List<FileMetadataDTO> upLoadFiles(MultipartFile files[]) throws IOException {
         ProfileDocument currentProfile = profileService.getCurrentProfile();
@@ -62,19 +65,6 @@ public class FileMetadataService {
 
         return savedFiles.stream().map(fileMetadataDocument -> mapToDTO(fileMetadataDocument))
                 .collect(Collectors.toList());
-    }
-
-    private FileMetadataDTO mapToDTO(FileMetadataDocument fileMetadataDocument) {
-        return FileMetadataDTO.builder()
-                .id(fileMetadataDocument.getId())
-                .fileLocation(fileMetadataDocument.getFileLocation())
-                .name(fileMetadataDocument.getName())
-                .size(fileMetadataDocument.getSize())
-                .type(fileMetadataDocument.getType())
-                .clerkId(fileMetadataDocument.getClerkId())
-                .isPublic(fileMetadataDocument.getIsPublic())
-                .uploadedAt(fileMetadataDocument.getUploadedAt())
-                .build();
     }
 
     public List<FileMetadataDTO> getFiles() {
@@ -123,5 +113,109 @@ public class FileMetadataService {
         file.setIsPublic(!file.getIsPublic());
         fileMetadataRepository.save(file);
         return mapToDTO(file);
+    }
+
+    /**
+     * 1. Lấy danh sách file công khai phục vụ trang Explore (Có bộ lọc động)
+     */
+    public List<FileMetadataDTO> getExploreFiles(String universityId, String categoryId, String search) {
+        List<hcmuaf.edu.vn.backend.document.FileMetadataDocument> documents;
+
+        if (search != null && !search.trim().isEmpty()) {
+            documents = fileMetadataRepository.findByIsPublicTrueAndTitleRegexIgnoreCase(search);
+        } else if (universityId != null && !universityId.trim().isEmpty()) {
+            documents = fileMetadataRepository.findByIsPublicTrueAndUniversityId(universityId);
+        } else if (categoryId != null && !categoryId.trim().isEmpty()) {
+            documents = fileMetadataRepository.findByIsPublicTrueAndCategoryId(categoryId);
+        } else {
+            documents = fileMetadataRepository.findAll().stream()
+                    .filter(d -> Boolean.TRUE.equals(d.getIsPublic()))
+                    .collect(Collectors.toList());
+        }
+
+        return documents.stream().map(this::mapToDTO).collect(Collectors.toList());
+    }
+
+    /**
+     * 2. Lấy chi tiết tài liệu và gộp thông tin Tác giả (Trang chi tiết)
+     */
+    public FileDetailResponseDTO getFileDetail(String id) {
+        FileMetadataDocument fileDoc = fileMetadataRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tài liệu không tồn tại"));
+
+        // Tăng viewCount trực tiếp khi có người nhấn xem chi tiết
+        fileDoc.setViewCount(fileDoc.getViewCount() + 1);
+        fileMetadataRepository.save(fileDoc);
+
+        // Tìm profile của người đăng file (tác giả)
+        ProfileDocument authorDoc = profileRepository.findByClerkId(fileDoc.getClerkId());
+        String authorName = "Thành viên StudocShare";
+        String authorAvatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100";
+
+        if (authorDoc != null) {
+            authorName = authorDoc.getLastName() + " " + authorDoc.getFirstName();
+            if (authorDoc.getPhotoUrl() != null) {
+                authorAvatar = authorDoc.getPhotoUrl();
+            }
+        }
+
+        // Map sang FileDetailResponseDTO
+        return FileDetailResponseDTO.builder()
+                .id(fileDoc.getId())
+                .title(fileDoc.getTitle() != null ? fileDoc.getTitle() : fileDoc.getName())
+                .type(fileDoc.getType())
+                .size(fileDoc.getSize())
+                .fileLocation(fileDoc.getFileLocation())
+                .uploadedAt(fileDoc.getUploadedAt())
+                .universityId(fileDoc.getUniversityId())
+                .subjectCode(fileDoc.getSubjectCode())
+                .subjectName(fileDoc.getSubjectName())
+                .docType(fileDoc.getDocType())
+                .description(fileDoc.getDescription())
+                .pageCount(fileDoc.getPageCount())
+                .creditCost(fileDoc.getCreditCost() != null ? fileDoc.getCreditCost() : 0)
+                .viewCount(fileDoc.getViewCount())
+                .downloadCount(fileDoc.getDownloadCount())
+                .rating(fileDoc.getRating())
+                .reviewCount(fileDoc.getReviewCount())
+                .authorName(authorName)
+                .authorAvatar(authorAvatar)
+                .build();
+    }
+
+    /**
+     * 3. Hàm phụ cập nhật dữ liệu khi người dùng thực hiện tải file thành công
+     */
+    public void incrementDownloadCount(String fileId) {
+        fileMetadataRepository.findById(fileId).ifPresent(file -> {
+            file.setDownloadCount(file.getDownloadCount() + 1);
+            fileMetadataRepository.save(file);
+        });
+    }
+
+    private FileMetadataDTO mapToDTO(hcmuaf.edu.vn.backend.document.FileMetadataDocument document) {
+        return FileMetadataDTO.builder()
+                .id(document.getId())
+                .name(document.getName())
+                .title(document.getTitle() != null ? document.getTitle() : document.getName())
+                .type(document.getType())
+                .size(document.getSize())
+                .clerkId(document.getClerkId())
+                .isPublic(document.getIsPublic())
+                .fileLocation(document.getFileLocation())
+                .uploadedAt(document.getUploadedAt())
+                .universityId(document.getUniversityId())
+                .subjectCode(document.getSubjectCode())
+                .subjectName(document.getSubjectName())
+                .categoryId(document.getCategoryId())
+                .docType(document.getDocType())
+                .description(document.getDescription())
+                .pageCount(document.getPageCount())
+                .creditCost(document.getCreditCost())
+                .viewCount(document.getViewCount())
+                .downloadCount(document.getDownloadCount())
+                .rating(document.getRating())
+                .reviewCount(document.getReviewCount())
+                .build();
     }
 }

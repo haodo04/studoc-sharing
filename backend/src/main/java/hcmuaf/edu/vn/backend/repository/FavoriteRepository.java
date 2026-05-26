@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;
 
-public interface FavoriteRepository extends MongoRepository<FavoriteRepository, String> {
+public interface FavoriteRepository extends MongoRepository<FavoriteDocument, String> {
     // Kiểm tra xem User này đã bookmark file này chưa (Để hiển thị icon bookmark sáng hay tối trên FE
     Optional<FavoriteDocument> findByClerkIdAndFileId(String clerkId, String fileId);
 

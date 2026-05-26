@@ -1,4 +1,4 @@
-package hcmuaf.edu.vn.backend.dto;
+package hcmuaf.edu.vn.backend.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,29 +10,25 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class FileMetadataDTO {
-
+public class FileDetailResponseDTO {
     private String id;
-    private String name;
     private String title;
     private String type;
     private long size;
-    private String clerkId;
-    private Boolean isPublic;
     private String fileLocation;
     private LocalDateTime uploadedAt;
-
     private String universityId;
     private String subjectCode;
     private String subjectName;
-    private String categoryId;
     private String docType;
     private String description;
     private int pageCount;
     private Integer creditCost;
-
     private int viewCount;
     private int downloadCount;
     private double rating;
     private int reviewCount;
+
+    private String authorName;
+    private String authorAvatar;
 }
