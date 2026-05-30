@@ -3,9 +3,9 @@ package hcmuaf.edu.vn.backend.service;
 import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
 import hcmuaf.edu.vn.backend.document.ProfileDocument;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
-import hcmuaf.edu.vn.backend.dto.response.FileDetailResponseDTO;
+import hcmuaf.edu.vn.backend.exceptions.BadRequestException;
+import hcmuaf.edu.vn.backend.exceptions.ResourceNotFoundException;
 import hcmuaf.edu.vn.backend.repository.FileMetadataRepository;
-import hcmuaf.edu.vn.backend.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -19,7 +19,6 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -28,164 +27,109 @@ import java.util.stream.Collectors;
 public class FileMetadataService {
 
     private final ProfileService profileService;
-    private final UserCreditsService userCreditsService;
     private final FileMetadataRepository fileMetadataRepository;
-    private final ProfileRepository profileRepository;
 
-    public List<FileMetadataDTO> upLoadFiles(MultipartFile files[]) throws IOException {
-        ProfileDocument currentProfile = profileService.getCurrentProfile();
-        List<FileMetadataDocument> savedFiles = new ArrayList<>();
+    private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
 
-        if (!userCreditsService.hasEnoughCredits(files.length)) {
-            throw new RuntimeException("Not enough credits to upload files. Please purchase more credits");
+    public List<FileMetadataDTO> upLoadFiles(MultipartFile[] files) throws IOException {
+        if (!Files.exists(this.fileStorageLocation)) {
+            Files.createDirectories(this.fileStorageLocation);
         }
 
-        Path uploadPath = Paths.get("upload").toAbsolutePath().normalize();
-        Files.createDirectories(uploadPath);
+        ProfileDocument currentProfile = profileService.getCurrentProfile();
+        String clerkId = currentProfile.getClerkId();
+
+        List<FileMetadataDTO> uploadedFilesResult = new ArrayList<>();
 
         for (MultipartFile file : files) {
-            String fileName = UUID.randomUUID() + "." + StringUtils.getFilenameExtension(file.getOriginalFilename());
-            Path targetLocation = uploadPath.resolve(fileName);
+            if (file.isEmpty()) continue;
+
+            String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+            String fileExtension = "";
+            if (originalFileName.contains(".")) {
+                fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
+            }
+            String storedFileName = UUID.randomUUID().toString() + fileExtension;
+
+            Path targetLocation = this.fileStorageLocation.resolve(storedFileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-            FileMetadataDocument fileMetadata = FileMetadataDocument.builder()
-                    .fileLocation(targetLocation.toString())
-                    .name(file.getOriginalFilename())
-                    .size(file.getSize())
-                    .type(file.getContentType())
-                    .clerkId(currentProfile.getClerkId())
-                    .isPublic(false)
-                    .uploadedAt(LocalDateTime.now())
-                    .build();
+            FileMetadataDocument document = new FileMetadataDocument();
+            document.setName(originalFileName);
+            document.setTitle(originalFileName.replace(fileExtension, ""));
+            document.setType(file.getContentType());
+            document.setSize(file.getSize());
+            document.setFileLocation(targetLocation.toString());
+            document.setClerkId(clerkId);
+            document.setIsPublic(true);
+            document.setUploadedAt(LocalDateTime.now());
 
-            userCreditsService.consumeCredits();
+            document.setViewCount(0);
+            document.setDownloadCount(0);
+            document.setRating(0.0);
+            document.setReviewCount(0);
+            document.setUniversityId(null);
+            document.setSubjectCode("CHƯA_CÓ");
+            document.setSubjectName("Tài liệu chưa phân loại");
+            document.setCategoryId(null);
+            document.setDocType("Khác");
+            document.setPageCount(1);
+            document.setCreditCost(0);
 
-            savedFiles.add(fileMetadataRepository.save(fileMetadata));
+            FileMetadataDocument savedDoc = fileMetadataRepository.save(document);
+            uploadedFilesResult.add(mapToDTO(savedDoc));
         }
 
-        return savedFiles.stream().map(fileMetadataDocument -> mapToDTO(fileMetadataDocument))
-                .collect(Collectors.toList());
+        return uploadedFilesResult;
     }
 
     public List<FileMetadataDTO> getFiles() {
-        ProfileDocument currentProfile = profileService.getCurrentProfile();
-        List<FileMetadataDocument> files = fileMetadataRepository.findByClerkId(currentProfile.getClerkId());
-        return files.stream().map(this::mapToDTO).collect(Collectors.toList());
-    }
-
-    public FileMetadataDTO getPublicFile(String id) {
-        Optional<FileMetadataDocument> fileOptional = fileMetadataRepository.findById(id);
-        if (fileOptional.isEmpty() || !fileOptional.get().getIsPublic()) {
-            throw new RuntimeException("Unable to get the file ");
-        }
-
-        FileMetadataDocument document = fileOptional.get();
-        return mapToDTO(document);
+        return fileMetadataRepository.findAll().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     public FileMetadataDTO getDownloadableFile(String id) {
-        FileMetadataDocument file = fileMetadataRepository.findById(id).orElseThrow(() -> new RuntimeException("File no found"));
-        return mapToDTO(file);
+        FileMetadataDocument document = fileMetadataRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy file hệ thống với ID yêu cầu: " + id));
+        return mapToDTO(document);
     }
 
     public void deleteFile(String id) {
-        try {
-            ProfileDocument currentProfile = profileService.getCurrentProfile();
-            FileMetadataDocument file = fileMetadataRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("File no found"));
-            if (!file.getClerkId().equals(currentProfile.getClerkId())) {
-                throw new RuntimeException("File is not belong to current user");
-            }
+        FileMetadataDocument document = fileMetadataRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tài liệu không tồn tại với ID: " + id));
 
-            Path filePath = Paths.get(file.getFileLocation());
-            Files.deleteIfExists(filePath);
+        // Lấy thông tin user hiện tại bảo mật tuyệt đối
+        ProfileDocument currentProfile = profileService.getCurrentProfile();
 
-            fileMetadataRepository.deleteById(id);
-        }catch (Exception e) {
-            throw new RuntimeException("Error deleting the file");
+        if (!document.getClerkId().equals(currentProfile.getClerkId())) {
+            throw new BadRequestException("Bạn không có quyền xóa tài liệu của người khác!");
         }
+
+        try {
+            Path filePath = Paths.get(document.getFileLocation());
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            System.err.println("Lỗi vật lý khi xóa tệp tin trên đĩa: " + e.getMessage());
+        }
+
+        fileMetadataRepository.delete(document);
     }
 
     public FileMetadataDTO togglePublic(String id) {
-        FileMetadataDocument file = fileMetadataRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("File no found"));
+        FileMetadataDocument document = fileMetadataRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tài liệu không tồn tại với ID: " + id));
 
-        file.setIsPublic(!file.getIsPublic());
-        fileMetadataRepository.save(file);
-        return mapToDTO(file);
-    }
+        ProfileDocument currentProfile = profileService.getCurrentProfile();
 
-    /**
-     * 1. Lấy danh sách file công khai phục vụ trang Explore (Có bộ lọc động)
-     */
-    public List<FileMetadataDTO> getExploreFiles(String universityId, String categoryId, String search) {
-        List<hcmuaf.edu.vn.backend.document.FileMetadataDocument> documents;
-
-        if (search != null && !search.trim().isEmpty()) {
-            documents = fileMetadataRepository.findByIsPublicTrueAndTitleRegexIgnoreCase(search);
-        } else if (universityId != null && !universityId.trim().isEmpty()) {
-            documents = fileMetadataRepository.findByIsPublicTrueAndUniversityId(universityId);
-        } else if (categoryId != null && !categoryId.trim().isEmpty()) {
-            documents = fileMetadataRepository.findByIsPublicTrueAndCategoryId(categoryId);
-        } else {
-            documents = fileMetadataRepository.findAll().stream()
-                    .filter(d -> Boolean.TRUE.equals(d.getIsPublic()))
-                    .collect(Collectors.toList());
+        if (!document.getClerkId().equals(currentProfile.getClerkId())) {
+            throw new BadRequestException("Bạn không có quyền thay đổi trạng thái tài liệu này!");
         }
 
-        return documents.stream().map(this::mapToDTO).collect(Collectors.toList());
+        document.setIsPublic(!document.getIsPublic());
+        return mapToDTO(fileMetadataRepository.save(document));
     }
 
-    /**
-     * 2. Lấy chi tiết tài liệu và gộp thông tin Tác giả (Trang chi tiết)
-     */
-    public FileDetailResponseDTO getFileDetail(String id) {
-        FileMetadataDocument fileDoc = fileMetadataRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tài liệu không tồn tại"));
-
-        // Tăng viewCount trực tiếp khi có người nhấn xem chi tiết
-        fileDoc.setViewCount(fileDoc.getViewCount() + 1);
-        fileMetadataRepository.save(fileDoc);
-
-        // Tìm profile của người đăng file (tác giả)
-        ProfileDocument authorDoc = profileRepository.findByClerkId(fileDoc.getClerkId());
-        String authorName = "Thành viên StudocShare";
-        String authorAvatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100";
-
-        if (authorDoc != null) {
-            authorName = authorDoc.getLastName() + " " + authorDoc.getFirstName();
-            if (authorDoc.getPhotoUrl() != null) {
-                authorAvatar = authorDoc.getPhotoUrl();
-            }
-        }
-
-        // Map sang FileDetailResponseDTO
-        return FileDetailResponseDTO.builder()
-                .id(fileDoc.getId())
-                .title(fileDoc.getTitle() != null ? fileDoc.getTitle() : fileDoc.getName())
-                .type(fileDoc.getType())
-                .size(fileDoc.getSize())
-                .fileLocation(fileDoc.getFileLocation())
-                .uploadedAt(fileDoc.getUploadedAt())
-                .universityId(fileDoc.getUniversityId())
-                .subjectCode(fileDoc.getSubjectCode())
-                .subjectName(fileDoc.getSubjectName())
-                .docType(fileDoc.getDocType())
-                .description(fileDoc.getDescription())
-                .pageCount(fileDoc.getPageCount())
-                .creditCost(fileDoc.getCreditCost() != null ? fileDoc.getCreditCost() : 0)
-                .viewCount(fileDoc.getViewCount())
-                .downloadCount(fileDoc.getDownloadCount())
-                .rating(fileDoc.getRating())
-                .reviewCount(fileDoc.getReviewCount())
-                .authorName(authorName)
-                .authorAvatar(authorAvatar)
-                .build();
-    }
-
-    /**
-     * 3. Hàm phụ cập nhật dữ liệu khi người dùng thực hiện tải file thành công
-     */
     public void incrementDownloadCount(String fileId) {
         fileMetadataRepository.findById(fileId).ifPresent(file -> {
             file.setDownloadCount(file.getDownloadCount() + 1);
@@ -193,7 +137,7 @@ public class FileMetadataService {
         });
     }
 
-    private FileMetadataDTO mapToDTO(hcmuaf.edu.vn.backend.document.FileMetadataDocument document) {
+    private FileMetadataDTO mapToDTO(FileMetadataDocument document) {
         return FileMetadataDTO.builder()
                 .id(document.getId())
                 .name(document.getName())
