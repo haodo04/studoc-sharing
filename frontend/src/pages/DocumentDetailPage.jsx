@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SignedIn, SignedOut, UserButton, SignInButton } from "@clerk/clerk-react";
 import { 
@@ -24,31 +24,8 @@ import {
   PenTool
 } from 'lucide-react';
 
-const MOCK_DOCUMENT = {
-  id: "doc-1",
-  title: "Bộ đề thi cuối kỳ môn Giải tích 1 - Viện Toán ứng dụng HUST (Có đáp án giải chi tiết từng bước)",
-  school: "HUST",
-  schoolFull: "Đại học Bách Khoa Hà Nội",
-  subject: "Giải tích 1",
-  subjectCode: "MI1110",
-  category: "Toán & Khoa Học Cơ Bản",
-  type: "Đề thi",
-  author: "Nguyễn Văn Hùng",
-  authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60",
-  uploadDate: "12/05/2024",
-  downloads: 2420,
-  views: 5890,
-  rating: 4.9,
-  reviewsCount: 48,
-  creditsCost: 1,
-  size: "3.4 MB",
-  pagesCount: 15,
-  description: "Tài liệu tổng hợp ngân hàng câu hỏi đề thi cuối kỳ môn Giải tích 1 (Mã học phần MI1110) qua các kỳ thi gần đây của Viện Toán ứng dụng ĐH Bách Khoa Hà Nội. Toàn bộ các câu hỏi tự luận về tích phân suy rộng, cực trị hàm nhiều biến và phương trình vi phân đều có lời giải chi tiết từng bước, bám sát barem chấm điểm hệ đại học.",
-  comments: [
-    { id: 1, user: "minh_duc_k66", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60", content: "Đề trúng tủ câu tích phân suy rộng kỳ vừa rồi luôn mọi người ơi! Đánh giá 5 sao uy tín.", date: "2 ngày trước" },
-    { id: 2, user: "thao_phuong_neu", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60", content: "Tài liệu trình bày rất sạch sẽ, dễ hiểu kể cả cho đứa mất gốc như mình.", date: "5 ngày trước" }
-  ]
-};
+// Import API giả lập (Nhớ kiểm tra lại đường dẫn cho đúng với project của bạn)
+import { documentApi } from '../api/documentApi';
 
 const RELATED_DOCUMENTS = [
   { id: "doc-5", title: "Sổ tay tóm tắt trọn bộ công thức Vật lý đại cương 1", school: "HUST", downloads: 3560, rating: 5.0, credits: 1, type: "Tóm tắt", thumbnail: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=500&auto=format&fit=crop&q=60" },
@@ -60,33 +37,110 @@ const RELATED_DOCUMENTS = [
 export default function DocumentDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [comments, setComments] = useState(MOCK_DOCUMENT.comments);
+  
+  // ================= STATE QUẢN LÝ DỮ LIỆU ĐỘNG =================
+  const [documentData, setDocumentData] = useState(null);
+  const [comments, setComments] = useState([]);
+  
+  const [isLoading, setIsLoading] = useState(true); 
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false); 
+
   const [newComment, setNewComment] = useState("");
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
 
-  const handleDownload = () => {
-    alert(`Hệ thống đang trừ ${MOCK_DOCUMENT.creditsCost} Credit để bắt đầu tải tệp tin: ${MOCK_DOCUMENT.size}`);
-  };
-
-  const handleAddComment = (e) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-    const commentObj = {
-      id: Date.now(),
-      user: "SinhVien_BaoCao",
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=60",
-      content: newComment,
-      date: "Vừa xong"
+  // ================= FETCH DỮ LIỆU KHI VÀO TRANG =================
+  useEffect(() => {
+    const loadDocument = async () => {
+      try {
+        setIsLoading(true);
+        const response = await documentApi.fetchDocumentDetails(id || 'doc-1');
+        if (response.status === 200) {
+          setDocumentData(response.data);
+          setComments(response.data.comments);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải tài liệu:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    setComments([commentObj, ...comments]);
-    setNewComment("");
+    loadDocument();
+  }, [id]);
+
+  // ================= HANDLERS =================
+  const handleDownload = () => {
+    if (!documentData) return;
+    alert(`Hệ thống đang trừ ${documentData.creditsCost} lượt tải để bắt đầu tải tệp tin: ${documentData.size}`);
   };
 
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim() || isSubmittingComment) return;
+    
+    try {
+      setIsSubmittingComment(true);
+      const response = await documentApi.submitComment(documentData.id, newComment);
+      
+      if (response.status === 201) {
+        setComments([response.data, ...comments]);
+        setNewComment(""); 
+      }
+    } catch (error) {
+      alert("Có lỗi xảy ra khi gửi bình luận!");
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const handleRate = async (star) => {
+    if (isSubmittingRating) return; 
+    
+    try {
+      setIsSubmittingRating(true);
+      setUserRating(star); 
+      
+      const response = await documentApi.submitRating(documentData.id, star);
+      
+      if (response.status === 200) {
+        setDocumentData(prev => ({
+          ...prev,
+          rating: response.data.newRating,
+          reviewsCount: response.data.newReviewsCount
+        }));
+      }
+    } catch (error) {
+      alert("Lỗi đánh giá!");
+      setUserRating(0); 
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
+  // ================= LOADING RENDER =================
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600"></div>
+        <p className="text-slate-500 font-medium text-sm">Đang tải dữ liệu tài liệu...</p>
+      </div>
+    );
+  }
+
+  if (!documentData) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-slate-500 font-medium">Không tìm thấy tài liệu này!</p>
+      </div>
+    );
+  }
+
+  // ================= MAIN UI RENDER =================
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased selection:bg-indigo-500 selection:text-white">
       
-      {/* ================= HEADER STICKY (ĐỒNG BỘ EXPLORE PAGE) ================= */}
+      {/* HEADER STICKY */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
@@ -98,7 +152,7 @@ export default function DocumentDetailPage() {
           </div>
 
           <nav className="hidden md:flex items-center gap-8 text-[13px] font-bold text-slate-600">
-            <span onClick={() => navigate('/')} className="hover:text-indigo-600 cursor-pointer transition-colors border-b-2 border-transparent py-5">Khám phá</span>
+            <span onClick={() => navigate('/explore')} className="hover:text-indigo-600 cursor-pointer transition-colors border-b-2 border-transparent py-5">Khám phá</span>
             <span onClick={() => navigate('/home')} className="text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-indigo-600">Tài liệu</span>
             <span className="hover:text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-transparent hover:border-indigo-600">Cộng đồng</span>
             <span className="hover:text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-transparent hover:border-indigo-600">Bảng xếp hạng</span>
@@ -134,20 +188,20 @@ export default function DocumentDetailPage() {
         </div>
       </header>
 
-      {/* ================= BREADCRUMBS ================= */}
+      {/* BREADCRUMBS */}
       <div className="bg-white border-b border-slate-200 py-2.5 px-4">
         <div className="max-w-7xl mx-auto flex items-center gap-2 text-xs font-bold text-slate-400 overflow-x-auto whitespace-nowrap">
           <span className="text-slate-600 hover:text-indigo-600 cursor-pointer" onClick={() => navigate('/home')}>Trang chủ</span>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-slate-600 hover:text-indigo-600 cursor-pointer">{MOCK_DOCUMENT.category}</span>
+          <span className="text-slate-600 hover:text-indigo-600 cursor-pointer">{documentData.category}</span>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-slate-600 hover:text-indigo-600 cursor-pointer">Tài liệu {MOCK_DOCUMENT.school}</span>
+          <span className="text-slate-600 hover:text-indigo-600 cursor-pointer">Tài liệu {documentData.school}</span>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-slate-900 truncate">{MOCK_DOCUMENT.subject}</span>
+          <span className="text-slate-900 truncate">{documentData.subject}</span>
         </div>
       </div>
 
-      {/* ================= BỐ CỤC CHÍNH ================= */}
+      {/* BỐ CỤC CHÍNH */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
@@ -157,46 +211,48 @@ export default function DocumentDetailPage() {
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
               <div className="flex flex-wrap gap-2">
                 <span className="bg-indigo-50 text-indigo-700 text-[10px] md:text-xs font-extrabold uppercase px-2.5 py-1 rounded-md border border-indigo-100">
-                  {MOCK_DOCUMENT.type}
+                  {documentData.type}
                 </span>
                 <span className="bg-slate-100 text-slate-600 text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5">
-                  <Landmark className="w-3.5 h-3.5" /> {MOCK_DOCUMENT.schoolFull} ({MOCK_DOCUMENT.school})
+                  <Landmark className="w-3.5 h-3.5" /> {documentData.schoolFull} ({documentData.school})
                 </span>
               </div>
-              <h1 className="text-lg md:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">{MOCK_DOCUMENT.title}</h1>
+              <h1 className="text-lg md:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
+                {documentData.title}
+              </h1>
               <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
                 <div className="flex items-center gap-2">
-                  <img src={MOCK_DOCUMENT.authorAvatar} alt={MOCK_DOCUMENT.author} className="w-8 h-8 rounded-full object-cover" />
+                  <img src={documentData.authorAvatar} alt={documentData.author} className="w-8 h-8 rounded-full object-cover" />
                   <div>
-                    <div className="text-slate-800 font-bold">bởi {MOCK_DOCUMENT.author}</div>
-                    <div className="text-[10px] text-slate-400 font-normal">Đăng ngày {MOCK_DOCUMENT.uploadDate}</div>
+                    <div className="text-slate-800 font-bold">bởi {documentData.author}</div>
+                    <div className="text-[10px] text-slate-400 font-normal">Đăng ngày {documentData.uploadDate}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 text-slate-500">
-                  <span className="flex items-center gap-1"><Eye className="w-4 h-4 text-slate-400" /> <strong className="text-slate-700">{MOCK_DOCUMENT.views}</strong> xem</span>
-                  <span className="flex items-center gap-1"><Download className="w-4 h-4 text-slate-400" /> <strong className="text-slate-700">{MOCK_DOCUMENT.downloads}</strong> tải</span>
-                  <span className="flex items-center gap-1 text-amber-500"><Star className="w-4 h-4 fill-amber-500" /> <strong className="text-slate-700">{MOCK_DOCUMENT.rating}</strong> <span className="text-slate-500">({MOCK_DOCUMENT.reviewsCount} đánh giá)</span></span>
+                  <span className="flex items-center gap-1"><Eye className="w-4 h-4 text-slate-400" /> <strong className="text-slate-700">{documentData.views}</strong> xem</span>
+                  <span className="flex items-center gap-1"><Download className="w-4 h-4 text-slate-400" /> <strong className="text-slate-700">{documentData.downloads}</strong> tải</span>
+                  <span className="flex items-center gap-1 text-amber-500"><Star className="w-4 h-4 fill-amber-500" /> <strong className="text-slate-700">{documentData.rating}</strong> <span className="text-slate-500">({documentData.reviewsCount} đánh giá)</span></span>
                 </div>
               </div>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="bg-slate-900 text-slate-300 px-4 py-2.5 flex items-center justify-between text-xs font-semibold border-b border-slate-800">
-                <span className="flex items-center gap-2"><FileText className="w-4 h-4 text-slate-400" /> Trình xem trước tài liệu ({MOCK_DOCUMENT.pagesCount} trang)</span>
+                <span className="flex items-center gap-2"><FileText className="w-4 h-4 text-slate-400" /> Trình xem trước tài liệu ({documentData.pagesCount} trang)</span>
                 <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded text-[10px] border border-indigo-500/30">Đọc thử miễn phí 2 trang</span>
               </div>
               <div className="p-4 md:p-6 bg-slate-100 space-y-4 max-h-[620px] overflow-y-auto relative">
                 <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-200 text-xs leading-relaxed font-mono">
-                  <div className="text-center font-bold text-slate-900 uppercase border-b pb-2 mb-4">{MOCK_DOCUMENT.schoolFull}</div>
+                  <div className="text-center font-bold text-slate-900 uppercase border-b pb-2 mb-4">{documentData.schoolFull}</div>
                   <p className="font-bold text-slate-900 mb-2">Câu 1 (2.5 điểm):</p>
                   <p>Tính giới hạn của hàm số sau khi x tiến về 0: L = lim (cos(x) - e^(-x^2/2)) / x^4</p>
-                  <div className="text-right text-[10px] text-slate-400 pt-4 font-sans">[Trang 1 / {MOCK_DOCUMENT.pagesCount}]</div>
+                  <div className="text-right text-[10px] text-slate-400 pt-4 font-sans">[Trang 1 / {documentData.pagesCount}]</div>
                 </div>
                 <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-200 text-xs leading-relaxed font-mono">
                   <p className="font-bold text-slate-900 mb-2">Lời giải chi tiết câu 1:</p>
                   <p>Khai triển Maclaurin đến bậc 4: cos(x) = 1 - x^2/2 + x^4/24 + o(x^4)</p>
                   <p>Kết quả giới hạn thu được L = -1/12.</p>
-                  <div className="text-right text-[10px] text-slate-400 pt-4 font-sans">[Trang 2 / {MOCK_DOCUMENT.pagesCount}]</div>
+                  <div className="text-right text-[10px] text-slate-400 pt-4 font-sans">[Trang 2 / {documentData.pagesCount}]</div>
                 </div>
                 <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-200 text-xs blur-[4px] pointer-events-none select-none font-mono">
                   <p className="font-bold">Câu 2 (3.0 điểm): Cực trị tự do hàm hai biến</p>
@@ -205,10 +261,10 @@ export default function DocumentDetailPage() {
                 <div className="absolute inset-x-0 bottom-0 top-[480px] bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent z-20 flex flex-col items-center justify-end p-6 text-center text-white">
                   <div className="max-w-md space-y-3 pb-2">
                     <Lock className="w-8 h-8 mx-auto mb-1 text-slate-300" />
-                    <h3 className="text-sm md:text-base font-extrabold tracking-tight">Mở khóa để đọc toàn bộ {MOCK_DOCUMENT.pagesCount} trang</h3>
-                    <p className="text-[11px] text-slate-400 px-4 leading-normal">Vui lòng sử dụng credit tích lũy hoặc đăng ký hội viên để tải xuống bản đầy đủ chất lượng cao.</p>
+                    <h3 className="text-sm md:text-base font-extrabold tracking-tight">Mở khóa để đọc toàn bộ {documentData.pagesCount} trang</h3>
+                    <p className="text-[11px] text-slate-400 px-4 leading-normal">Vui lòng sử dụng lượt tải tích lũy hoặc đăng ký hội viên để tải xuống bản đầy đủ chất lượng cao.</p>
                     <button onClick={handleDownload} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 mx-auto">
-                      <Download className="w-4 h-4" /> Tải Xuống Ngay ({MOCK_DOCUMENT.creditsCost} Credit)
+                      <Download className="w-4 h-4" /> Tải Xuống Ngay (-{documentData.creditsCost} Lượt)
                     </button>
                   </div>
                 </div>
@@ -220,7 +276,7 @@ export default function DocumentDetailPage() {
                 <PenTool className="w-4 h-4" /> Mô tả nội dung tài liệu
               </h3>
               <p className="text-xs md:text-sm text-slate-600 leading-relaxed whitespace-pre-line font-medium">
-                {MOCK_DOCUMENT.description}
+                {documentData.description}
               </p>
             </div>
 
@@ -241,13 +297,11 @@ export default function DocumentDetailPage() {
                     <button
                       key={star}
                       type="button"
-                      onClick={() => {
-                        setUserRating(star);
-                        alert(`Cảm ơn bạn đã đánh giá tài liệu ${star} sao!`);
-                      }}
+                      disabled={isSubmittingRating}
+                      onClick={() => handleRate(star)}
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(0)}
-                      className="transition-all active:scale-125 focus:outline-none"
+                      className="transition-all active:scale-125 focus:outline-none disabled:opacity-50"
                     >
                       <Star className={`w-7 h-7 ${(hoverRating || userRating) >= star ? "fill-amber-400 text-amber-400" : "text-slate-200 fill-slate-50"}`} />
                     </button>
@@ -267,25 +321,25 @@ export default function DocumentDetailPage() {
               <div className="flex justify-between items-center bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs">
                 <div>
                   <div className="text-[10px] text-slate-400 font-bold uppercase">Chi phí tải</div>
-                  <div className="text-base font-extrabold tracking-tight text-emerald-400">{MOCK_DOCUMENT.creditsCost} Credit</div>
+                  <div className="text-base font-extrabold tracking-tight text-emerald-400">-{documentData.creditsCost} Lượt</div>
                 </div>
                 <div className="text-right">
                   <div className="text-[10px] text-slate-400 font-bold uppercase">Dung lượng</div>
-                  <div className="font-bold text-slate-200">{MOCK_DOCUMENT.size}</div>
+                  <div className="font-bold text-slate-200">{documentData.size}</div>
                 </div>
               </div>
               <button onClick={handleDownload} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold tracking-tight py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95 text-xs md:text-sm flex justify-center items-center gap-2">
                 <Download className="w-4 h-4" /> Tải Xuống Bản Đầy Đủ (.PDF)
               </button>
               <p className="text-[10px] text-slate-500 text-center leading-normal">
-                *Tài liệu sau khi dùng credit tải về thành công sẽ nằm trong Tab Lịch sử để tải lại hoàn toàn miễn phí mãi mãi.
+                *Tài liệu sau khi dùng lượt tải về thành công sẽ nằm trong Tab Lịch sử để tải lại hoàn toàn miễn phí mãi mãi.
               </p>
             </div>
 
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-xs space-y-2.5 font-medium">
               <div className="flex justify-between py-1 border-b border-slate-50">
                 <span className="text-slate-500">Mã môn học:</span>
-                <span className="text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">{MOCK_DOCUMENT.subjectCode}</span>
+                <span className="text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">{documentData.subjectCode}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-50">
                 <span className="text-slate-500">Định dạng file:</span>
@@ -293,7 +347,7 @@ export default function DocumentDetailPage() {
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-slate-500">Chuyên mục:</span>
-                <span className="text-slate-800 font-bold">{MOCK_DOCUMENT.subject}</span>
+                <span className="text-slate-800 font-bold">{documentData.subject}</span>
               </div>
             </div>
 
@@ -306,11 +360,20 @@ export default function DocumentDetailPage() {
                   rows="2"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
+                  disabled={isSubmittingComment}
                   placeholder="Hỏi đáp về tài liệu, đề thi..."
-                  className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-slate-50/50 resize-none font-medium placeholder-slate-400"
+                  className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-slate-50/50 resize-none font-medium placeholder-slate-400 disabled:bg-slate-100"
                 ></textarea>
-                <button type="submit" className="bg-slate-900 hover:bg-slate-950 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg active:scale-95 transition-all">
-                  Gửi bình luận
+                <button 
+                  type="submit" 
+                  disabled={isSubmittingComment || !newComment.trim()}
+                  className={`font-bold text-[10px] px-3 py-1.5 rounded-lg transition-all ${
+                    isSubmittingComment || !newComment.trim() 
+                      ? 'bg-slate-300 text-slate-500 cursor-not-allowed' 
+                      : 'bg-slate-900 hover:bg-slate-950 active:scale-95 text-white'
+                  }`}
+                >
+                  {isSubmittingComment ? 'Đang gửi...' : 'Gửi bình luận'}
                 </button>
               </form>
               <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
@@ -332,7 +395,7 @@ export default function DocumentDetailPage() {
           </div>
         </div>
 
-        {/* ================= TÀI LIỆU LIÊN QUAN ================= */}
+        {/* TÀI LIỆU LIÊN QUAN */}
         <div className="mt-12 pt-8 border-t border-slate-200 space-y-5">
           <div className="flex justify-between items-end">
             <h2 className="text-base md:text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
@@ -343,7 +406,7 @@ export default function DocumentDetailPage() {
             {RELATED_DOCUMENTS.map((doc) => (
               <div 
                 key={doc.id} 
-                onClick={() => alert(`Điều hướng sang trang chi tiết của file ID: ${doc.id}`)}
+                onClick={() => navigate(`/document/${doc.id}`)}
                 className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md hover:border-indigo-400 transition-all cursor-pointer flex flex-col justify-between group"
               >
                 <div className="h-32 w-full overflow-hidden relative bg-slate-100 border-b border-slate-100">
@@ -358,7 +421,7 @@ export default function DocumentDetailPage() {
                   </h4>
                   <div className="flex items-center justify-between text-[11px] text-slate-500 font-semibold border-t border-slate-50 pt-2">
                     <div className="flex items-center gap-1"><Flame className="w-3.5 h-3.5 text-amber-500" /> {doc.downloads} tải</div>
-                    <div className="text-indigo-600 font-bold">{doc.credits} Credit</div>
+                    <div className="text-indigo-600 font-bold">{doc.credits} Lượt</div>
                   </div>
                 </div>
               </div>
@@ -368,7 +431,7 @@ export default function DocumentDetailPage() {
 
       </div>
 
-      {/* ================= FOOTER (ĐỒNG BỘ EXPLORE PAGE) ================= */}
+      {/* FOOTER */}
       <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
