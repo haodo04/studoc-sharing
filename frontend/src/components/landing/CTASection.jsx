@@ -7,7 +7,7 @@ const CTASection = ({ openSignUp }) => {
 
     const handleCtaClick = () => {
         if (isSignIn) {
-            navigate("/dashboard");
+            navigate("/home");
         } else {
             openSignUp({
                 afterSignUpUrl: "/",
@@ -34,7 +34,7 @@ const CTASection = ({ openSignUp }) => {
                             onClick={handleCtaClick}
                             className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-semibold rounded-xl text-indigo-950 bg-white hover:bg-slate-50 active:bg-slate-100 shadow-xl shadow-black/10 transition-all duration-200 hover:-translate-y-0.5"
                         >
-                            {isSignIn ? "Go to Dashboard" : "Sign up for free"}
+                            {isSignIn ? "Get Started" : "Sign up for free"}
                         </button>
                     </div>
                 </div>

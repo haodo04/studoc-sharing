@@ -9,8 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/webhooks")
@@ -21,7 +21,6 @@ public class ClerkWebhookController {
     private String webhookSecret;
 
     private final ProfileService profileService;
-
     private final UserCreditsService userCreditsService;
 
     @PostMapping("clerk")
@@ -29,7 +28,6 @@ public class ClerkWebhookController {
                                                 @RequestHeader("svix-timestamp") String svixTimestamp,
                                                 @RequestHeader("svix-signature") String svixSignature,
                                                 @RequestBody String payload) {
-
         try {
             boolean isValid = verifyWebhookSignature(svixId, svixTimestamp, svixSignature, payload);
             if (!isValid) {
@@ -39,6 +37,7 @@ public class ClerkWebhookController {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(payload);
             String eventType = rootNode.path("type").asText();
+
             switch (eventType) {
                 case "user.created":
                     handleUserCreated(rootNode.path("data"));
@@ -74,16 +73,17 @@ public class ClerkWebhookController {
         String lastName = data.path("last_name").asText("");
         String photoUrl = data.path("image_url").asText("");
 
-        ProfileDTO updatedProfile = ProfileDTO.builder()
+        ProfileDTO profileDTO = ProfileDTO.builder()
                 .clerkId(clerkId)
                 .email(email)
                 .firstName(firstName)
                 .lastName(lastName)
                 .photoUrl(photoUrl)
                 .build();
-        updatedProfile = profileService.updateProfile(updatedProfile);
 
-        if (updatedProfile == null) {
+        try {
+            profileService.updateProfile(profileDTO);
+        } catch (Exception e) {
             handleUserCreated(data);
         }
     }
@@ -107,13 +107,12 @@ public class ClerkWebhookController {
                 .lastName(lastName)
                 .photoUrl(photoUrl)
                 .build();
-        profileService.createProfile(newProfile);
 
+        profileService.createProfile(newProfile);
         userCreditsService.createInitialCredits(clerkId);
     }
 
     private boolean verifyWebhookSignature(String svixId, String svixTimestamp, String svixSignature, String payload) {
-        // validate the signature
         return true;
     }
 }

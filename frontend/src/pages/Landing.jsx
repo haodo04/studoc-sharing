@@ -10,7 +10,6 @@ import TestimonialsSection from "../components/landing/TestimonialsSection";
 const Landing = () => {
     const { isLoaded } = useUser();
 
-    // Đợi Clerk tải xong trạng thái Session 5 phút của bạn
     if (!isLoaded) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -21,7 +20,6 @@ const Landing = () => {
 
     return (
         <div className="landing-page bg-slate-50 min-h-screen text-slate-800 antialiased selection:bg-indigo-500 selection:text-white relative">
-            {/* Hero Section tự quản lý Auth */}
             <HeroSection />
             
             <FeatureSection features={features} />
