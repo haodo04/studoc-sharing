@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
 import { Menu, Share2, X, Download } from "lucide-react"; 
 import SideMenu from "./SideMenu";
-import { UserCreditsContext } from "./context/UserCreditsContext";
+import { UserCreditsContext } from "../../context/UserCreditsContext";
 
 const Navbar = ({ activeMenu }) => {
   const [openSideMenu, setOpenSideMenu] = useState(false);

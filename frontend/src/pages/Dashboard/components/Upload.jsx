@@ -1,11 +1,11 @@
 import { useContext, useState } from "react";
-import DashboardLayout from "../components/layout/DashboardLayout";
+import DashboardLayout from "../../../components/layout/DashboardLayout";
 import { useAuth } from "@clerk/clerk-react";
-import { UserCreditsContext } from "../components/context/UserCreditsContext";
+import { UserCreditsContext } from "../../../context/UserCreditsContext";
 import { AlertCircle, CheckCircle2, ArrowUpCircle } from "lucide-react";
 import axios from "axios";
-import apiEndpoints from "../util/apiEndpoint";
-import UploadBox from "../components/UploadBox";
+import apiEndpoints from "../../../api/apiEndpoint";
+import UploadBox from "../../../components/ui/UploadBox";
 
 const Upload = () => {
     const [files, setFiles] = useState([]);

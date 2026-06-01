@@ -1,4 +1,4 @@
-import { assets } from "../../assets/assets.js";
+import { assets } from "../../../assets/assets";
 import { useClerk, SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import { LogIn } from "lucide-react";

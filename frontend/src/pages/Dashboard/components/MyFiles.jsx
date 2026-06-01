@@ -1,7 +1,7 @@
-import DashboardLayout from "../components/layout/DashboardLayout";
+import DashboardLayout from "../../../components/layout/DashboardLayout";
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import apiEndpoints from "../util/apiEndpoint";
+import apiEndpoints from "../../../api/apiEndpoint";
 import {
   Copy,
   Download,
@@ -18,9 +18,9 @@ import {
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
-import FileCard from "../components/FileCard";
-import ConfirmationDialog from "../components/confirmationDialog";
-import LinkShareModal from "../components/LinkShareModal";
+import FileCard from "../../../components/ui/FileCard";
+import ConfirmationDialog from "../../../components/ui/confirmationDialog";
+import LinkShareModal from "../../../components/ui/LinkShareModal";
 
 const MyFiles = () => {
   const [files, setFiles] = useState([]);

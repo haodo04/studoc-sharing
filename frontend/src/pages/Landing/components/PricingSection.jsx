@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { pricingPlans } from "../../assets/data";
+import { pricingPlans } from "../../../assets/data";
 
 const PricingSection = ({pricingPlan, openSignUp}) => {
     return (

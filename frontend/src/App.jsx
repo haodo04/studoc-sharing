@@ -1,104 +1,20 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom"
-import Dashboard from "./pages/Dashboard"
-import Landing from "./pages/Landing"
-import Upload from "./pages/Upload"
-import MyFiles from "./pages/MyFiles"
-import Subscription from "./pages/Subscription"
-import Transaction from "./pages/Transaction"
-import { RedirectToSignIn, SignedIn, SignedOut, SignIn } from "@clerk/clerk-react"
-import SharedPage from "./pages/Shared" 
-import FavoritesPage from "./pages/Favorites"
-import TrashPage from "./pages/Trash"
-import { Toaster } from "react-hot-toast"
-import UserCreditsContext, { UserCreditsProvider } from "./components/context/UserCreditsContext"
-import PublicFileView from "./pages/PublicFileView"
-import ExplorePage from "./pages/ExplorePage"
-import DocumentDetailPage from "./pages/DocumentDetailPage"
+import React from "react";
+import { BrowserRouter } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import AppRoutes from "./routes/AppRoutes";
+
+import { UserCreditsProvider } from "./context/UserCreditsContext";
 
 function App() {
   return (
     <UserCreditsProvider>
       <BrowserRouter>
-        <Toaster/>
-        <Routes>
-          <Route path="/" element={<Landing />}/>
-
-          <Route path="/home" element={
-            <>
-              <SignedIn><ExplorePage/></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-          <Route path="/explore" element={
-            <>
-              <SignedIn><ExplorePage/></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-
-          <Route path="/document/:id" element={
-            <>
-              <SignedIn><DocumentDetailPage /></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-
-          <Route path="/dashboard" element={
-            <>
-              <SignedIn><Dashboard/></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-          <Route path="/upload" element={
-            <>
-              <SignedIn><Upload/></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-          <Route path="/my-files" element={
-            <>
-              <SignedIn><MyFiles/></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-          <Route path="/subscriptions" element={
-            <>
-              <SignedIn><Subscription/></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-          <Route path="/transactions" element={
-            <>
-              <SignedIn><Transaction/></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-          <Route path="/shared" element={
-            <>
-              <SignedIn><SharedPage/></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-          <Route path="/favorites" element={
-            <>
-              <SignedIn><FavoritesPage/></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-          <Route path="/trash" element={
-            <>
-              <SignedIn><TrashPage/></SignedIn>
-              <SignedOut><RedirectToSignIn/></SignedOut>
-            </>
-          }/>
-
-          <Route path="file/:fileId" element={<PublicFileView />}/>
-
-          <Route path="/*" element={<RedirectToSignIn/>}/>
-        </Routes>
+        <Toaster position="top-center" reverseOrder={false} />
+        
+        <AppRoutes />
       </BrowserRouter>
     </UserCreditsProvider>
-  )
+  );
 }
 
-export default App
+export default App;

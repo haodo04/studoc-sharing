@@ -24,8 +24,7 @@ import {
   PenTool
 } from 'lucide-react';
 
-// Import API giả lập (Nhớ kiểm tra lại đường dẫn cho đúng với project của bạn)
-import { documentApi } from '../api/documentApi';
+import { documentApi } from '../../api/documentApi';
 
 const RELATED_DOCUMENTS = [
   { id: "doc-5", title: "Sổ tay tóm tắt trọn bộ công thức Vật lý đại cương 1", school: "HUST", downloads: 3560, rating: 5.0, credits: 1, type: "Tóm tắt", thumbnail: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=500&auto=format&fit=crop&q=60" },

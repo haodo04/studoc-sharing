@@ -2,7 +2,7 @@ import { useAuth } from "@clerk/clerk-react";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import apiEndpoints from "../util/apiEndpoint";
+import apiEndpoints from "../../../api/apiEndpoint";
 import toast from "react-hot-toast";
 import {
   Copy,
@@ -17,7 +17,7 @@ import {
   Music,
   Video,
 } from "lucide-react";
-import LinkShareModal from "../components/LinkShareModal";
+import LinkShareModal from "../../../components/ui/LinkShareModal";
 
 const PublicFileView = () => {
   const [file, setFile] = useState(null);

@@ -1,13 +1,13 @@
 import { UserButton } from "@clerk/clerk-react";
 import { useAuth } from "@clerk/clerk-react";
-import DashboardLayout from "../components/layout/DashboardLayout";
+import DashboardLayout from "../../components/layout/DashboardLayout";
 import { useContext, useEffect, useState } from "react";
-import { UserCreditsContext } from "../components/context/UserCreditsContext";
+import { UserCreditsContext } from "../../context/UserCreditsContext";
 import axios from "axios";
-import apiEndpoints from "../util/apiEndpoint";
+import apiEndpoints from "../../api/apiEndpoint";
 import { Loader2, FileText, Download, Eye, Coins } from "lucide-react";
-import DashboardUpload from "../components/DashboardUpload";
-import RecentFiles from "../components/RecentFiles";
+import DashboardUpload from "../../components/ui/DashboardUpload";
+import RecentFiles from "../../components/ui/RecentFiles";
 
 const Dashboard = () => {
   const [files, setFiles] = useState([]);
