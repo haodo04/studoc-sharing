@@ -1,4 +1,4 @@
-import { SIDE_MENU_DATA } from "../assets/data";
+import { SIDE_MENU_DATA } from "../../assets/data";
 import { useUser } from "@clerk/clerk-react";
 import { User, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";

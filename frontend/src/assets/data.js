@@ -119,12 +119,6 @@ export const testimonials = [
 
 export const SIDE_MENU_DATA = [
   {
-    id: "01",
-    label: "Khám phá",
-    path: "/explore",
-    icon: Compass
-  },
-  {
     id: "02",
     label: "Dashboard",
     icon: LayoutDashboard,

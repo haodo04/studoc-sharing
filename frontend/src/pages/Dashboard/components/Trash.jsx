@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2, RotateCcw, FileText, Image as ImageIcon, Folder, Trash } from 'lucide-react';
-import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardLayout from '../../../components/layout/DashboardLayout';
 
 const TrashPage = () => {
     // Mock data

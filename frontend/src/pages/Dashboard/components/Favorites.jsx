@@ -6,7 +6,7 @@ import {
     Folder,
     FileSpreadsheet
 } from 'lucide-react';
-import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardLayout from '../../../components/layout/DashboardLayout';
 
 const FavoritesPage = () => {
     // Mock Data cho khu vực "Truy cập nhanh"

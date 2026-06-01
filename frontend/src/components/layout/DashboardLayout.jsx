@@ -1,6 +1,6 @@
 import {useUser} from "@clerk/clerk-react"
-import SideMenu from "../SideMenu";
-import Navbar from '../Navbar';
+import SideMenu from "../common/SideMenu";
+import Navbar from '../common/Navbar';
 
 const DashboardLayout = ({ children, activeMenu }) => {
     const { user } = useUser();

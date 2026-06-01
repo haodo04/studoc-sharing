@@ -1,11 +1,11 @@
-import { features, pricingPlans, testimonials } from "../assets/data";
+import { features, pricingPlans, testimonials } from "../../assets/data";
 import { useUser } from "@clerk/clerk-react";
-import CTASection from "../components/landing/CTASection";
-import FeatureSection from "../components/landing/FeatureSection";
-import Footer from "../components/landing/Footer";
-import HeroSection from "../components/landing/HeroSection";
-import PricingSection from "../components/landing/PricingSection";
-import TestimonialsSection from "../components/landing/TestimonialsSection";
+import CTASection from "./components/CTASection";
+import FeatureSection from "./components/FeatureSection";
+import Footer from "./components/Footer";
+import HeroSection from "./components/HeroSection";
+import PricingSection from "./components/PricingSection";
+import TestimonialsSection from "./components/TestimonialsSection";
 
 const Landing = () => {
     const { isLoaded } = useUser();
