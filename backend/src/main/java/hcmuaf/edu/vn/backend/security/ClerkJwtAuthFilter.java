@@ -35,17 +35,28 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        if (request.getRequestURI().contains("/webhooks") ||
-                request.getRequestURI().contains("/public") ||
-                request.getRequestURI().contains("/register") ||
-                    request.getRequestURI().contains("/download")) {
+        String requestURI = request.getRequestURI();
+        String method = request.getMethod();
+
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String lowerURI = requestURI.toLowerCase();
+        if (lowerURI.contains("/webhooks") ||
+                lowerURI.contains("/public") ||
+                lowerURI.contains("/register") ||
+                lowerURI.contains("/uploads") ||
+                lowerURI.contains("/download")) {
+
             filterChain.doFilter(request, response);
             return;
         }
 
         String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer")) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Authorization header missing/invalid");
             return;
         }
@@ -68,10 +79,8 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
             }
 
             String kid = headerNode.get("kid").asText();
-
             PublicKey publicKey = jwksProvider.getPublicKey(kid);
 
-            // verify the token
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(publicKey)
                     .setAllowedClockSkewSeconds(60)
@@ -88,7 +97,6 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid JWT token");
-            return;
         }
     }
 }
