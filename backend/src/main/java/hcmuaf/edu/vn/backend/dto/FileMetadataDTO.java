@@ -16,7 +16,7 @@ public class FileMetadataDTO {
     private String name;
     private String title;
     private String type;
-    private long size;
+    private Long size;
     private String clerkId;
     private Boolean isPublic;
     private String fileLocation;
@@ -26,13 +26,15 @@ public class FileMetadataDTO {
     private String subjectCode;
     private String subjectName;
     private String categoryId;
+    private String customUniversity;
+    private String customCategory;
     private String docType;
     private String description;
-    private int pageCount;
+    private Integer pageCount;
     private Integer creditCost;
 
-    private int viewCount;
-    private int downloadCount;
-    private double rating;
-    private int reviewCount;
+    private Integer viewCount;
+    private Integer downloadCount;
+    private Double rating;
+    private Integer reviewCount;
 }
