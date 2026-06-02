@@ -1,5 +1,7 @@
 package hcmuaf.edu.vn.backend.controller;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
 import hcmuaf.edu.vn.backend.service.FileMetadataService;
 import hcmuaf.edu.vn.backend.service.UserCreditsService;
@@ -26,8 +28,17 @@ public class FileController {
     private final FileMetadataService fileMetadataService;
 
     @PostMapping("/upload")
-    public ResponseEntity<List<FileMetadataDTO>> uploadFile(@RequestParam("files") MultipartFile[] files) throws IOException {
-        List<FileMetadataDTO> result = fileMetadataService.upLoadFiles(files);
+    public ResponseEntity<List<FileMetadataDTO>> uploadFile(
+            @RequestParam("files") MultipartFile[] files,
+            @RequestParam("metadata") String metadataJson
+    ) throws IOException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        FileMetadataDTO dto = objectMapper.readValue(metadataJson, FileMetadataDTO.class);
+
+        List<FileMetadataDTO> result = fileMetadataService.upLoadFiles(files, dto);
         return ResponseEntity.ok(result);
     }
 
@@ -38,7 +49,8 @@ public class FileController {
 
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> download(@PathVariable String id) throws IOException {
-        FileMetadataDTO downloadableFile = fileMetadataService.getDownloadableFile(id);
+        FileMetadataDTO downloadableFile = fileMetadataService.processDownloadRequest(id);
+
         Path path = Paths.get(downloadableFile.getFileLocation());
         Resource resource = new UrlResource(path.toUri());
 

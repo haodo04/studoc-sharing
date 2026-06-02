@@ -30,6 +30,7 @@ import {
   Clock,
   Sparkles
 } from 'lucide-react';
+import NavbarPage from '../../components/common/NavbarPage';
 
 // DỮ LIỆU MẪU MỞ RỘNG MỚI
 const QUICK_STATS = [
@@ -146,56 +147,7 @@ export default function ExplorePage() {
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
       
       {/* 1. HEADER NAVBAR (CẬP NHẬT LOGO VÀ THANH ĐIỀU HƯỚNG TABS) */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          
-          {/* Logo Mới */}
-          <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-            <div className="flex items-center gap-2 font-extrabold text-xl text-slate-900 tracking-tight">
-              <span className="p-2 bg-indigo-600 rounded-lg text-white text-sm w-8 h-8 flex items-center justify-center">S</span>
-              <span>StudocShare</span>
-            </div>
-          </div>
-
-          {/* Navigation Tabs (Thay thế Search Bar) */}
-          <nav className="hidden md:flex items-center gap-8 text-[13px] font-bold text-slate-600">
-            <span onClick={() => navigate('/')} className="text-indigo-600 cursor-pointer transition-colors border-b-2 border-indigo-600 py-5">Khám phá</span>
-            <span onClick={() => navigate('/home')} className="hover:text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-transparent hover:border-indigo-600">Tài liệu</span>
-            <span className="hover:text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-transparent hover:border-indigo-600">Cộng đồng</span>
-            <span className="hover:text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-transparent hover:border-indigo-600">Bảng xếp hạng</span>
-            <span onClick={() => navigate('/subscriptions')} className="text-amber-600 hover:text-amber-700 cursor-pointer transition-colors flex items-center gap-1">
-              <Sparkles className="w-4 h-4" /> Premium
-            </span>
-          </nav>
-
-          {/* User Actions */}
-          <div className="flex items-center gap-4">
-            <SignedIn>
-              <button 
-                onClick={() => navigate('/dashboard')}
-                className="hidden sm:inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-colors shadow-sm"
-              >
-                Vào Dashboard
-              </button>
-              <UserButton afterSignOutUrl="/explore" />
-            </SignedIn>
-            
-            <SignedOut>
-              <SignInButton mode="modal">
-                <button className="text-xs font-bold text-slate-700 hover:text-indigo-600 transition-colors">
-                  Đăng nhập
-                </button>
-              </SignInButton>
-              <SignInButton mode="modal">
-                <button className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-full transition-colors shadow-sm">
-                  Đăng ký
-                </button>
-              </SignInButton>
-            </SignedOut>
-          </div>
-        </div>
-      </header>
-
+      <NavbarPage /> 
       {/* MAIN CONTENT CONTAINER */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
         

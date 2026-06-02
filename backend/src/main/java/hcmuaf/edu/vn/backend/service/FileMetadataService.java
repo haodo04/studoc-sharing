@@ -28,10 +28,11 @@ public class FileMetadataService {
 
     private final ProfileService profileService;
     private final FileMetadataRepository fileMetadataRepository;
+    private final UserCreditsService userCreditsService;
 
     private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
 
-    public List<FileMetadataDTO> upLoadFiles(MultipartFile[] files) throws IOException {
+    public List<FileMetadataDTO> upLoadFiles(MultipartFile[] files, FileMetadataDTO dto) throws IOException {
         if (!Files.exists(this.fileStorageLocation)) {
             Files.createDirectories(this.fileStorageLocation);
         }
@@ -40,6 +41,7 @@ public class FileMetadataService {
         String clerkId = currentProfile.getClerkId();
 
         List<FileMetadataDTO> uploadedFilesResult = new ArrayList<>();
+        int successfullyUploadedCount = 0;
 
         for (MultipartFile file : files) {
             if (file.isEmpty()) continue;
@@ -55,32 +57,100 @@ public class FileMetadataService {
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
             FileMetadataDocument document = new FileMetadataDocument();
+
             document.setName(originalFileName);
-            document.setTitle(originalFileName.replace(fileExtension, ""));
             document.setType(file.getContentType());
             document.setSize(file.getSize());
             document.setFileLocation(targetLocation.toString());
             document.setClerkId(clerkId);
-            document.setIsPublic(true);
             document.setUploadedAt(LocalDateTime.now());
+
+            document.setTitle(StringUtils.hasText(dto.getTitle()) ? dto.getTitle() : originalFileName.replace(fileExtension, ""));
+            document.setDescription(dto.getDescription());
+            document.setDocType(dto.getDocType());
+            document.setCreditCost(dto.getCreditCost() != null ? dto.getCreditCost() : 0);
+            document.setIsPublic(dto.getIsPublic() != null ? dto.getIsPublic() : true);
 
             document.setViewCount(0);
             document.setDownloadCount(0);
             document.setRating(0.0);
             document.setReviewCount(0);
-            document.setUniversityId(null);
-            document.setSubjectCode("CHƯA_CÓ");
-            document.setSubjectName("Tài liệu chưa phân loại");
-            document.setCategoryId(null);
-            document.setDocType("Khác");
             document.setPageCount(1);
-            document.setCreditCost(0);
+
+            if ("OTHER_UNI".equals(dto.getUniversityId()) && StringUtils.hasText(dto.getCustomUniversity())) {
+                document.setUniversityId(dto.getCustomUniversity());
+            } else {
+                document.setUniversityId(dto.getUniversityId());
+            }
+
+            if ("OTHER_CAT".equals(dto.getCategoryId()) && StringUtils.hasText(dto.getCustomCategory())) {
+                document.setCategoryId(dto.getCustomCategory());
+            } else {
+                document.setCategoryId(dto.getCategoryId());
+            }
+
+            document.setSubjectCode(StringUtils.hasText(dto.getSubjectCode()) ? dto.getSubjectCode() : "CHƯA_CÓ");
+            document.setSubjectName(StringUtils.hasText(dto.getSubjectName()) ? dto.getSubjectName() : "Tài liệu tự do");
 
             FileMetadataDocument savedDoc = fileMetadataRepository.save(document);
             uploadedFilesResult.add(mapToDTO(savedDoc));
+
+            successfullyUploadedCount++;
+        }
+
+        // Thưởng xu đóng góp khi hoàn thành
+        if (successfullyUploadedCount > 0) {
+            userCreditsService.addCredits(clerkId, 2);
         }
 
         return uploadedFilesResult;
+    }
+
+    private FileMetadataDTO mapToDTO(FileMetadataDocument doc) {
+        if (doc == null) return null;
+
+        List<String> systemUniIds = List.of("HUST", "NEU", "FTU", "HCMUTE");
+        List<String> systemCatIds = List.of("it", "biz", "lang", "eng");
+
+        String uniId = doc.getUniversityId();
+        String catId = doc.getCategoryId();
+
+        String customUni = null;
+        String customCat = null;
+
+        if (uniId != null && !systemUniIds.contains(uniId)) {
+            customUni = uniId;
+            uniId = "OTHER_UNI";
+        }
+
+        if (catId != null && !systemCatIds.contains(catId)) {
+            customCat = catId;
+            catId = "OTHER_CAT";
+        }
+
+        return FileMetadataDTO.builder()
+                .id(doc.getId())
+                .name(doc.getName())
+                .title(doc.getTitle())
+                .description(doc.getDescription())
+                .type(doc.getType())
+                .size(doc.getSize())
+                .universityId(uniId)
+                .categoryId(catId)
+                .customUniversity(customUni)
+                .customCategory(customCat)
+                .subjectCode(doc.getSubjectCode())
+                .subjectName(doc.getSubjectName())
+                .docType(doc.getDocType())
+                .creditCost(doc.getCreditCost())
+                .isPublic(doc.getIsPublic())
+                .viewCount(doc.getViewCount())
+                .downloadCount(doc.getDownloadCount())
+                .rating(doc.getRating())
+                .reviewCount(doc.getReviewCount())
+                .pageCount(doc.getPageCount())
+                .uploadedAt(doc.getUploadedAt())
+                .build();
     }
 
     public List<FileMetadataDTO> getFiles() {
@@ -137,29 +207,18 @@ public class FileMetadataService {
         });
     }
 
-    private FileMetadataDTO mapToDTO(FileMetadataDocument document) {
-        return FileMetadataDTO.builder()
-                .id(document.getId())
-                .name(document.getName())
-                .title(document.getTitle() != null ? document.getTitle() : document.getName())
-                .type(document.getType())
-                .size(document.getSize())
-                .clerkId(document.getClerkId())
-                .isPublic(document.getIsPublic())
-                .fileLocation(document.getFileLocation())
-                .uploadedAt(document.getUploadedAt())
-                .universityId(document.getUniversityId())
-                .subjectCode(document.getSubjectCode())
-                .subjectName(document.getSubjectName())
-                .categoryId(document.getCategoryId())
-                .docType(document.getDocType())
-                .description(document.getDescription())
-                .pageCount(document.getPageCount())
-                .creditCost(document.getCreditCost())
-                .viewCount(document.getViewCount())
-                .downloadCount(document.getDownloadCount())
-                .rating(document.getRating())
-                .reviewCount(document.getReviewCount())
-                .build();
+
+    public FileMetadataDTO processDownloadRequest(String fileId) {
+        FileMetadataDocument document = fileMetadataRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu"));
+
+        int cost = document.getCreditCost() != null ? document.getCreditCost() : 0;
+
+        userCreditsService.deductCreditsForDownload(cost);
+
+        document.setDownloadCount(document.getDownloadCount() + 1);
+        fileMetadataRepository.save(document);
+
+        return mapToDTO(document);
     }
 }

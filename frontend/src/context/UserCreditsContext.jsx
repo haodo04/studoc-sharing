@@ -1,5 +1,5 @@
 import axios from "axios";
-import { createContext, useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useEffect, useState, useContext } from "react"; 
 import apiEndpoints from "../api/apiEndpoint";
 import { useAuth } from "@clerk/clerk-react";
 import toast from "react-hot-toast";
@@ -11,7 +11,6 @@ export const UserCreditsProvider = ({children}) => {
     const [loading, setLoading] = useState(false);
     const {getToken, isSignedIn} = useAuth();
 
-    // Function to fetch the user credits that can be called from anywhere
     const fetchUserCredits = useCallback(async () => {
         if (!isSignedIn) return;
 
@@ -46,7 +45,8 @@ export const UserCreditsProvider = ({children}) => {
         credits,
         setCredits,
         fetchUserCredits,
-        updateCredits
+        updateCredits,
+        loading 
     }
 
     return (
@@ -55,5 +55,13 @@ export const UserCreditsProvider = ({children}) => {
         </UserCreditsContext.Provider>
     )
 }
+
+export const useUserCredits = () => {
+    const context = useContext(UserCreditsContext);
+    if (!context) {
+        throw new Error('useUserCredits phải được sử dụng bên trong UserCreditsProvider');
+    }
+    return context;
+};
 
 export default UserCreditsContext;
