@@ -1,5 +1,7 @@
 package hcmuaf.edu.vn.backend.service;
 
+import com.documents4j.api.IConverter;
+import com.documents4j.job.LocalConverter;
 import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
 import hcmuaf.edu.vn.backend.document.ProfileDocument;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
@@ -7,11 +9,18 @@ import hcmuaf.edu.vn.backend.exceptions.BadRequestException;
 import hcmuaf.edu.vn.backend.exceptions.ResourceNotFoundException;
 import hcmuaf.edu.vn.backend.repository.FileMetadataRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,6 +40,8 @@ public class FileMetadataService {
     private final UserCreditsService userCreditsService;
 
     private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
+    private final String UPLOAD_DIR = "uploads/";
+    private final String THUMBNAIL_DIR = "uploads/thumbnails/";
 
     public List<FileMetadataDTO> upLoadFiles(MultipartFile[] files, FileMetadataDTO dto) throws IOException {
         if (!Files.exists(this.fileStorageLocation)) {
@@ -51,7 +62,9 @@ public class FileMetadataService {
             if (originalFileName.contains(".")) {
                 fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
             }
+
             String storedFileName = UUID.randomUUID().toString() + fileExtension;
+            String fileIdClean = storedFileName.replace(fileExtension, ""); // Cắt bỏ extension để lấy fileId sạch
 
             Path targetLocation = this.fileStorageLocation.resolve(storedFileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
@@ -92,18 +105,59 @@ public class FileMetadataService {
             document.setSubjectCode(StringUtils.hasText(dto.getSubjectCode()) ? dto.getSubjectCode() : "CHƯA_CÓ");
             document.setSubjectName(StringUtils.hasText(dto.getSubjectName()) ? dto.getSubjectName() : "Tài liệu tự do");
 
+            if (file.getContentType() != null && (
+                    file.getContentType().equalsIgnoreCase("application/pdf") ||
+                            file.getContentType().contains("word") ||
+                            file.getContentType().contains("officedocument.wordprocessingml.document")
+            )) {
+
+                String thumbUrl = generateMultiFormatThumbnail(targetLocation.toString(), fileIdClean, file.getContentType());
+
+                document.setThumbnailUrl(thumbUrl != null ? thumbUrl : "/uploads/thumbnails/default-doc.png");
+            } else {
+                document.setThumbnailUrl("/uploads/thumbnails/default-doc.png");
+            }
+
             FileMetadataDocument savedDoc = fileMetadataRepository.save(document);
             uploadedFilesResult.add(mapToDTO(savedDoc));
 
             successfullyUploadedCount++;
         }
 
-        // Thưởng xu đóng góp khi hoàn thành
         if (successfullyUploadedCount > 0) {
             userCreditsService.addCredits(clerkId, 2);
         }
 
         return uploadedFilesResult;
+    }
+
+    private String generatePdfThumbnail(String pdfFilePath, String fileId) {
+        try {
+            Path thumbnailPath = Paths.get(THUMBNAIL_DIR);
+            if (!Files.exists(thumbnailPath)) {
+                Files.createDirectories(thumbnailPath);
+            }
+
+            File pdfFile = new File(pdfFilePath);
+            try (PDDocument document = PDDocument.load(pdfFile)) {
+
+                if (document.getNumberOfPages() > 0) {
+                    PDFRenderer pdfRenderer = new PDFRenderer(document);
+
+                    BufferedImage bufferedImage = pdfRenderer.renderImageWithDPI(0, 150);
+
+                    String thumbnailFileName = fileId + ".png";
+                    File outputImageFile = new File(THUMBNAIL_DIR + thumbnailFileName);
+
+                    ImageIO.write(bufferedImage, "png", outputImageFile);
+
+                    return "/uploads/thumbnails/" + thumbnailFileName;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Không thể tạo thumbnail cho file ID " + fileId + ": " + e.getMessage());
+        }
+        return null;
     }
 
     private FileMetadataDTO mapToDTO(FileMetadataDocument doc) {
@@ -141,6 +195,7 @@ public class FileMetadataService {
                 .customCategory(customCat)
                 .subjectCode(doc.getSubjectCode())
                 .subjectName(doc.getSubjectName())
+                .thumbnailUrl(doc.getThumbnailUrl())
                 .docType(doc.getDocType())
                 .creditCost(doc.getCreditCost())
                 .isPublic(doc.getIsPublic())
@@ -151,6 +206,62 @@ public class FileMetadataService {
                 .pageCount(doc.getPageCount())
                 .uploadedAt(doc.getUploadedAt())
                 .build();
+    }
+
+    private String generateMultiFormatThumbnail(String filePath, String fileId, String contentType) {
+        try {
+            Path thumbnailDirectory = this.fileStorageLocation.resolve("thumbnails");
+            if (!Files.exists(thumbnailDirectory)) {
+                Files.createDirectories(thumbnailDirectory);
+            }
+
+            File inputFile = new File(filePath);
+            File pdfFileForRendering = null;
+
+            if (contentType != null && contentType.equalsIgnoreCase("application/pdf")) {
+                pdfFileForRendering = inputFile;
+            }
+            else if (contentType != null && (contentType.contains("word") || contentType.contains("officedocument.wordprocessingml.document"))) {
+                File parentDir = inputFile.getParentFile();
+                pdfFileForRendering = new File(parentDir, fileId + "_temp.pdf");
+
+                try (InputStream docxInputStream = Files.newInputStream(inputFile.toPath());
+                     OutputStream pdfOutputStream = Files.newOutputStream(pdfFileForRendering.toPath())) {
+                    IConverter converter = LocalConverter.builder().build();
+                    converter.convert(docxInputStream).as(com.documents4j.api.DocumentType.DOCX)
+                            .to(pdfOutputStream).as(com.documents4j.api.DocumentType.PDF)
+                            .execute();
+                }
+            }
+
+            if (pdfFileForRendering != null && pdfFileForRendering.exists()) {
+                try (PDDocument document = PDDocument.load(pdfFileForRendering)) {
+                    if (document.getNumberOfPages() > 0) {
+                        PDFRenderer pdfRenderer = new PDFRenderer(document);
+                        BufferedImage bufferedImage = pdfRenderer.renderImageWithDPI(0, 120);
+
+                        String thumbnailFileName = fileId + ".png";
+
+                        File outputImageFile = thumbnailDirectory.resolve(thumbnailFileName).toFile();
+
+                        ImageIO.write(bufferedImage, "png", outputImageFile);
+
+                        System.out.println("--- [SUCCESS] Đã tạo Thumbnail thành công tại: " + outputImageFile.getAbsolutePath());
+
+                        if (!inputFile.equals(pdfFileForRendering)) {
+                            pdfFileForRendering.delete();
+                        }
+
+                        return "/uploads/thumbnails/" + thumbnailFileName;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi sinh thumbnail tự động cho file " + fileId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     public List<FileMetadataDTO> getFiles() {
@@ -220,5 +331,11 @@ public class FileMetadataService {
         fileMetadataRepository.save(document);
 
         return mapToDTO(document);
+    }
+
+    public List<FileMetadataDTO> getPublicFiles() {
+        return fileMetadataRepository.findByIsPublicTrue().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 }
