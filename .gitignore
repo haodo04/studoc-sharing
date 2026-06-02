@@ -32,6 +32,7 @@ frontend/.env.local
 # backend
 backend/target
 backend/upload/
+backend/uploads/
 backend/.env
 backend/.idea
 backend/.classpath

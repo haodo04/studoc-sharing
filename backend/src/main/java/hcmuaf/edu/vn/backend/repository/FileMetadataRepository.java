@@ -18,4 +18,7 @@ public interface FileMetadataRepository extends MongoRepository<FileMetadataDocu
 
 //    Lọc theo từ khóa tìm kiếm
     List<FileMetadataDocument> findByIsPublicTrueAndTitleRegexIgnoreCase(String keyword);
+
+    // lấy tất ca file đang public
+    List<FileMetadataDocument> findByIsPublicTrue();
 }

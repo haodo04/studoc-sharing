@@ -12,10 +12,12 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import NavbarPage from "../../components/common/NavbarPage";
 import apiEndpoints from "../../api/apiEndpoint";
+import { useUserCredits } from "../../context/UserCreditsContext";
 
 export default function UploadPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
+  const { fetchUserCredits } = useUserCredits();
 
   // State quản lý form dữ liệu khớp chuẩn 100% với các trường hiển thị của FileMetadataDocument
   const [formData, setFormData] = useState({
@@ -41,6 +43,7 @@ export default function UploadPage() {
     { id: "HCMUTE", name: "Đại học Sư phạm Kỹ thuật TP.HCM (HCMUTE)" },
     { id: "VNU", name: "Đại học Quốc gia Hà Nội (VNU)" },
     { id: "UFE", name: "Đại học Nông Lâm TP.HCM" },
+    { id: "OTHER", name: "Khác... (Tự nhập trường của bạn)" },
   ];
 
   // Danh mục chuyên ngành chung
@@ -50,6 +53,7 @@ export default function UploadPage() {
     { id: "luat-phap-ly", name: "Luật & Pháp lý" },
     { id: "mon-dai-cuong", name: "Môn học đại cương" },
     { id: "khoa-hoc-co-ban", name: "Khoa học cơ bản" },
+    { id: "OTHER", name: "Khác... (Tự nhập chuyên ngành)" },
   ];
 
   // Phân loại tài liệu học tập theo quy ước của db docType
@@ -151,6 +155,7 @@ const handleFormSubmit = async (e) => {
       );
 
       if (response.status === 200 || response.status === 201) {
+        await fetchUserCredits();
         toast.success(
           "Đăng tải tài liệu thành công! Bạn nhận được +2 Xu đóng góp.",
           { id: toastId },
@@ -172,7 +177,6 @@ const handleFormSubmit = async (e) => {
     <div className="min-h-screen bg-slate-50/50 flex flex-col">
       <NavbarPage />
 
-      {/* 🌟 ĐÃ SỬA: Tăng chiều rộng tối đa lên max-w-7xl để chiếm trọn chiều ngang, cân xứng thanh điều hướng */}
       <main className="grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12">
           {/* CỘT TRÁI: KHU VỰC HƯỚNG DẪN QUY ĐỊNH (Chiếm 4/12 cột) */}
@@ -361,6 +365,15 @@ const handleFormSubmit = async (e) => {
                     </option>
                   ))}
                 </select>
+                {formData.universityId === "OTHER" && (
+                  <input
+                    type="text"
+                    placeholder="Nhập tên Trường Đại học của bạn..."
+                    value={customUniversity}
+                    onChange={(e) => setCustomUniversity(e.target.value)}
+                    className="w-full text-xs px-3 py-2 mt-2 border border-amber-300 bg-amber-50/20 rounded-xl focus:outline-none focus:border-amber-500 placeholder:text-slate-400 transition-all animate-fadeIn"
+                  />
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -381,6 +394,15 @@ const handleFormSubmit = async (e) => {
                     </option>
                   ))}
                 </select>
+                {formData.categoryId === "OTHER" && (
+                  <input
+                    type="text"
+                    placeholder="Nhập tên chuyên ngành học khác..."
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    className="w-full text-xs px-3 py-2 mt-2 border border-amber-300 bg-amber-50/20 rounded-xl focus:outline-none focus:border-amber-500 placeholder:text-slate-400 transition-all animate-fadeIn"
+                  />
+                )}
               </div>
             </div>
 

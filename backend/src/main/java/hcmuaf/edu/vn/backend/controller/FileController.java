@@ -2,6 +2,7 @@ package hcmuaf.edu.vn.backend.controller;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
 import hcmuaf.edu.vn.backend.service.FileMetadataService;
 import hcmuaf.edu.vn.backend.service.UserCreditsService;
@@ -70,5 +71,11 @@ public class FileController {
     public ResponseEntity<FileMetadataDTO> togglePublic(@PathVariable String id) {
         FileMetadataDTO file = fileMetadataService.togglePublic(id);
         return ResponseEntity.ok(file);
+    }
+
+    @GetMapping("/public")
+    public ResponseEntity<List<FileMetadataDTO>> getPublicFiles() {
+        List<FileMetadataDTO> publicFiles = fileMetadataService.getPublicFiles();
+        return ResponseEntity.ok(publicFiles);
     }
 }

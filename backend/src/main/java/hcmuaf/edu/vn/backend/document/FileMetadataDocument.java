@@ -38,4 +38,5 @@ public class FileMetadataDocument {
     private int downloadCount;    // Số lượt tải xuống
     private double rating;        // Điểm đánh giá trung bình
     private int reviewCount;      // Tổng số lượt đánh giá
+    private String thumbnailUrl; // Đường dẫn lưu ảnh preview
 }
