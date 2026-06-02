@@ -29,7 +29,7 @@ const Navbar = ({ activeMenu }) => {
             {openSideMenu ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <Link to="/dashboard" className="flex items-center gap-2.5 group">
+          <Link to="/home" className="flex items-center gap-2.5 group">
             <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
               <Share2 size={18} className="stroke-[2.5]" />
             </div>
