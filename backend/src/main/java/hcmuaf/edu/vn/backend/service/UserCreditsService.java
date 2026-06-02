@@ -1,12 +1,11 @@
 package hcmuaf.edu.vn.backend.service;
 
 import hcmuaf.edu.vn.backend.document.UserCredits;
-import hcmuaf.edu.vn.backend.repository.ProfileRepository;
+import hcmuaf.edu.vn.backend.exceptions.BadRequestException;
 import hcmuaf.edu.vn.backend.repository.UserCreditsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -16,18 +15,16 @@ public class UserCreditsService {
     private final ProfileService profileService;
 
     public UserCredits createInitialCredits(String clerkId) {
+        return userCreditsRepository.findByClerkId(clerkId)
+                .orElseGet(() -> {
+                    UserCredits initialCredits = UserCredits.builder()
+                            .clerkId(clerkId)
+                            .credits(5)
+                            .plan("BASIC")
+                            .build();
 
-        if (userCreditsRepository.existsByClerkId(clerkId)) {
-            return userCreditsRepository.findByClerkId(clerkId);
-        }
-
-        UserCredits userCredits = UserCredits.builder()
-                .clerkId(clerkId)
-                .credits(5)
-                .plan("BASIC")
-                .build();
-
-        return userCreditsRepository.save(userCredits);
+                    return userCreditsRepository.save(initialCredits);
+                });
     }
 
     public void deleteUserCredits(String clerkId) {
@@ -36,12 +33,8 @@ public class UserCreditsService {
         }
     }
 
-    //    public UserCredits getUserCredits(String clerkId) {
-//        return userCreditsRepository.findByClerkId(clerkId)
-//                .orElseGet(() -> createInitialCredits(clerkId));
-//    }
-    public UserCredits getUserCredits(String clerkId) {
-        return Optional.ofNullable(userCreditsRepository.findByClerkId(clerkId))
+        public UserCredits getUserCredits(String clerkId) {
+        return userCreditsRepository.findByClerkId(clerkId)
                 .orElseGet(() -> createInitialCredits(clerkId));
     }
 
@@ -50,20 +43,34 @@ public class UserCreditsService {
         return getUserCredits(clerkId);
     }
 
-    public Boolean hasEnoughCredits(int requiredCredits) {
-        UserCredits userCredits = getUserCredits();
-        return userCredits.getCredits() >= requiredCredits;
-    }
-
-    public UserCredits consumeCredits() {
+    public void deductCreditsForDownload(int amount) {
         UserCredits userCredits = getUserCredits();
 
-        if (userCredits.getCredits() <= 0) {
-            return null;
+        if (userCredits.getCredits() < amount) {
+            throw new BadRequestException("Tài khoản của bạn không đủ xu. Vui lòng nạp thêm!");
         }
 
-        userCredits.setCredits(userCredits.getCredits() - 1);
-        return userCreditsRepository.save(userCredits);
+        userCredits.setCredits(userCredits.getCredits() - amount);
+        userCreditsRepository.save(userCredits);
     }
 
+    @Transactional
+    public void addCredits(String clerkId, int amount) {
+        userCreditsRepository.findByClerkId(clerkId)
+                .ifPresentOrElse(
+                        userCredits -> {
+                            int currentCredits = userCredits.getCredits() != null ? userCredits.getCredits() : 0;
+                            userCredits.setCredits(currentCredits + amount);
+                            userCreditsRepository.save(userCredits);
+                        },
+                        () -> {
+                            UserCredits newCredits = UserCredits.builder()
+                                    .clerkId(clerkId)
+                                    .credits(amount)
+                                    .plan("BASIC")
+                                    .build();
+                            userCreditsRepository.save(newCredits);
+                        }
+                );
+    }
 }
