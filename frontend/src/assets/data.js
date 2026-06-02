@@ -125,12 +125,6 @@ export const SIDE_MENU_DATA = [
     path: "/Dashboard",
   },
   {
-    id: "03",
-    label: "Upload",
-    icon: Upload,
-    path: "/upload",
-  },
-  {
     id: "04",
     label: "My Files",
     icon: Files,
