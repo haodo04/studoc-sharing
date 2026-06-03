@@ -29,6 +29,8 @@ public class FileMetadataDocument {
     private String subjectCode;   // Mã môn học
     private String subjectName;   // Tên môn học
     private String categoryId;
+    private String customUniversity;
+    private String customCategory;
     private String docType;       // Phân loại: "Đề thi", "Bài tập", "Bài giảng", "Tóm tắt"
     private String description;   // Mô tả chi tiết tài liệu
     private int pageCount;        // Số trang của tài liệu

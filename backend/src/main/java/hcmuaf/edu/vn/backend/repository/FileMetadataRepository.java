@@ -1,6 +1,7 @@
 package hcmuaf.edu.vn.backend.repository;
 
 import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
@@ -21,4 +22,6 @@ public interface FileMetadataRepository extends MongoRepository<FileMetadataDocu
 
     // lấy tất ca file đang public
     List<FileMetadataDocument> findByIsPublicTrue();
+
+    List<FileMetadataDocument> findByCategoryIdAndIsPublicTrueAndIdNot(String categoryId, String id, Pageable pageable);
 }
