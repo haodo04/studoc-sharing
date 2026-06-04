@@ -2,6 +2,7 @@ package hcmuaf.edu.vn.backend.service;
 
 import hcmuaf.edu.vn.backend.document.UserCredits;
 import hcmuaf.edu.vn.backend.exceptions.BadRequestException;
+import hcmuaf.edu.vn.backend.exceptions.UnauthorizedException;
 import hcmuaf.edu.vn.backend.repository.UserCreditsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,14 +34,29 @@ public class UserCreditsService {
         }
     }
 
-        public UserCredits getUserCredits(String clerkId) {
+    public UserCredits getUserCredits(String clerkId) {
+        if (clerkId == null || clerkId.trim().isEmpty()) {
+            throw new BadRequestException("Mã định danh không hợp lệ!");
+        }
         return userCreditsRepository.findByClerkId(clerkId)
                 .orElseGet(() -> createInitialCredits(clerkId));
     }
 
     public UserCredits getUserCredits() {
-        String clerkId = profileService.getCurrentProfile().getClerkId();
-        return getUserCredits(clerkId);
+        try {
+            String clerkId = profileService.getCurrentProfile().getClerkId();
+            return getUserCredits(clerkId);
+        } catch (Exception e) {
+            org.springframework.security.core.Authentication authentication =
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication != null && authentication.getPrincipal() != null) {
+                String clerkIdFromToken = authentication.getName();
+                return getUserCredits(clerkIdFromToken);
+            }
+
+            throw new UnauthorizedException("Tài khoản chưa được xác thực hệ thống!");
+        }
     }
 
     public void deductCreditsForDownload(int amount) {
