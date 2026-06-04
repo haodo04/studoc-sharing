@@ -34,10 +34,4 @@ public class FileInteractionController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadableFile.getName() + "\"")
                 .body(resource);
     }
-
-    // 2. Viết bình luận mới (Sẽ code chi tiết ở các bước sau)
-    // @PostMapping("/{id}/comment") ...
-
-    // 3. Đánh giá sao (Sẽ code chi tiết ở các bước sau)
-    // @PostMapping("/{id}/rate") ...
 }

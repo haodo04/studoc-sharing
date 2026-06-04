@@ -5,9 +5,11 @@ import com.documents4j.job.LocalConverter;
 import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
 import hcmuaf.edu.vn.backend.document.ProfileDocument;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
+import hcmuaf.edu.vn.backend.dto.response.FileDetailResponseDTO;
 import hcmuaf.edu.vn.backend.exceptions.BadRequestException;
 import hcmuaf.edu.vn.backend.exceptions.ResourceNotFoundException;
 import hcmuaf.edu.vn.backend.repository.FileMetadataRepository;
+import hcmuaf.edu.vn.backend.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -48,6 +50,7 @@ public class FileMetadataService {
     private final FileMetadataRepository fileMetadataRepository;
     private final UserCreditsService userCreditsService;
     private final MongoTemplate mongoTemplate;
+    private final ProfileRepository profileRepository;
 
     private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
     private final String UPLOAD_DIR = "uploads/";
@@ -399,50 +402,66 @@ public class FileMetadataService {
         return dto;
     }
 
-    public FileMetadataDTO getFileById(String id) {
-        Query query = new Query(Criteria.where("_id").is(id));
-
-        Update update = new Update().inc("viewCount", 1);
+    public FileDetailResponseDTO getFileById(String id) {
+        org.springframework.data.mongodb.core.query.Query query =
+                new org.springframework.data.mongodb.core.query.Query(org.springframework.data.mongodb.core.query.Criteria.where("_id").is(id));
+        org.springframework.data.mongodb.core.query.Update update =
+                new org.springframework.data.mongodb.core.query.Update().inc("viewCount", 1);
 
         FileMetadataDocument updatedDoc = mongoTemplate.findAndModify(
                 query,
                 update,
+                org.springframework.data.mongodb.core.FindAndModifyOptions.options().returnNew(true),
                 FileMetadataDocument.class
         );
 
         if (updatedDoc == null) {
-            throw new RuntimeException("Không tìm thấy tài liệu trong DB với ID: " + id);
+            throw new ResourceNotFoundException("Không tìm thấy tài liệu trong DB với ID: " + id);
         }
 
-        FileMetadataDTO dto = new FileMetadataDTO();
+        FileDetailResponseDTO dto = FileDetailResponseDTO.builder()
+                .id(updatedDoc.getId())
+                .title(updatedDoc.getTitle())
+                .type(updatedDoc.getType())
+                .size(updatedDoc.getSize())
+                .fileLocation(updatedDoc.getFileLocation())
+                .uploadedAt(updatedDoc.getUploadedAt())
+                .universityId(updatedDoc.getUniversityId())
+                .subjectCode(updatedDoc.getSubjectCode())
+                .subjectName(updatedDoc.getSubjectName())
+                .docType(updatedDoc.getDocType())
+                .description(updatedDoc.getDescription())
+                .pageCount(updatedDoc.getPageCount())
+                .creditCost(updatedDoc.getCreditCost())
+                .viewCount(updatedDoc.getViewCount())
+                .downloadCount(updatedDoc.getDownloadCount())
+                .rating(updatedDoc.getRating())
+                .reviewCount(updatedDoc.getReviewCount())
+                .thumbnailUrl(updatedDoc.getThumbnailUrl())
+                .build();
 
-        dto.setId(updatedDoc.getId());
-        dto.setName(updatedDoc.getName());
-        dto.setTitle(updatedDoc.getTitle());
-        dto.setType(updatedDoc.getType());
-        dto.setSize(updatedDoc.getSize());
-        dto.setClerkId(updatedDoc.getClerkId());
-        dto.setIsPublic(updatedDoc.getIsPublic());
-        dto.setFileLocation(updatedDoc.getFileLocation());
-        dto.setUploadedAt(updatedDoc.getUploadedAt());
+        dto.setAuthorName("Thành viên StuDoc");
+        dto.setAuthorAvatar("https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100");
 
-        dto.setUniversityId(updatedDoc.getUniversityId());
-        dto.setSubjectCode(updatedDoc.getSubjectCode());
-        dto.setSubjectName(updatedDoc.getSubjectName());
-        dto.setCategoryId(updatedDoc.getCategoryId());
-        dto.setCustomUniversity(updatedDoc.getCustomUniversity());
-        dto.setCustomCategory(updatedDoc.getCustomCategory());
-        dto.setDocType(updatedDoc.getDocType());
-        dto.setDescription(updatedDoc.getDescription());
-        dto.setPageCount(updatedDoc.getPageCount());
-        dto.setCreditCost(updatedDoc.getCreditCost());
+        String uploaderClerkId = updatedDoc.getClerkId();
+        if (uploaderClerkId != null) {
+            ProfileDocument profile = profileRepository.findByClerkId(uploaderClerkId);
 
-        dto.setViewCount(updatedDoc.getViewCount());
-        dto.setDownloadCount(updatedDoc.getDownloadCount());
-        dto.setRating(updatedDoc.getRating());
-        dto.setReviewCount(updatedDoc.getReviewCount());
-        dto.setThumbnailUrl(updatedDoc.getThumbnailUrl());
+            if (profile != null) {
+                String firstName = profile.getFirstName() != null ? profile.getFirstName() : "";
+                String lastName = profile.getLastName() != null ? profile.getLastName() : "";
+                String fullName = (firstName + " " + lastName).trim();
+
+                if (!fullName.isEmpty()) {
+                    dto.setAuthorName(fullName);
+                }
+                if (profile.getPhotoUrl() != null) {
+                    dto.setAuthorAvatar(profile.getPhotoUrl());
+                }
+            }
+        }
 
         return dto;
     }
+
 }
