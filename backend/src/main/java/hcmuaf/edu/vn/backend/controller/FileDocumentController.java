@@ -1,6 +1,7 @@
 package hcmuaf.edu.vn.backend.controller;
 
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
+import hcmuaf.edu.vn.backend.dto.response.FileDetailResponseDTO;
 import hcmuaf.edu.vn.backend.service.FileMetadataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,8 +29,8 @@ public class FileDocumentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<FileMetadataDTO> getDocumentDetails(@PathVariable String id) {
-        FileMetadataDTO file = fileMetadataService.getFileById(id);
+    public ResponseEntity<FileDetailResponseDTO> getDocumentDetails(@PathVariable String id) {
+        FileDetailResponseDTO file = fileMetadataService.getFileById(id);
         return ResponseEntity.ok(file);
     }
 

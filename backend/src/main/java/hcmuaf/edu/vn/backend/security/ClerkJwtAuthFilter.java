@@ -44,12 +44,17 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
         }
 
         String lowerURI = requestURI.toLowerCase();
-        if (lowerURI.contains("/webhooks") ||
+
+        boolean isPublicEndpoint = lowerURI.contains("/webhooks") ||
                 lowerURI.contains("/public") ||
                 lowerURI.contains("/register") ||
                 lowerURI.contains("/uploads") ||
-                lowerURI.contains("/download")) {
+                lowerURI.contains("/download") ||
+                lowerURI.contains("/files");
 
+        boolean isGetComments = lowerURI.contains("/comments") && "GET".equalsIgnoreCase(method);
+
+        if (isPublicEndpoint || isGetComments) {
             filterChain.doFilter(request, response);
             return;
         }
