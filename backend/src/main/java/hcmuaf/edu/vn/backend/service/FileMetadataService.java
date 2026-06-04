@@ -11,9 +11,13 @@ import hcmuaf.edu.vn.backend.repository.FileMetadataRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -30,6 +34,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +47,7 @@ public class FileMetadataService {
     private final ProfileService profileService;
     private final FileMetadataRepository fileMetadataRepository;
     private final UserCreditsService userCreditsService;
+    private final MongoTemplate mongoTemplate;
 
     private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
     private final String UPLOAD_DIR = "uploads/";
@@ -337,5 +347,102 @@ public class FileMetadataService {
         return fileMetadataRepository.findByIsPublicTrue().stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+
+    public List<FileMetadataDTO> getRelatedDocuments(String id, int limit) {
+        FileMetadataDocument currentFile = fileMetadataRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy tài liệu"));
+
+        Pageable pageable = PageRequest.of(0, limit);
+
+        List<FileMetadataDocument> relatedDocuments = fileMetadataRepository
+                .findByCategoryIdAndIsPublicTrueAndIdNot(currentFile.getCategoryId(), id, pageable);
+
+        return relatedDocuments.stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
+
+    private FileMetadataDTO convertToDTO(FileMetadataDocument doc) {
+        if (doc == null) {
+            return null;
+        }
+
+        FileMetadataDTO dto = new FileMetadataDTO();
+        dto.setId(doc.getId());
+        dto.setName(doc.getName());
+        dto.setTitle(doc.getTitle());
+        dto.setType(doc.getType());
+        dto.setSize(doc.getSize());
+        dto.setClerkId(doc.getClerkId());
+        dto.setIsPublic(doc.getIsPublic());
+        dto.setFileLocation(doc.getFileLocation());
+        dto.setUploadedAt(doc.getUploadedAt());
+
+        dto.setUniversityId(doc.getUniversityId());
+        dto.setSubjectCode(doc.getSubjectCode());
+        dto.setSubjectName(doc.getSubjectName());
+        dto.setCategoryId(doc.getCategoryId());
+        dto.setCustomUniversity(doc.getCustomUniversity());
+        dto.setCustomCategory(doc.getCustomCategory());
+        dto.setDocType(doc.getDocType());
+        dto.setDescription(doc.getDescription());
+        dto.setThumbnailUrl(doc.getThumbnailUrl());
+
+        dto.setPageCount(doc.getPageCount());
+        dto.setCreditCost(doc.getCreditCost());
+        dto.setViewCount(doc.getViewCount());
+        dto.setDownloadCount(doc.getDownloadCount());
+        dto.setRating(doc.getRating());
+        dto.setReviewCount(doc.getReviewCount());
+
+        return dto;
+    }
+
+    public FileMetadataDTO getFileById(String id) {
+        Query query = new Query(Criteria.where("_id").is(id));
+
+        Update update = new Update().inc("viewCount", 1);
+
+        FileMetadataDocument updatedDoc = mongoTemplate.findAndModify(
+                query,
+                update,
+                FileMetadataDocument.class
+        );
+
+        if (updatedDoc == null) {
+            throw new RuntimeException("Không tìm thấy tài liệu trong DB với ID: " + id);
+        }
+
+        FileMetadataDTO dto = new FileMetadataDTO();
+
+        dto.setId(updatedDoc.getId());
+        dto.setName(updatedDoc.getName());
+        dto.setTitle(updatedDoc.getTitle());
+        dto.setType(updatedDoc.getType());
+        dto.setSize(updatedDoc.getSize());
+        dto.setClerkId(updatedDoc.getClerkId());
+        dto.setIsPublic(updatedDoc.getIsPublic());
+        dto.setFileLocation(updatedDoc.getFileLocation());
+        dto.setUploadedAt(updatedDoc.getUploadedAt());
+
+        dto.setUniversityId(updatedDoc.getUniversityId());
+        dto.setSubjectCode(updatedDoc.getSubjectCode());
+        dto.setSubjectName(updatedDoc.getSubjectName());
+        dto.setCategoryId(updatedDoc.getCategoryId());
+        dto.setCustomUniversity(updatedDoc.getCustomUniversity());
+        dto.setCustomCategory(updatedDoc.getCustomCategory());
+        dto.setDocType(updatedDoc.getDocType());
+        dto.setDescription(updatedDoc.getDescription());
+        dto.setPageCount(updatedDoc.getPageCount());
+        dto.setCreditCost(updatedDoc.getCreditCost());
+
+        dto.setViewCount(updatedDoc.getViewCount());
+        dto.setDownloadCount(updatedDoc.getDownloadCount());
+        dto.setRating(updatedDoc.getRating());
+        dto.setReviewCount(updatedDoc.getReviewCount());
+        dto.setThumbnailUrl(updatedDoc.getThumbnailUrl());
+
+        return dto;
     }
 }
