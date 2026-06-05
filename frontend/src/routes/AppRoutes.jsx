@@ -14,6 +14,7 @@ import PublicFileView from "../pages/Dashboard/components/PublicFileView";
 import ExplorePage from "../pages/Explore/ExplorePage";
 import DocumentDetailPage from "../pages/DocumentDetail/DocumentDetailPage";
 import UploadPage from "../pages/Upload/Upload";
+import PremiumPage from "../pages/Premium/PremiumPage";
 
 const ProtectedLayout = ({ children }) => {
   return (
@@ -42,6 +43,7 @@ const AppRoutes = () => {
       <Route path="/trash" element={<ProtectedLayout><TrashPage /></ProtectedLayout>} />
       <Route path="/upload" element={<UploadPage />} />
       <Route path="/category" element={<CategoryPage />} />
+      <Route path="/premium" element={<PremiumPage />} />
 
       <Route path="/*" element={<Navigate to="/home" replace />} />
     </Routes>
