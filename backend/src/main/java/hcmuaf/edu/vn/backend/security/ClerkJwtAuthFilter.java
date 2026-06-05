@@ -43,19 +43,18 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
 
         String lowerURI = requestURI.toLowerCase();
 
+        boolean isVnPayReturn = lowerURI.contains("/api/payment/vnpay_return");
+
         boolean isBasePublic = lowerURI.contains("/webhooks") || lowerURI.contains("/register") || lowerURI.contains("/uploads");
         boolean isPublicFiles = lowerURI.contains("/files/public/");
         boolean isGetComments = lowerURI.contains("/comments") && "GET".equalsIgnoreCase(method);
         boolean isGetDocumentDetail = lowerURI.contains("/files/") && "GET".equalsIgnoreCase(method) && !lowerURI.contains("/interaction");
 
-
-        if (isBasePublic || isPublicFiles || isGetComments || isGetDocumentDetail) {
+        if (isBasePublic || isPublicFiles || isGetComments || isGetDocumentDetail || isVnPayReturn) {
             filterChain.doFilter(request, response);
             return;
         }
 
-
-        // 2. ĐỌC HEADER XÁC THỰC
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -92,6 +91,8 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
                     .getBody();
 
             String clerkId = claims.getSubject();
+
+            request.setAttribute("clerkId", clerkId);
 
             UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                     clerkId, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))

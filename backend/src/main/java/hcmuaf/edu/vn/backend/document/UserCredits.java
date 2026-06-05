@@ -19,6 +19,6 @@ public class UserCredits {
     @Indexed(unique = true)
     private String clerkId;
     private Integer credits;
-    private String plan;    //BASIC, PREMIUM, ULTIMATE
+    private String plan;
 
 }
