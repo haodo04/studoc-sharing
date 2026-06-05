@@ -54,7 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/files/**").permitAll()
                         .requestMatchers("/comments/**", "/webhooks/**", "/register").permitAll()
                         .requestMatchers("/api/payment/vnpay_return").permitAll()
-                        .requestMatchers("/uploads/**", "/error").permitAll()
+                        .requestMatchers("/uploads/**", "/documents/**", "/error").permitAll()
                         .requestMatchers("/files/interaction/*/download").authenticated()
                         .anyRequest().authenticated()
                 )
