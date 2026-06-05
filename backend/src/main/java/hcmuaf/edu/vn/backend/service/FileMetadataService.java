@@ -13,8 +13,10 @@ import hcmuaf.edu.vn.backend.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -36,21 +38,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
-import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
 public class FileMetadataService {
 
-    private final ProfileService profileService;
-    private final FileMetadataRepository fileMetadataRepository;
-    private final UserCreditsService userCreditsService;
-    private final MongoTemplate mongoTemplate;
-    private final ProfileRepository profileRepository;
+    @Autowired
+    private  ProfileService profileService;
+    @Autowired
+    private FileMetadataRepository fileMetadataRepository;
+    @Autowired
+    private UserCreditsService userCreditsService;
+    @Autowired
+    private MongoTemplate mongoTemplate;
+    @Autowired
+    private ProfileRepository profileRepository;
 
     private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
     private final String UPLOAD_DIR = "uploads/";
@@ -144,35 +146,6 @@ public class FileMetadataService {
         return uploadedFilesResult;
     }
 
-    private String generatePdfThumbnail(String pdfFilePath, String fileId) {
-        try {
-            Path thumbnailPath = Paths.get(THUMBNAIL_DIR);
-            if (!Files.exists(thumbnailPath)) {
-                Files.createDirectories(thumbnailPath);
-            }
-
-            File pdfFile = new File(pdfFilePath);
-            try (PDDocument document = PDDocument.load(pdfFile)) {
-
-                if (document.getNumberOfPages() > 0) {
-                    PDFRenderer pdfRenderer = new PDFRenderer(document);
-
-                    BufferedImage bufferedImage = pdfRenderer.renderImageWithDPI(0, 150);
-
-                    String thumbnailFileName = fileId + ".png";
-                    File outputImageFile = new File(THUMBNAIL_DIR + thumbnailFileName);
-
-                    ImageIO.write(bufferedImage, "png", outputImageFile);
-
-                    return "/uploads/thumbnails/" + thumbnailFileName;
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Không thể tạo thumbnail cho file ID " + fileId + ": " + e.getMessage());
-        }
-        return null;
-    }
-
     private FileMetadataDTO mapToDTO(FileMetadataDocument doc) {
         if (doc == null) return null;
 
@@ -202,6 +175,9 @@ public class FileMetadataService {
                 .description(doc.getDescription())
                 .type(doc.getType())
                 .size(doc.getSize())
+
+                .fileLocation(doc.getFileLocation())
+
                 .universityId(uniId)
                 .categoryId(catId)
                 .customUniversity(customUni)
@@ -259,8 +235,6 @@ public class FileMetadataService {
 
                         ImageIO.write(bufferedImage, "png", outputImageFile);
 
-                        System.out.println("--- [SUCCESS] Đã tạo Thumbnail thành công tại: " + outputImageFile.getAbsolutePath());
-
                         if (!inputFile.equals(pdfFileForRendering)) {
                             pdfFileForRendering.delete();
                         }
@@ -283,17 +257,10 @@ public class FileMetadataService {
                 .collect(Collectors.toList());
     }
 
-    public FileMetadataDTO getDownloadableFile(String id) {
-        FileMetadataDocument document = fileMetadataRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy file hệ thống với ID yêu cầu: " + id));
-        return mapToDTO(document);
-    }
-
     public void deleteFile(String id) {
         FileMetadataDocument document = fileMetadataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tài liệu không tồn tại với ID: " + id));
 
-        // Lấy thông tin user hiện tại bảo mật tuyệt đối
         ProfileDocument currentProfile = profileService.getCurrentProfile();
 
         if (!document.getClerkId().equals(currentProfile.getClerkId())) {
@@ -324,26 +291,26 @@ public class FileMetadataService {
         return mapToDTO(fileMetadataRepository.save(document));
     }
 
-    public void incrementDownloadCount(String fileId) {
-        fileMetadataRepository.findById(fileId).ifPresent(file -> {
-            file.setDownloadCount(file.getDownloadCount() + 1);
-            fileMetadataRepository.save(file);
-        });
-    }
 
+    public FileMetadataDTO processDownloadRequest(String fileId, String clerkId) {
+        try {
+            FileMetadataDocument document = fileMetadataRepository.findById(fileId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu"));
 
-    public FileMetadataDTO processDownloadRequest(String fileId) {
-        FileMetadataDocument document = fileMetadataRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu"));
+            int cost = document.getCreditCost() != null ? document.getCreditCost() : 0;
 
-        int cost = document.getCreditCost() != null ? document.getCreditCost() : 0;
+            userCreditsService.deductCreditsForDownload(clerkId, cost);
 
-        userCreditsService.deductCreditsForDownload(cost);
+            document.setDownloadCount(document.getDownloadCount() + 1);
 
-        document.setDownloadCount(document.getDownloadCount() + 1);
-        fileMetadataRepository.save(document);
+            FileMetadataDocument savedDoc = fileMetadataRepository.save(document);
 
-        return mapToDTO(document);
+            return mapToDTO(savedDoc);
+
+        } catch (NullPointerException npe) {
+            npe.printStackTrace();
+            throw npe;
+        }
     }
 
     public List<FileMetadataDTO> getPublicFiles() {

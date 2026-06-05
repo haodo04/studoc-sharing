@@ -5,6 +5,7 @@ import {
   SignedOut,
   UserButton,
   SignInButton,
+  useAuth,
 } from "@clerk/clerk-react";
 import {
   Search,
@@ -33,12 +34,12 @@ import {
 import { documentApi } from "../../api/documentApi";
 import NavbarPage from "../../components/common/NavbarPage";
 import { getCommentsByFileId } from "../../api/commentApi";
-
 import DocumentHeaderInfo from "./components/DocumentHeaderInfo";
 import DocumentPreview from "./components/DocumentPreview";
 import RatingSection from "./components/RatingSection";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
+import {UserCreditsContext, useUserCredits}  from '../../context/UserCreditsContext';
 
 export default function DocumentDetailPage() {
   const navigate = useNavigate();
@@ -51,6 +52,8 @@ export default function DocumentDetailPage() {
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const { getToken } = useAuth();
 
   // hàm lấy danh sách bình luận
   const fetchComments = useCallback(async () => {
@@ -127,6 +130,7 @@ export default function DocumentDetailPage() {
 
     loadDocumentAndRelated();
   }, [id, fetchComments]);
+  const { fetchUserCredits } = useUserCredits();
 
   const handleDownload = () => {
     if (!documentData) return;
@@ -143,9 +147,95 @@ export default function DocumentDetailPage() {
           </p>
           <div className="flex justify-end gap-2 mt-1">
             <button
-              onClick={() => {
+              onClick={async () => {
                 toast.dismiss(t.id);
-                toast.success("Bắt đầu tải tệp tin bản đầy đủ!");
+
+                const downloadToastId = toast.loading(
+                  "Đang chuẩn bị tệp tin...",
+                );
+
+                try {
+                  const token = await getToken();
+                  const response = await axios.get(
+                    `${BASE_URL}/files/interaction/${id}/download`,
+                    {
+                      responseType: "blob",
+                      headers: { Authorization: `Bearer ${token}` },
+                    },
+                  );
+
+                  const blob = new Blob([response.data], {
+                    type: response.headers["content-type"],
+                  });
+                  const downloadUrl = window.URL.createObjectURL(blob);
+
+                  let fileName = documentData.title || "tai-lieu-studocshare";
+                  const fileExtension =
+                    documentData.type && !documentData.type.includes("/")
+                      ? documentData.type
+                      : documentData.type?.split("/")[1] === "pdf"
+                        ? "pdf"
+                        : "docx";
+
+                  if (
+                    !fileName
+                      .toLowerCase()
+                      .endsWith(`.${fileExtension.toLowerCase()}`)
+                  ) {
+                    fileName = `${fileName}.${fileExtension}`;
+                  }
+
+                  const link = document.createElement("a");
+                  link.href = downloadUrl;
+                  link.setAttribute("download", fileName);
+                  document.body.appendChild(link);
+                  link.click();
+
+                  document.body.removeChild(link);
+                  window.URL.revokeObjectURL(downloadUrl);
+
+                  toast.success("Tải tài liệu thành công!", {
+                    id: downloadToastId,
+                  });
+                  
+                  await fetchUserCredits();
+
+                } catch (err) {
+                  console.error("Lỗi khi tải tài liệu:", err);
+
+                  let customErrorMessage =
+                    "Tải file thất bại hoặc tài khoản không đủ số dư!";
+
+                  if (
+                    err.response &&
+                    (err.response.status === 401 || err.response.status === 403)
+                  ) {
+                    customErrorMessage =
+                      "Phiên đăng nhập hết hạn hoặc bạn không có quyền tải file này. Vui lòng đăng nhập lại!";
+                  } else if (
+                    err.response &&
+                    err.response.data instanceof Blob
+                  ) {
+                    try {
+                      const textError = await err.response.data.text();
+                      if (textError && textError.trim().length > 0) {
+                        const errorObj = JSON.parse(textError);
+                        if (errorObj && errorObj.message) {
+                          customErrorMessage = errorObj.message;
+                        }
+                      }
+                    } catch (parseObjErr) {
+                      console.error(
+                        "Không thể parse nội dung lỗi:",
+                        parseObjErr,
+                      );
+                    }
+                  } else if (err.message) {
+                    customErrorMessage = err.message;
+                  }
+
+                  toast.error(customErrorMessage, { id: downloadToastId });
+                }
               }}
               className="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
             >
@@ -161,7 +251,8 @@ export default function DocumentDetailPage() {
         </div>
       ),
       {
-        duration: 6000,
+        duration: 8000,
+        icon: "💡",
         style: {
           borderRadius: "16px",
           background: "#ffffff",

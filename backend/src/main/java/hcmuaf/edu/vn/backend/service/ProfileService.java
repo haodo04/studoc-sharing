@@ -37,7 +37,7 @@ public class ProfileService {
                 .firstName(profileDTO.getFirstName())
                 .lastName(profileDTO.getLastName())
                 .photoUrl(profileDTO.getPhotoUrl())
-                .credits(5)
+//                .credits(5)
                 .createdAt(Instant.now())
                 .build();
 
@@ -137,7 +137,7 @@ public class ProfileService {
                 .email(profile.getEmail())
                 .firstName(profile.getFirstName())
                 .lastName(profile.getLastName())
-                .credits(profile.getCredits())
+//                .credits(profile.getCredits())
                 .photoUrl(profile.getPhotoUrl())
                 .createdAt(profile.getCreatedAt())
                 .build();
