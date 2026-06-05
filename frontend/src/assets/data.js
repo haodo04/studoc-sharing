@@ -119,45 +119,27 @@ export const testimonials = [
 
 export const SIDE_MENU_DATA = [
   {
-    id: "02",
+    id: "01",
     label: "Dashboard",
     icon: LayoutDashboard,
-    path: "/Dashboard",
+    path: "/user/dashboard",
+  },
+  {
+    id: "02",
+    label: "My Files",
+    icon: Files,
+    path: "/user/my-files",
+  },
+  {
+    id: "03",
+    label: "Transactions",
+    icon: Receipt,
+    path: "/user/transactions",
   },
   {
     id: "04",
-    label: "My Files",
-    icon: Files,
-    path: "/my-files",
-  },
-  {
-    id: "05",
-    label: "Subscriptions",
-    icon: CreditCard,
-    path: "/subscriptions",
-  },
-  {
-    id: "06",
-    label: "Transactions",
-    icon: Receipt,
-    path: "/transactions",
-  },
-  {
-    id: "07",
-    label: "Shared",
-    icon: Share,
-    path: "/shared",
-  },
-  {
-    id: "08",
     label: "Favorites",
     icon: Star,
-    path: "/favorites",
-  },
-  {
-    id: "09",
-    label: "Trash",
-    icon: Trash2,
-    path: "/trash",
+    path: "/user/favorites",
   },
 ];

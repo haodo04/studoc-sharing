@@ -16,6 +16,10 @@
   }
 }
 
+.cl-userButtonPopoverFooter {
+  display: none !important;
+}
+
 .landing-page {
   @apply overflow-y-auto h-screen;
 }
