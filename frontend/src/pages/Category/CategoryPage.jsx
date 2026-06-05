@@ -1,36 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavbarPage from "../../components/common/NavbarPage";
-import { documentApi } from "../../api/documentApi"; // Import API vừa viết
+import { documentApi } from "../../api/documentApi"; 
 import {
-    Search, Compass, Clock, TrendingUp, Star, Monitor, Briefcase,
-    Scale, Stethoscope, Calculator, GraduationCap, Building2, BookOpen,
-    Award, FileText, Presentation, Archive, Download, ChevronLeft, ChevronRight,
-    Laptop, Globe, Ruler, Book, Palette, Settings
+    Search, Compass, Clock, TrendingUp, Star, Monitor, Scale, Stethoscope, 
+    Calculator, GraduationCap, Building2, BookOpen, Award, FileText, 
+    Presentation, Archive, Download, ChevronLeft, ChevronRight, Laptop, 
+    Globe, Ruler, Book, Palette, Settings, File
 } from 'lucide-react';
+const CATEGORY_MAP = {
+    'IT': { name: 'Công nghệ thông tin', icon: Laptop },
+    'ECO': { name: 'Kinh tế - Kế toán', icon: TrendingUp },
+    'LAW': { name: 'Luật học', icon: Scale },
+    'MED': { name: 'Y Dược', icon: Stethoscope }
+};
+
+const UNIVERSITY_MAP = {
+    'NLU': { name: 'NLU - Nông Lâm', icon: GraduationCap },
+    'HUST': { name: 'HUST - Bách Khoa', icon: Building2 },
+    'NEU': { name: 'NEU - Kinh tế QD', icon: BookOpen }
+};
 
 export default function CategoryPage() {
     const navigate = useNavigate();
 
-    // 1. CÁC STATE QUẢN LÝ BỘ LỌC
     const [searchQuery, setSearchQuery] = useState("");
     const [activeExplore, setActiveExplore] = useState("Tất cả");
     const [activeCategory, setActiveCategory] = useState("");
     const [activeUniversity, setActiveUniversity] = useState("");
     const [sortBy, setSortBy] = useState("Mới nhất");
 
-    // 2. CÁC STATE QUẢN LÝ DỮ LIỆU & PHÂN TRANG
     const [documents, setDocuments] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
 
-    // 3. USE_EFFECT: GỌI API MỖI KHI BỘ LỌC THAY ĐỔI
+    const [dynamicCategories, setDynamicCategories] = useState([]);
+    const [dynamicUniversities, setDynamicUniversities] = useState([]);
+
+    useEffect(() => {
+        const fetchFiltersData = async () => {
+            try {
+                const categoriesData = await documentApi.getCategories();
+                const universitiesData = await documentApi.getUniversities();
+                setDynamicCategories(categoriesData || []);
+                setDynamicUniversities(universitiesData || []);
+            } catch (error) {
+                console.error("Không thể tải dữ liệu bộ lọc bộ lọc:", error);
+            }
+        };
+        fetchFiltersData();
+    }, []);
+
     useEffect(() => {
         const fetchDocuments = async () => {
             setIsLoading(true);
             try {
-                // Xây dựng tham số gửi xuống Backend
                 const filters = {
                     keyword: searchQuery,
                     explore: activeExplore !== 'Tất cả' ? activeExplore : null,
@@ -38,12 +63,12 @@ export default function CategoryPage() {
                     universityId: activeUniversity,
                     sortBy: sortBy,
                     page: currentPage,
-                    size: 12 // Hiển thị 12 tài liệu mỗi trang
+                    size: 12 
                 };
 
                 const data = await documentApi.searchDocuments(filters);
-                setDocuments(data.content || []); // Dữ liệu mảng tài liệu
-                setTotalPages(data.totalPages || 1); // Tổng số trang
+                setDocuments(data.content || []);
+                setTotalPages(data.totalPages || 1);
             } catch (error) {
                 console.error("Không thể tải danh sách tài liệu:", error);
             } finally {
@@ -51,7 +76,6 @@ export default function CategoryPage() {
             }
         };
 
-        // Kỹ thuật Debounce cơ bản: Đợi user gõ xong phím (500ms) rồi mới gọi API
         const delaySearch = setTimeout(() => {
             fetchDocuments();
         }, 300);
@@ -59,7 +83,18 @@ export default function CategoryPage() {
         return () => clearTimeout(delaySearch);
     }, [searchQuery, activeExplore, activeCategory, activeUniversity, sortBy, currentPage]);
 
-    // Hàm đổi trang
+    const handleExploreChange = (exploreName) => {
+        setActiveExplore(exploreName);
+        setCurrentPage(0);
+        if (exploreName === "Mới nhất" || exploreName === "Cũ nhất") {
+            setSortBy(exploreName);
+        } else if (exploreName === "Thịnh hành") {
+            setSortBy("Tải nhiều nhất");
+        } else if (exploreName === "Đánh giá cao") {
+            setSortBy("Đánh giá cao");
+        }
+    };
+
     const handlePageChange = (newPage) => {
         if (newPage >= 0 && newPage < totalPages) {
             setCurrentPage(newPage);
@@ -67,7 +102,6 @@ export default function CategoryPage() {
         }
     };
 
-    // Helper function lấy icon tương ứng với loại file
     const getFileIcon = (docType) => {
         const type = docType?.toLowerCase();
         if (type === 'pdf') return <FileText className="w-4 h-4 text-red-500" />;
@@ -100,7 +134,7 @@ export default function CategoryPage() {
                         ].map((item) => (
                             <button
                                 key={item.name}
-                                onClick={() => { setActiveExplore(item.name); setCurrentPage(0); }}
+                                onClick={() => handleExploreChange(item.name)}
                                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
                                     activeExplore === item.name ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600 hover:bg-slate-100 hover:text-indigo-600"
                                 }`}
@@ -120,23 +154,22 @@ export default function CategoryPage() {
                         >
                             <span>Tất cả ngành học</span>
                         </button>
-                        {[
-                            { id: 'IT', name: 'Công nghệ thông tin', icon: Laptop },
-                            { id: 'ECO', name: 'Kinh tế - Kế toán', icon: TrendingUp },
-                            { id: 'LAW', name: 'Luật học', icon: Scale },
-                            { id: 'MED', name: 'Y Dược', icon: Stethoscope },
-                        ].map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => { setActiveCategory(item.id); setCurrentPage(0); }}
-                                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                                    activeCategory === item.id ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600 hover:bg-slate-100"
-                                }`}
-                            >
-                                <item.icon className="w-5 h-5" />
-                                <span>{item.name}</span>
-                            </button>
-                        ))}
+                        {dynamicCategories.map((cat) => {
+                            const config = CATEGORY_MAP[cat.id] || { name: cat.name, icon: Monitor };
+                            const IconComponent = config.icon;
+                            return (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => { setActiveCategory(cat.id); setCurrentPage(0); }}
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                                        activeCategory === cat.id ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600 hover:bg-slate-100"
+                                    }`}
+                                >
+                                    <IconComponent className="w-5 h-5 text-slate-500" />
+                                    <span>{config.name}</span>
+                                </button>
+                            );
+                        })}
                     </div>
 
                     {/* Nhóm Trường Đại Học */}
@@ -148,22 +181,22 @@ export default function CategoryPage() {
                         >
                             <span>Tất cả trường</span>
                         </button>
-                        {[
-                            { id: 'NLU', name: 'NLU - Nông Lâm', icon: GraduationCap },
-                            { id: 'HUST', name: 'HUST - Bách Khoa', icon: Building2 },
-                            { id: 'NEU', name: 'NEU - Kinh tế QD', icon: BookOpen },
-                        ].map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => { setActiveUniversity(item.id); setCurrentPage(0); }}
-                                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                                    activeUniversity === item.id ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600 hover:bg-slate-100"
-                                }`}
-                            >
-                                <item.icon className="w-5 h-5" />
-                                <span>{item.name}</span>
-                            </button>
-                        ))}
+                        {dynamicUniversities.map((uni) => {
+                            const config = UNIVERSITY_MAP[uni.id] || { name: uni.name, icon: BookOpen };
+                            const IconComponent = config.icon;
+                            return (
+                                <button
+                                    key={uni.id}
+                                    onClick={() => { setActiveUniversity(uni.id); setCurrentPage(0); }}
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                                        activeUniversity === uni.id ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600 hover:bg-slate-100"
+                                    }`}
+                                >
+                                    <IconComponent className="w-5 h-5 text-slate-500" />
+                                    <span>{config.name}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </aside>
 
@@ -180,7 +213,7 @@ export default function CategoryPage() {
                                 placeholder="Nhập tên tài liệu, môn học, mã học phần..."
                                 value={searchQuery}
                                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0); }}
-                                className="block w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl leading-5 bg-transparent placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:text-sm font-medium transition-all shadow-sm"
+                                className="block w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:text-sm font-medium transition-all shadow-sm"
                             />
                         </div>
                     </div>
@@ -208,7 +241,7 @@ export default function CategoryPage() {
                         </div>
                     </div>
 
-                    {/* DANH SÁCH TÀI LIỆU (MAPPING TỪ API) */}
+                    {/* DANH SÁCH TÀI LIỆU */}
                     {isLoading ? (
                         <div className="flex justify-center items-center py-20 text-indigo-600 font-bold animate-pulse">
                             Đang tìm kiếm tài liệu...
@@ -220,14 +253,16 @@ export default function CategoryPage() {
                             <p className="text-sm">Hãy thử thay đổi từ khóa hoặc bộ lọc của bạn.</p>
                         </div>
                     ) : (
+                        /* Lưới Grid hiển thị đồng bộ tất cả các cột */
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {documents.map((doc, index) => (
+                            {documents.map((doc) => (
                                 <div 
                                     key={doc.id} 
                                     onClick={() => navigate(`/document/${doc.id}`)}
-                                    className={`group bg-white rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden flex flex-col cursor-pointer ${index === 0 ? 'lg:col-span-2 sm:col-span-2' : ''}`}
+                                    className="group bg-white rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden flex flex-col cursor-pointer"
                                 >
-                                    <div className={`relative w-full bg-slate-50 overflow-hidden ${index === 0 ? 'aspect-[21/9]' : 'aspect-[16/10]'}`}>
+                                    {/* Khung chứa ảnh tỉ lệ chuẩn hình chữ nhật 16/10 cho tất cả */}
+                                    <div className="relative w-full bg-slate-50 overflow-hidden aspect-[16/10]">
                                         <img
                                             alt={doc.title}
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -254,14 +289,9 @@ export default function CategoryPage() {
                                                 </span>
                                             )}
                                         </div>
-                                        <h3 className={`${index === 0 ? 'text-lg' : 'text-base'} font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors`}>
+                                        <h3 className="text-base font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
                                             {doc.title}
                                         </h3>
-                                        {index === 0 && (
-                                            <p className="text-sm text-slate-500 line-clamp-2 mb-4 flex-1">
-                                                {doc.description || "Không có mô tả cho tài liệu này."}
-                                            </p>
-                                        )}
                                         <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-200">
                                             <div className="flex items-center gap-1 text-amber-500">
                                                 <Star className="w-4 h-4 fill-amber-500" />
@@ -278,7 +308,6 @@ export default function CategoryPage() {
                         </div>
                     )}
 
-                    {/* PHÂN TRANG (PAGINATION) */}
                     {totalPages > 1 && (
                         <div className="flex justify-center items-center gap-2 mt-12 mb-8">
                             <button 
@@ -286,10 +315,9 @@ export default function CategoryPage() {
                                 disabled={currentPage === 0}
                                 className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <ChevronLeft className="w-5 h-5" />
+                                <ThemeChevronLeft className="w-5 h-5" />
                             </button>
 
-                            {/* Render số trang */}
                             {[...Array(totalPages)].map((_, i) => (
                                 <button 
                                     key={i}

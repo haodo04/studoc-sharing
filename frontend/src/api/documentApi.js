@@ -1,25 +1,22 @@
-import axios from 'axios';
+import axios from 'axios' 
 import apiEndpoints from './apiEndpoint'; 
 
 export const documentApi = {
-    // 1. Xem chi tiết tài liệu (API thật)
+    // 1. Xem chi tiết tài liệu 
     fetchDocumentDetails: async (documentId) => {
         const response = await axios.get(apiEndpoints.PUBLIC_VIEW_FILE(documentId));
-        
         return { 
             data: response.data, 
             status: response.status 
         };
     },
 
-    // 2. TÌM KIẾM VÀ LỌC TÀI LIỆU (API MỚI THÊM)
+    // 2. TÌM KIẾM VÀ LỌC TÀI LIỆU 
     searchDocuments: async (filters) => {
         try {
-            // filters là một object chứa các query param như { keyword, categoryId, universityId... }
             const response = await axios.get('http://localhost:8080/api/v1.0/documents/search', {
                 params: filters
             });
-            // Spring Boot trả về đối tượng Page có chứa thuộc tính content và totalPages
             return response.data; 
         } catch (error) {
             console.error("Lỗi khi gọi API tìm kiếm tài liệu:", error);
@@ -27,7 +24,29 @@ export const documentApi = {
         }
     },
 
-    // 3. Gửi bình luận (Hiện tại đang là Mock Data giả lập)
+    // 3. LẤY DANH SÁCH NGÀNH HỌC 
+    getCategories: async () => {
+        try {
+            const response = await axios.get('http://localhost:8080/api/v1.0/documents/categories');
+            return response.data; 
+        } catch (error) {
+            console.error("Lỗi khi gọi API lấy danh mục:", error);
+            return []; 
+        }
+    },
+
+    // 4. LẤY DANH SÁCH TRƯỜNG ĐẠI HỌC
+    getUniversities: async () => {
+        try {
+            const response = await axios.get('http://localhost:8080/api/v1.0/documents/universities');
+            return response.data; 
+        } catch (error) {
+            console.error("Lỗi khi gọi API lấy danh sách trường:", error);
+            return [];
+        }
+    },
+
+    // 5. Gửi bình luận 
     submitComment: async (documentId, content) => {
         const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
         await delay(600); 
@@ -42,7 +61,7 @@ export const documentApi = {
         return { data: newComment, status: 201 };
     },
 
-    // 4. Gửi đánh giá sao (Hiện tại đang là Mock Data giả lập)
+    // 6. Gửi đánh giá sao 
     submitRating: async (documentId, rating) => {
         const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
         await delay(500); 
