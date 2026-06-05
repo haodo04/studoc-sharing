@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
-import { FileText, Coins, Sparkles, Upload, UploadIcon } from 'lucide-react';
+import { FileText, Coins, Sparkles, UploadIcon } from 'lucide-react';
 import { useUserCredits } from '../../context/UserCreditsContext';
 
 const NavbarPage = () => {
@@ -22,14 +22,18 @@ const NavbarPage = () => {
       isActive = currentPath === '/home' || currentPath === '/explore';
     } else if (tabName === 'tai-lieu') {
       isActive = currentPath === '/category' || currentPath.startsWith('/category/');
-    } else if (tabName === 'subscriptions') {
-      isActive = currentPath === '/subscriptions';
+    } else if (tabName === 'premium') {
+      isActive = currentPath === '/premium';
     }
 
     if (isActive) {
       return `${baseClass} text-indigo-600 border-indigo-600`;
     }
     return `${baseClass} text-slate-600 border-transparent hover:text-indigo-600 hover:border-indigo-600`;
+  };
+
+  const handlePremiumClick = () => {
+    navigate('/premium'); 
   };
 
   return (
@@ -69,8 +73,8 @@ const NavbarPage = () => {
           </span>
 
           <span
-            onClick={() => navigate('/subscriptions')}
-            className={getTabClass('subscriptions', true)}
+            onClick={handlePremiumClick}
+            className={getTabClass('premium', true)}
           >
             <Sparkles className="w-4 h-4" /> Premium
           </span>
