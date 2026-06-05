@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
-
+import CategoryPage from "../pages/Category/CategoryPage";
 import Landing from "../pages/Landing/Landing";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import MyFiles from "../pages/Dashboard/components/MyFiles";
@@ -41,6 +41,7 @@ const AppRoutes = () => {
       <Route path="/favorites" element={<ProtectedLayout><FavoritesPage /></ProtectedLayout>} />
       <Route path="/trash" element={<ProtectedLayout><TrashPage /></ProtectedLayout>} />
       <Route path="/upload" element={<UploadPage />} />
+      <Route path="/category" element={<CategoryPage />} />
 
       <Route path="/*" element={<Navigate to="/home" replace />} />
     </Routes>

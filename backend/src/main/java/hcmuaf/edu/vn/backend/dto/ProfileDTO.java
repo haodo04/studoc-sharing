@@ -25,8 +25,8 @@ public class ProfileDTO {
     @NotBlank(message = "lastName is required")
     private String lastName;
 
-    @NotBlank(message = "credits is required")
-    private Integer credits;
+//    @NotBlank(message = "credits is required")
+//    private Integer credits;
 
     @NotBlank(message = "photoUrl is required")
     private String photoUrl;

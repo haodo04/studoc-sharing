@@ -24,7 +24,7 @@ public class ProfileDocument {
     private String email;
     private String firstName;
     private String lastName;
-    private Integer credits;
+//    private Integer credits;
     private String photoUrl;
     @CreatedDate
     private Instant createdAt;

@@ -1,7 +1,6 @@
 package hcmuaf.edu.vn.backend.security;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,7 +19,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Collections;
 
 @Component
@@ -44,28 +42,33 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
         }
 
         String lowerURI = requestURI.toLowerCase();
-        if (lowerURI.contains("/webhooks") ||
-                lowerURI.contains("/public") ||
-                lowerURI.contains("/register") ||
-                lowerURI.contains("/uploads") ||
-                lowerURI.contains("/download")) {
 
+        boolean isBasePublic = lowerURI.contains("/webhooks") || lowerURI.contains("/register") || lowerURI.contains("/uploads");
+        boolean isPublicFiles = lowerURI.contains("/files/public/");
+        boolean isGetComments = lowerURI.contains("/comments") && "GET".equalsIgnoreCase(method);
+        boolean isGetDocumentDetail = lowerURI.contains("/files/") && "GET".equalsIgnoreCase(method) && !lowerURI.contains("/interaction");
+
+
+        if (isBasePublic || isPublicFiles || isGetComments || isGetDocumentDetail) {
             filterChain.doFilter(request, response);
             return;
         }
 
+
+        // 2. ĐỌC HEADER XÁC THỰC
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Authorization header missing/invalid");
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authorization header missing/invalid");
             return;
         }
 
         try {
             String token = authHeader.substring(7);
             String[] chunks = token.split("\\.");
+
             if (chunks.length < 3) {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid JWT token format");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token format");
                 return;
             }
 
@@ -74,13 +77,12 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
             JsonNode headerNode = mapper.readTree(headerJson);
 
             if (!headerNode.has("kid")) {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Token header is missing kid");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token header is missing kid");
                 return;
             }
 
             String kid = headerNode.get("kid").asText();
             PublicKey publicKey = jwksProvider.getPublicKey(kid);
-
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(publicKey)
                     .setAllowedClockSkewSeconds(60)
@@ -91,12 +93,16 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
 
             String clerkId = claims.getSubject();
 
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(clerkId, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-
+            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                    clerkId, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+            );
+            authenticationToken.setDetails(new org.springframework.security.web.authentication.WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
             filterChain.doFilter(request, response);
+
         } catch (Exception e) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid JWT token");
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token: " + e.getMessage());
         }
     }
 }

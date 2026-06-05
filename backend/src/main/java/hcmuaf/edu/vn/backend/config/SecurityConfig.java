@@ -4,6 +4,7 @@ import hcmuaf.edu.vn.backend.security.ClerkJwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,12 +32,17 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/webhooks/**", "/register", "/files/public/**", "/files/download/**", "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/files/public/**", "/files/*").permitAll()
+                        .requestMatchers("/files/**").permitAll()
+                        .requestMatchers("/comments/**", "/webhooks/**", "/register").permitAll()
+                        .requestMatchers("/uploads/**", "/error").permitAll()
+                        .requestMatchers("/files/interaction/*/download").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(clerkJwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return httpSecurity.build();
     }
 

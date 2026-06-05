@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
-import { FileText, Coins, Sparkles, Upload, UploadIcon } from 'lucide-react'; 
+import { FileText, Coins, Sparkles, Upload, UploadIcon } from 'lucide-react';
 import { useUserCredits } from '../../context/UserCreditsContext';
 
 const NavbarPage = () => {
@@ -21,7 +21,7 @@ const NavbarPage = () => {
     if (tabName === 'trang-chu') {
       isActive = currentPath === '/home' || currentPath === '/explore';
     } else if (tabName === 'tai-lieu') {
-      isActive = currentPath.startsWith('/document/');
+      isActive = currentPath === '/category' || currentPath.startsWith('/category/');
     } else if (tabName === 'subscriptions') {
       isActive = currentPath === '/subscriptions';
     }
@@ -35,7 +35,7 @@ const NavbarPage = () => {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-slate-200/80 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        
+
         <div onClick={() => navigate('/home')} className="flex items-center gap-2.5 group cursor-pointer">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform duration-200">
             <FileText className="text-white stroke-[2.2]" size={19} />
@@ -46,16 +46,16 @@ const NavbarPage = () => {
         </div>
 
         <nav className="hidden md:flex items-center gap-8 text-[13px] font-bold">
-          <span 
-            onClick={() => navigate('/home')} 
+          <span
+            onClick={() => navigate('/home')}
             className={getTabClass('trang-chu')}
           >
             Trang chủ
           </span>
 
-          <span 
+          <span
             className={getTabClass('tai-lieu')}
-            onClick={() => { if (!currentPath.startsWith('/document/')) navigate('/home'); }}
+            onClick={() => navigate('/category')}
           >
             Tài liệu
           </span>
@@ -68,8 +68,8 @@ const NavbarPage = () => {
             Bảng xếp hạng
           </span>
 
-          <span 
-            onClick={() => navigate('/subscriptions')} 
+          <span
+            onClick={() => navigate('/subscriptions')}
             className={getTabClass('subscriptions', true)}
           >
             <Sparkles className="w-4 h-4" /> Premium
@@ -77,7 +77,7 @@ const NavbarPage = () => {
         </nav>
 
         <div className="flex items-center gap-4">
-          
+
           <button
             onClick={() => navigate('/upload')}
             className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm shadow-indigo-100 active:scale-95 transition-all duration-150"

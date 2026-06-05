@@ -1,7 +1,11 @@
 package hcmuaf.edu.vn.backend.service;
 
+import hcmuaf.edu.vn.backend.document.ProfileDocument;
 import hcmuaf.edu.vn.backend.document.UserCredits;
 import hcmuaf.edu.vn.backend.exceptions.BadRequestException;
+import hcmuaf.edu.vn.backend.exceptions.ResourceNotFoundException;
+import hcmuaf.edu.vn.backend.exceptions.UnauthorizedException;
+import hcmuaf.edu.vn.backend.repository.ProfileRepository;
 import hcmuaf.edu.vn.backend.repository.UserCreditsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +17,7 @@ public class UserCreditsService {
 
     private final UserCreditsRepository userCreditsRepository;
     private final ProfileService profileService;
+    private final ProfileRepository profileRepository;
 
     public UserCredits createInitialCredits(String clerkId) {
         return userCreditsRepository.findByClerkId(clerkId)
@@ -33,24 +38,43 @@ public class UserCreditsService {
         }
     }
 
-        public UserCredits getUserCredits(String clerkId) {
+    public UserCredits getUserCredits(String clerkId) {
+        if (clerkId == null || clerkId.trim().isEmpty()) {
+            throw new BadRequestException("Mã định danh không hợp lệ!");
+        }
         return userCreditsRepository.findByClerkId(clerkId)
                 .orElseGet(() -> createInitialCredits(clerkId));
     }
 
     public UserCredits getUserCredits() {
-        String clerkId = profileService.getCurrentProfile().getClerkId();
-        return getUserCredits(clerkId);
+        try {
+            String clerkId = profileService.getCurrentProfile().getClerkId();
+            return getUserCredits(clerkId);
+        } catch (Exception e) {
+            org.springframework.security.core.Authentication authentication =
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication != null && authentication.getPrincipal() != null) {
+                String clerkIdFromToken = authentication.getName();
+                return getUserCredits(clerkIdFromToken);
+            }
+
+            throw new UnauthorizedException("Tài khoản chưa được xác thực hệ thống!");
+        }
     }
 
-    public void deductCreditsForDownload(int amount) {
-        UserCredits userCredits = getUserCredits();
+    @Transactional
+    public void deductCreditsForDownload(String clerkId, int amount) {
+        UserCredits userCredits = userCreditsRepository.findByClerkId(clerkId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin ví của người dùng này trong hệ thống!"));
 
-        if (userCredits.getCredits() < amount) {
+        int currentCredits = userCredits.getCredits() != null ? userCredits.getCredits() : 0;
+
+        if (currentCredits < amount) {
             throw new BadRequestException("Tài khoản của bạn không đủ xu. Vui lòng nạp thêm!");
         }
 
-        userCredits.setCredits(userCredits.getCredits() - amount);
+        userCredits.setCredits(currentCredits - amount);
         userCreditsRepository.save(userCredits);
     }
 
