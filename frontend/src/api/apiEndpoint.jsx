@@ -12,7 +12,8 @@ const apiEndpoints = {
 
     GET_CREDITS: `${BASE_URL}/users/credits`,
 
-    GET_DOWNLOAD_HISTORY: (clerkId) => `${BASE_URL}/files/interaction/history/${clerkId}`
+    GET_DOWNLOAD_HISTORY: (clerkId) => `${BASE_URL}/files/interaction/history/${clerkId}`,
+    GET_PAYMENT_HISTORY: (clerkId) => `${BASE_URL}/payments/history/${clerkId}`
 }
 
 export default apiEndpoints;
