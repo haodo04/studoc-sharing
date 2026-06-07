@@ -44,4 +44,10 @@ public class FileUploadController {
         FileMetadataDTO file = fileMetadataService.togglePublic(id);
         return ResponseEntity.ok(file);
     }
+
+    @GetMapping("/user/{clerkId}")
+    public ResponseEntity<List<FileMetadataDTO>> getFilesByUser(@PathVariable String clerkId) {
+        List<FileMetadataDTO> result = fileMetadataService.getFilesByClerkId(clerkId);
+        return ResponseEntity.ok(result);
+    }
 }

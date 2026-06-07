@@ -2,12 +2,15 @@ package hcmuaf.edu.vn.backend.service;
 
 import com.documents4j.api.IConverter;
 import com.documents4j.job.LocalConverter;
+import hcmuaf.edu.vn.backend.document.DownloadHistoryDocument;
 import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
 import hcmuaf.edu.vn.backend.document.ProfileDocument;
+import hcmuaf.edu.vn.backend.dto.DownloadHistoryDTO;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
 import hcmuaf.edu.vn.backend.dto.response.FileDetailResponseDTO;
 import hcmuaf.edu.vn.backend.exceptions.BadRequestException;
 import hcmuaf.edu.vn.backend.exceptions.ResourceNotFoundException;
+import hcmuaf.edu.vn.backend.repository.DownloadHistoryRepository;
 import hcmuaf.edu.vn.backend.repository.FileMetadataRepository;
 import hcmuaf.edu.vn.backend.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +56,8 @@ public class FileMetadataService {
     private MongoTemplate mongoTemplate;
     @Autowired
     private ProfileRepository profileRepository;
+    @Autowired
+    private DownloadHistoryRepository downloadHistoryRepository;
 
     private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
     private final String UPLOAD_DIR = "uploads/";
@@ -291,7 +296,6 @@ public class FileMetadataService {
         return mapToDTO(fileMetadataRepository.save(document));
     }
 
-
     public FileMetadataDTO processDownloadRequest(String fileId, String clerkId) {
         try {
             FileMetadataDocument document = fileMetadataRepository.findById(fileId)
@@ -299,13 +303,32 @@ public class FileMetadataService {
 
             int cost = document.getCreditCost() != null ? document.getCreditCost() : 0;
 
-            userCreditsService.deductCreditsForDownload(clerkId, cost);
+            boolean hasDownloadedBefore = downloadHistoryRepository
+                    .findByClerkIdOrderByDownloadedAtDesc(clerkId)
+                    .stream()
+                    .anyMatch(history -> history.getFileId().equals(fileId));
+
+            if (hasDownloadedBefore) {
+                cost = 0;
+            }
+
+            if (cost > 0) {
+                userCreditsService.deductCreditsForDownload(clerkId, cost);
+            }
+
+            DownloadHistoryDocument historyRecord = DownloadHistoryDocument.builder()
+                    .clerkId(clerkId)
+                    .fileId(fileId)
+                    .creditsSpent(cost)
+                    .downloadedAt(java.time.LocalDateTime.now())
+                    .build();
+
+            downloadHistoryRepository.save(historyRecord);
 
             document.setDownloadCount(document.getDownloadCount() + 1);
-
             FileMetadataDocument savedDoc = fileMetadataRepository.save(document);
 
-            return mapToDTO(savedDoc);
+            return convertToDTO(savedDoc);
 
         } catch (NullPointerException npe) {
             npe.printStackTrace();
@@ -431,4 +454,33 @@ public class FileMetadataService {
         return dto;
     }
 
+    public List<FileMetadataDTO> getFilesByClerkId(String clerkId) {
+        List<FileMetadataDocument> entities = fileMetadataRepository.findByClerkIdOrderByUploadedAtDesc(clerkId);
+
+        return entities.stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
+
+    public List<DownloadHistoryDTO> getDownloadHistoryByClerkId(String clerkId) {
+        List<DownloadHistoryDocument> histories = downloadHistoryRepository.findByClerkIdOrderByDownloadedAtDesc(clerkId);
+
+        return histories.stream().map(history -> {
+            DownloadHistoryDTO dto = DownloadHistoryDTO.builder()
+                    .id(history.getId())
+                    .clerkId(history.getClerkId())
+                    .fileId(history.getFileId())
+                    .creditsSpent(history.getCreditsSpent())
+                    .downloadedAt(history.getDownloadedAt())
+                    .build();
+
+            fileMetadataRepository.findById(history.getFileId()).ifPresent(file -> {
+                dto.setFileName(file.getName());
+                dto.setFileSize(file.getSize());
+                dto.setFileType(file.getType());
+            });
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
 }

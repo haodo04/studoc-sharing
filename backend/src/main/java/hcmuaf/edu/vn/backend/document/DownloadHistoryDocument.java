@@ -17,8 +17,8 @@ import java.time.LocalDateTime;
 public class DownloadHistoryDocument {
     @Id
     private String id;
-    private String clerkId;       // Ai tải
-    private String fileId;        // Tải tài liệu nào
-    private Integer creditsSpent; // Số xu đã trừ tại thời điểm tải (để làm lịch sử giao dịch)
+    private String clerkId;
+    private String fileId;
+    private Integer creditsSpent; // Số xu đã trừ tại thời điểm tải
     private LocalDateTime downloadedAt;
 }
