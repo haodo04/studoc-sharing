@@ -15,6 +15,7 @@ import ExplorePage from "../pages/Explore/ExplorePage";
 import DocumentDetailPage from "../pages/DocumentDetail/DocumentDetailPage";
 import UploadPage from "../pages/Upload/Upload";
 import PremiumPage from "../pages/Premium/PremiumPage";
+import History from "../pages/Dashboard/components/History";
 
 const ProtectedLayout = ({ children }) => {
   return (
@@ -43,6 +44,7 @@ const AppRoutes = () => {
 
       <Route path="/user/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
       <Route path="/user/my-files" element={<ProtectedLayout><MyFiles /></ProtectedLayout>} />
+      <Route path="/user/history" element={<ProtectedLayout><History /></ProtectedLayout>} />
       <Route path="/user/transactions" element={<ProtectedLayout><Transaction /></ProtectedLayout>} />
       <Route path="/user/favorites" element={<ProtectedLayout><FavoritesPage /></ProtectedLayout>} />
 

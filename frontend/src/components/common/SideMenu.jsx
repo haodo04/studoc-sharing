@@ -1,17 +1,17 @@
 import { SIDE_MENU_DATA } from "../../assets/data";
 import { useUser } from "@clerk/clerk-react";
 import { User, ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; 
 
-const SideMenu = ({ activeMenu }) => {
+const SideMenu = () => {
   const { user } = useUser();
   const navigate = useNavigate();
+  const location = useLocation(); 
 
   return (
     <div className="w-64 h-[calc(100vh-73px)] bg-slate-900 border-r border-slate-800 p-5 sticky top-[73px] z-20 flex flex-col justify-between text-slate-300">
       
       <div className="space-y-6">
-        {/* Profile Section */}
         <div className="flex flex-col items-center justify-center gap-3 py-4 bg-slate-950/40 border border-slate-800/60 rounded-xl shadow-inner">
           {user?.imageUrl ? (
             <img
@@ -35,15 +35,15 @@ const SideMenu = ({ activeMenu }) => {
         </div>
 
         <div className="space-y-1">
-          {SIDE_MENU_DATA && SIDE_MENU_DATA.map((item, index) => {
-            const isActive = activeMenu === item.label;
+          {SIDE_MENU_DATA && SIDE_MENU_DATA.map((item) => {
+            const isActive = location.pathname === item.path;
             
             const IconComponent = item.icon;
 
             return (
               <button
-                key={`menu_${index}`}
-                onClick={() => navigate(item.path || "/dashboard")}
+                key={item.id} 
+                onClick={() => navigate(item.path)}
                 className={`w-full flex items-center justify-between gap-4 text-xs font-medium py-3 px-4 rounded-xl transition-all duration-200 group ${
                   isActive
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-900/20 font-semibold"
@@ -52,7 +52,6 @@ const SideMenu = ({ activeMenu }) => {
               >
                 <div className="flex items-center gap-3">
                   <span className={`transition-colors ${isActive ? "text-white" : "text-slate-400 group-hover:text-indigo-400"}`}>
-                    {/* Render Icon an toàn dưới dạng thẻ React Component */}
                     {IconComponent && <IconComponent size={16} />} 
                   </span>
                   <span>{item.label}</span>
@@ -64,7 +63,6 @@ const SideMenu = ({ activeMenu }) => {
         </div>
       </div>
 
-      {/* Footer Version Info */}
       <div className="text-[10px] text-slate-500 text-center border-t border-slate-800/80 pt-4">
         Studoc Share v2.0 • Pro SaaS
       </div>
