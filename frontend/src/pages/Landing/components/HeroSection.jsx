@@ -45,7 +45,7 @@ const HeroSection = () => {
                             className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-sm font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 shadow-sm"
                         >
                             <LogIn size={16} className="text-slate-500" />
-                            <span>Sign In</span>
+                            <span>Đăng nhập</span>
                         </button>
                     </SignedOut>
 
@@ -72,7 +72,7 @@ const HeroSection = () => {
                 {/* NỘI DUNG CHÍNH Ở GIỮA */}
                 <div className="text-center max-w-4xl mx-auto">
                     <h1 className="text-4xl tracking-tight font-extrabold text-slate-900 sm:text-5xl md:text-6xl leading-none">
-                        <span className="block mb-2">Share Files Securely with</span>
+                        <span className="block mb-2">Chia sẻ tài liệu học tập</span>
                         <span className="block bg-gradient-to-r from-indigo-600 via-blue-600 to-teal-500 bg-clip-text text-transparent">
                             CloudShare
                         </span>
@@ -88,7 +88,7 @@ const HeroSection = () => {
                                 onClick={handleSignUpClick}
                                 className="w-full sm:w-auto flex items-center justify-center px-10 py-4 border border-transparent text-base font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-all duration-200 shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 hover:-translate-y-0.5"
                             >
-                                Get Started
+                                Bắt đầu
                             </button>
                         </SignedOut>
 
@@ -97,7 +97,7 @@ const HeroSection = () => {
                                 onClick={() => navigate("/home")}
                                 className="w-full sm:w-auto flex items-center justify-center px-10 py-4 border border-transparent text-base font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-all duration-200 shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 hover:-translate-y-0.5"
                             >
-                                Get Started
+                                Bắt đầu
                             </button>
                         </SignedIn>
                     </div>

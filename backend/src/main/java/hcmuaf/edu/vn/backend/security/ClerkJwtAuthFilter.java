@@ -44,14 +44,14 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
         String lowerURI = requestURI.toLowerCase();
 
         boolean isVnPayReturn = lowerURI.contains("/api/payment/vnpay_return");
-
+        boolean isMetadataPublic = lowerURI.contains("/metadata/");
         boolean isBasePublic = lowerURI.contains("/webhooks") || lowerURI.contains("/register") || lowerURI.contains("/uploads");
         boolean isPublicFiles = lowerURI.contains("/files/public/");
         boolean isGetComments = lowerURI.contains("/comments") && "GET".equalsIgnoreCase(method);
         boolean isGetDocumentDetail = lowerURI.contains("/files/") && "GET".equalsIgnoreCase(method) && !lowerURI.contains("/interaction");
         boolean isDocumentsPublic = lowerURI.contains("/documents/");
 
-        if (isBasePublic || isPublicFiles || isGetComments || isGetDocumentDetail || isVnPayReturn || isDocumentsPublic) {
+        if (isMetadataPublic || isBasePublic || isPublicFiles || isGetComments || isGetDocumentDetail || isVnPayReturn || isDocumentsPublic) {
             filterChain.doFilter(request, response);
             return;
         }

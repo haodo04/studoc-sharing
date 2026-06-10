@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import {
@@ -18,6 +18,9 @@ export default function UploadPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
   const { fetchUserCredits } = useUserCredits();
+  const [dbUniversities, setDbUniversities] = useState([]);
+  const [dbCategories, setDbCategories] = useState([]);
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
 
   // State quản lý form dữ liệu khớp chuẩn 100% với các trường hiển thị của FileMetadataDocument
   const [formData, setFormData] = useState({
@@ -36,31 +39,30 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Danh sách Trường Đại học (Có thể map dữ liệu thật từ DB của bạn hoặc để Mockup chuẩn)
-  const universities = [
-    { id: "HUST", name: "Đại học Bách Khoa Hà Nội (HUST)" },
-    { id: "NEU", name: "Đại học Kinh tế Quốc dân (NEU)" },
-    { id: "HCMUTE", name: "Đại học Sư phạm Kỹ thuật TP.HCM (HCMUTE)" },
-    { id: "VNU", name: "Đại học Quốc gia Hà Nội (VNU)" },
-    { id: "UFE", name: "Đại học Nông Lâm TP.HCM" },
-    { id: "OTHER", name: "Khác... (Tự nhập trường của bạn)" },
-  ];
-
-  // Danh mục chuyên ngành chung
-  const categories = [
-    { id: "cong-nghe-thong-tin", name: "Công nghệ thông tin" },
-    { id: "kinh-te-quan-tri", name: "Kinh tế & Quản trị" },
-    { id: "luat-phap-ly", name: "Luật & Pháp lý" },
-    { id: "mon-dai-cuong", name: "Môn học đại cương" },
-    { id: "khoa-hoc-co-ban", name: "Khoa học cơ bản" },
-    { id: "OTHER", name: "Khác... (Tự nhập chuyên ngành)" },
-  ];
-
   // Phân loại tài liệu học tập theo quy ước của db docType
   const documentTypes = ["Đề thi", "Bài tập", "Bài giảng", "Tóm tắt"];
 
   const [customUniversity, setCustomUniversity] = useState("");
   const [customCategory, setCustomCategory] = useState("");
+
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const [uniRes, catRes] = await Promise.all([
+          axios.get(apiEndpoints.GET_UNIVERSITIES),
+          axios.get(apiEndpoints.GET_CATEGORIES),
+        ]);
+        setDbUniversities(uniRes.data || []);
+        setDbCategories(catRes.data || []);
+      } catch (error) {
+        console.error("Lỗi khi tải metadata học thuật:", error);
+        toast.error("Không thể load danh sách trường học và chuyên ngành!");
+      } finally {
+        setIsLoadingMetadata(false);
+      }
+    };
+    fetchMetadata();
+  }, []);
 
   // Xử lý thay đổi dữ liệu đầu vào
   const handleInputChange = (e) => {
@@ -96,63 +98,65 @@ export default function UploadPage() {
     }
   };
 
-const handleFormSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!selectedFile) {
-    toast.error("Vui lòng chọn hoặc kéo thả tệp tin tài liệu!");
-    return;
-  }
-  if (!formData.universityId || !formData.categoryId) {
-    toast.error("Vui lòng chọn đầy đủ Trường học và Chuyên ngành!");
-    return;
-  }
-  if (formData.universityId === "OTHER" && !customUniversity.trim()) {
-    toast.error("Vui lòng nhập tên Trường Đại học của bạn!");
-    return;
-  }
-  if (formData.categoryId === "OTHER" && !customCategory.trim()) {
-    toast.error("Vui lòng nhập tên Chuyên ngành của bạn!");
-    return;
-  }
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
 
-  setIsSubmitting(true);
-  const toastId = toast.loading("Đang xử lý và tải file lên...");
+    if (!selectedFile) {
+      toast.error("Vui lòng chọn hoặc kéo thả tệp tin tài liệu!");
+      return;
+    }
+    if (!formData.universityId || !formData.categoryId) {
+      toast.error("Vui lòng chọn đầy đủ Trường học và Chuyên ngành!");
+      return;
+    }
+    if (formData.universityId === "OTHER" && !customUniversity.trim()) {
+      toast.error("Vui lòng nhập tên Trường Đại học của bạn!");
+      return;
+    }
+    if (formData.categoryId === "OTHER" && !customCategory.trim()) {
+      toast.error("Vui lòng nhập tên Chuyên ngành của bạn!");
+      return;
+    }
 
-  try {
-    const token = await getToken();
-    const sendData = new FormData();
-    sendData.append("files", selectedFile);
+    setIsSubmitting(true);
+    const toastId = toast.loading("Đang xử lý và tải file lên...");
 
-    const metadata = {
-      title: formData.title,
-      description: formData.description,
-      
-      universityId: formData.universityId === "OTHER" ? "OTHER_UNI" : formData.universityId,
-      customUniversity: formData.universityId === "OTHER" ? customUniversity.trim() : null,
-      
-      categoryId: formData.categoryId === "OTHER" ? "OTHER_CAT" : formData.categoryId,
-      customCategory: formData.categoryId === "OTHER" ? customCategory.trim() : null,
+    try {
+      const token = await getToken();
+      const sendData = new FormData();
+      sendData.append("files", selectedFile);
 
-      subjectCode: formData.subjectCode ? formData.subjectCode.toUpperCase() : "",
-      subjectName: formData.subjectName,
-      docType: formData.docType,
-      creditCost: formData.creditCost,
-      isPublic: formData.isPublic
-    };
-    
-    sendData.append("metadata", JSON.stringify(metadata));
+      const metadata = {
+        title: formData.title,
+        description: formData.description,
 
-      const response = await axios.post(
-        apiEndpoints.UPLOAD_FILE || "/api/files/upload",
-        sendData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+        universityId: formData.universityId,
+        customUniversity:
+          formData.universityId === "OTHER_UNI"
+            ? customUniversity.trim()
+            : null,
+
+        categoryId: formData.categoryId,
+        customCategory:
+          formData.categoryId === "OTHER_CAT" ? customCategory.trim() : null,
+
+        subjectCode: formData.subjectCode
+          ? formData.subjectCode.toUpperCase()
+          : "CHƯA_CÓ",
+        subjectName: formData.subjectName,
+        docType: formData.docType,
+        creditCost: parseInt(formData.creditCost) || 0,
+        isPublic: formData.isPublic,
+      };
+
+      sendData.append("metadata", JSON.stringify(metadata));
+
+      const response = await axios.post(apiEndpoints.UPLOAD_FILE, sendData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-      );
+      });
 
       if (response.status === 200 || response.status === 201) {
         await fetchUserCredits();
@@ -355,17 +359,25 @@ const handleFormSubmit = async (e) => {
                   name="universityId"
                   value={formData.universityId}
                   onChange={handleInputChange}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer transition-all"
+                  disabled={isLoadingMetadata}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer transition-all disabled:opacity-60"
                   required
                 >
-                  <option value="">-- Chọn trường đại học liên kết --</option>
-                  {universities.map((uni) => (
+                  <option value="">
+                    {isLoadingMetadata
+                      ? "-- Đang tải trường học... --"
+                      : "-- Chọn trường đại học liên kết --"}
+                  </option>
+                  {dbUniversities.map((uni) => (
                     <option key={uni.id} value={uni.id}>
-                      {uni.name}
+                      {uni.name} {uni.shortName ? `(${uni.shortName})` : ""}
                     </option>
                   ))}
+                  <option value="OTHER_UNI">
+                    Khác... (Tự nhập trường của bạn)
+                  </option>
                 </select>
-                {formData.universityId === "OTHER" && (
+                {formData.universityId === "OTHER_UNI" && (
                   <input
                     type="text"
                     placeholder="Nhập tên Trường Đại học của bạn..."
@@ -384,17 +396,25 @@ const handleFormSubmit = async (e) => {
                   name="categoryId"
                   value={formData.categoryId}
                   onChange={handleInputChange}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer transition-all"
+                  disabled={isLoadingMetadata}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer transition-all disabled:opacity-60"
                   required
                 >
-                  <option value="">-- Chọn ngành phân loại --</option>
-                  {categories.map((cat) => (
+                  <option value="">
+                    {isLoadingMetadata
+                      ? "-- Đang tải chuyên ngành... --"
+                      : "-- Chọn ngành phân loại --"}
+                  </option>
+                  {dbCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
                     </option>
                   ))}
+                  <option value="OTHER_CAT">
+                    Khác... (Tự nhập chuyên ngành)
+                  </option>
                 </select>
-                {formData.categoryId === "OTHER" && (
+                {formData.categoryId === "OTHER_CAT" && (
                   <input
                     type="text"
                     placeholder="Nhập tên chuyên ngành học khác..."

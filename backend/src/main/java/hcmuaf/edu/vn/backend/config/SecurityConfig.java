@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/payment/vnpay_return").permitAll()
                         .requestMatchers("/payments/**").permitAll()
                         .requestMatchers("/uploads/**", "/documents/**", "/error").permitAll()
+                        .requestMatchers("/metadata/**").permitAll()
                         .requestMatchers("/files/interaction/*/download").authenticated()
                         .anyRequest().authenticated()
                 )
