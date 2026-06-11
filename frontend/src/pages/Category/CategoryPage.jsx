@@ -1,348 +1,458 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import NavbarPage from "../../components/common/NavbarPage";
-import { documentApi } from "../../api/documentApi"; 
+import { documentApi } from "../../api/documentApi";
 import {
-    Search, Compass, Clock, TrendingUp, Star, Monitor, Scale, Stethoscope, 
-    Calculator, GraduationCap, Building2, BookOpen, Award, FileText, 
-    Presentation, Archive, Download, ChevronLeft, ChevronRight, Laptop, 
-    Globe, Ruler, Book, Palette, Settings, File
-} from 'lucide-react';
+  Search,
+  Compass,
+  Clock,
+  TrendingUp,
+  Star,
+  Monitor,
+  Scale,
+  Stethoscope,
+  Calculator,
+  GraduationCap,
+  Building2,
+  BookOpen,
+  Award,
+  FileText,
+  Presentation,
+  Archive,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  Laptop,
+  Globe,
+  Ruler,
+  Book,
+  Palette,
+  Settings,
+  File,
+} from "lucide-react";
 const CATEGORY_MAP = {
-    'IT': { name: 'Công nghệ thông tin', icon: Laptop },
-    'ECO': { name: 'Kinh tế - Kế toán', icon: TrendingUp },
-    'LAW': { name: 'Luật học', icon: Scale },
-    'MED': { name: 'Y Dược', icon: Stethoscope }
+  IT: { name: "Công nghệ thông tin", icon: Laptop },
+  ECO: { name: "Kinh tế - Kế toán", icon: TrendingUp },
+  LAW: { name: "Luật học", icon: Scale },
+  MED: { name: "Y Dược", icon: Stethoscope },
 };
 
 const UNIVERSITY_MAP = {
-    'NLU': { name: 'NLU - Nông Lâm', icon: GraduationCap },
-    'HUST': { name: 'HUST - Bách Khoa', icon: Building2 },
-    'NEU': { name: 'NEU - Kinh tế QD', icon: BookOpen }
+  NLU: { name: "NLU - Nông Lâm", icon: GraduationCap },
+  HUST: { name: "HUST - Bách Khoa", icon: Building2 },
+  NEU: { name: "NEU - Kinh tế QD", icon: BookOpen },
+};
+
+const ThumbnailImage = ({ src, alt, className }) => {
+  const [imgSrc, setImgSrc] = useState(src);
+  useEffect(() => {
+    setImgSrc(src);
+  }, [src]);
+
+  return (
+    <img
+      src={
+        imgSrc ||
+        "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60"
+      }
+      alt={alt}
+      className={className}
+      onError={() => {
+        setImgSrc(
+          "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60",
+        );
+      }}
+    />
+  );
 };
 
 export default function CategoryPage() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    const [searchQuery, setSearchQuery] = useState("");
-    const [activeExplore, setActiveExplore] = useState("Tất cả");
-    const [activeCategory, setActiveCategory] = useState("");
-    const [activeUniversity, setActiveUniversity] = useState("");
-    const [sortBy, setSortBy] = useState("Mới nhất");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeExplore, setActiveExplore] = useState("Tất cả");
+  const [activeCategory, setActiveCategory] = useState("");
+  const [activeUniversity, setActiveUniversity] = useState("");
+  const [sortBy, setSortBy] = useState("Mới nhất");
 
-    const [documents, setDocuments] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [currentPage, setCurrentPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
+  const [documents, setDocuments] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-    const [dynamicCategories, setDynamicCategories] = useState([]);
-    const [dynamicUniversities, setDynamicUniversities] = useState([]);
+  const [dynamicCategories, setDynamicCategories] = useState([]);
+  const [dynamicUniversities, setDynamicUniversities] = useState([]);
 
-    useEffect(() => {
-        const fetchFiltersData = async () => {
-            try {
-                const categoriesData = await documentApi.getCategories();
-                const universitiesData = await documentApi.getUniversities();
-                setDynamicCategories(categoriesData || []);
-                setDynamicUniversities(universitiesData || []);
-            } catch (error) {
-                console.error("Không thể tải dữ liệu bộ lọc bộ lọc:", error);
-            }
-        };
-        fetchFiltersData();
-    }, []);
+  useEffect(() => {
+    const fetchFiltersData = async () => {
+      try {
+        const categoriesData = await documentApi.getCategories();
+        const universitiesData = await documentApi.getUniversities();
+        setDynamicCategories(categoriesData || []);
+        setDynamicUniversities(universitiesData || []);
+      } catch (error) {
+        console.error("Không thể tải dữ liệu bộ lọc bộ lọc:", error);
+      }
+    };
+    fetchFiltersData();
+  }, []);
 
-    useEffect(() => {
-        const fetchDocuments = async () => {
-            setIsLoading(true);
-            try {
-                const filters = {
-                    keyword: searchQuery,
-                    explore: activeExplore !== 'Tất cả' ? activeExplore : null,
-                    categoryId: activeCategory,
-                    universityId: activeUniversity,
-                    sortBy: sortBy,
-                    page: currentPage,
-                    size: 12 
-                };
-
-                const data = await documentApi.searchDocuments(filters);
-                setDocuments(data.content || []);
-                setTotalPages(data.totalPages || 1);
-            } catch (error) {
-                console.error("Không thể tải danh sách tài liệu:", error);
-            } finally {
-                setIsLoading(false);
-            }
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      setIsLoading(true);
+      try {
+        const filters = {
+          keyword: searchQuery,
+          explore: activeExplore !== "Tất cả" ? activeExplore : null,
+          categoryId: activeCategory,
+          universityId: activeUniversity,
+          sortBy: sortBy,
+          page: currentPage,
+          size: 12,
         };
 
-        const delaySearch = setTimeout(() => {
-            fetchDocuments();
-        }, 300);
-
-        return () => clearTimeout(delaySearch);
-    }, [searchQuery, activeExplore, activeCategory, activeUniversity, sortBy, currentPage]);
-
-    const handleExploreChange = (exploreName) => {
-        setActiveExplore(exploreName);
-        setCurrentPage(0);
-        if (exploreName === "Mới nhất" || exploreName === "Cũ nhất") {
-            setSortBy(exploreName);
-        } else if (exploreName === "Thịnh hành") {
-            setSortBy("Tải nhiều nhất");
-        } else if (exploreName === "Đánh giá cao") {
-            setSortBy("Đánh giá cao");
-        }
+        const data = await documentApi.searchDocuments(filters);
+        setDocuments(data.content || []);
+        setTotalPages(data.totalPages || 1);
+      } catch (error) {
+        console.error("Không thể tải danh sách tài liệu:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    const handlePageChange = (newPage) => {
-        if (newPage >= 0 && newPage < totalPages) {
-            setCurrentPage(newPage);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    };
+    const delaySearch = setTimeout(() => {
+      fetchDocuments();
+    }, 300);
 
-    const getFileIcon = (docType) => {
-        const type = docType?.toLowerCase();
-        if (type === 'pdf') return <FileText className="w-4 h-4 text-red-500" />;
-        if (type === 'docx' || type === 'doc') return <FileText className="w-4 h-4 text-blue-500" />;
-        if (type === 'pptx' || type === 'ppt') return <Presentation className="w-4 h-4 text-orange-500" />;
-        if (type === 'zip' || type === 'rar') return <Archive className="w-4 h-4 text-emerald-500" />;
-        return <File className="w-4 h-4 text-slate-500" />;
-    };
+    return () => clearTimeout(delaySearch);
+  }, [
+    searchQuery,
+    activeExplore,
+    activeCategory,
+    activeUniversity,
+    sortBy,
+    currentPage,
+  ]);
 
-    return (
-        <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
-            <NavbarPage />
+  const handleExploreChange = (exploreName) => {
+    setActiveExplore(exploreName);
+    setCurrentPage(0);
+    if (exploreName === "Mới nhất" || exploreName === "Cũ nhất") {
+      setSortBy(exploreName);
+    } else if (exploreName === "Thịnh hành") {
+      setSortBy("Tải nhiều nhất");
+    } else if (exploreName === "Đánh giá cao") {
+      setSortBy("Đánh giá cao");
+    }
+  };
 
-            <div className="flex flex-1 max-w-[1500px] mx-auto w-full">
-                {/* SIDEBAR BÊN TRÁI */}
-                <aside className="hidden md:flex flex-col sticky top-[65px] left-0 h-[calc(100vh-65px)] p-6 gap-4 w-64 bg-slate-50 border-r border-slate-200 overflow-y-auto shrink-0 z-10">
-                    <div className="mb-4">
-                        <h2 className="text-xl font-bold text-indigo-600 mb-1">Bộ lọc tài liệu</h2>
-                        <p className="text-sm text-slate-500">Tìm kiếm theo ngành & trường</p>
-                    </div>
+  const handlePageChange = (newPage) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
-                    {/* Nhóm Khám phá */}
-                    <div className="flex flex-col gap-1 mb-6">
-                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">Khám Phá</h3>
-                        {[
-                            { name: 'Tất cả', icon: Compass },
-                            { name: 'Mới nhất', icon: Clock },
-                            { name: 'Thịnh hành', icon: TrendingUp },
-                            { name: 'Đánh giá cao', icon: Star },
-                        ].map((item) => (
-                            <button
-                                key={item.name}
-                                onClick={() => handleExploreChange(item.name)}
-                                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                                    activeExplore === item.name ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600 hover:bg-slate-100 hover:text-indigo-600"
-                                }`}
-                            >
-                                <item.icon className={`w-5 h-5 ${activeExplore === item.name ? "fill-indigo-100" : ""}`} />
-                                <span>{item.name}</span>
-                            </button>
-                        ))}
-                    </div>
+  const getFileIcon = (docType) => {
+    const type = docType?.toLowerCase();
+    if (type === "pdf") return <FileText className="w-4 h-4 text-red-500" />;
+    if (type === "docx" || type === "doc")
+      return <FileText className="w-4 h-4 text-blue-500" />;
+    if (type === "pptx" || type === "ppt")
+      return <Presentation className="w-4 h-4 text-orange-500" />;
+    if (type === "zip" || type === "rar")
+      return <Archive className="w-4 h-4 text-emerald-500" />;
+    return <File className="w-4 h-4 text-slate-500" />;
+  };
 
-                    {/* Nhóm Ngành Học */}
-                    <div className="flex flex-col gap-1 mb-6">
-                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">Ngành Học</h3>
-                        <button 
-                            onClick={() => { setActiveCategory(""); setCurrentPage(0); }}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeCategory === "" ? "text-indigo-600 font-bold bg-indigo-50" : "text-slate-600 hover:bg-slate-100"}`}
-                        >
-                            <span>Tất cả ngành học</span>
-                        </button>
-                        {dynamicCategories.map((cat) => {
-                            const config = CATEGORY_MAP[cat.id] || { name: cat.name, icon: Monitor };
-                            const IconComponent = config.icon;
-                            return (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => { setActiveCategory(cat.id); setCurrentPage(0); }}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                                        activeCategory === cat.id ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600 hover:bg-slate-100"
-                                    }`}
-                                >
-                                    <IconComponent className="w-5 h-5 text-slate-500" />
-                                    <span>{config.name}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
+      <NavbarPage />
 
-                    {/* Nhóm Trường Đại Học */}
-                    <div className="flex flex-col gap-1 mb-8">
-                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">Trường Đại Học</h3>
-                        <button 
-                            onClick={() => { setActiveUniversity(""); setCurrentPage(0); }}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeUniversity === "" ? "text-indigo-600 font-bold bg-indigo-50" : "text-slate-600 hover:bg-slate-100"}`}
-                        >
-                            <span>Tất cả trường</span>
-                        </button>
-                        {dynamicUniversities.map((uni) => {
-                            const config = UNIVERSITY_MAP[uni.id] || { name: uni.name, icon: BookOpen };
-                            const IconComponent = config.icon;
-                            return (
-                                <button
-                                    key={uni.id}
-                                    onClick={() => { setActiveUniversity(uni.id); setCurrentPage(0); }}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                                        activeUniversity === uni.id ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600 hover:bg-slate-100"
-                                    }`}
-                                >
-                                    <IconComponent className="w-5 h-5 text-slate-500" />
-                                    <span>{config.name}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </aside>
+      <div className="flex flex-1 max-w-[1500px] mx-auto w-full">
+        {/* SIDEBAR BÊN TRÁI */}
+        <aside className="hidden md:flex flex-col sticky top-[65px] left-0 h-[calc(100vh-65px)] p-6 gap-4 w-64 bg-slate-50 border-r border-slate-200 overflow-y-auto shrink-0 z-10">
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-indigo-600 mb-1">
+              Bộ lọc tài liệu
+            </h2>
+            <p className="text-sm text-slate-500">
+              Tìm kiếm theo ngành & trường
+            </p>
+          </div>
 
-                {/* NỘI DUNG CHÍNH BÊN PHẢI */}
-                <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-                    {/* THANH TÌM KIẾM */}
-                    <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                        <div className="relative w-full max-w-lg group">
-                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                <Search className="h-4.5 w-4.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Nhập tên tài liệu, môn học, mã học phần..."
-                                value={searchQuery}
-                                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0); }}
-                                className="block w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:text-sm font-medium transition-all shadow-sm"
-                            />
-                        </div>
-                    </div>
+          {/* Nhóm Khám phá */}
+          <div className="flex flex-col gap-1 mb-6">
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">
+              Khám Phá
+            </h3>
+            {[
+              { name: "Tất cả", icon: Compass },
+              { name: "Mới nhất", icon: Clock },
+              { name: "Thịnh hành", icon: TrendingUp },
+              { name: "Đánh giá cao", icon: Star },
+            ].map((item) => (
+              <button
+                key={item.name}
+                onClick={() => handleExploreChange(item.name)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                  activeExplore === item.name
+                    ? "bg-indigo-50 text-indigo-700 font-bold"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-indigo-600"
+                }`}
+              >
+                <item.icon
+                  className={`w-5 h-5 ${activeExplore === item.name ? "fill-indigo-100" : ""}`}
+                />
+                <span>{item.name}</span>
+              </button>
+            ))}
+          </div>
 
-                    {/* HEADER CONTENT */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 border-b border-slate-200 pb-5">
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-900">
-                                {searchQuery ? `Kết quả cho: "${searchQuery}"` : activeExplore}
-                            </h1>
-                            <p className="text-sm text-slate-500 mt-1">Khám phá hàng ngàn tài liệu học tập từ các trường đại học.</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm text-slate-500">Sắp xếp theo:</span>
-                            <select 
-                                value={sortBy}
-                                onChange={(e) => { setSortBy(e.target.value); setCurrentPage(0); }}
-                                className="bg-white border border-slate-200 rounded-lg py-2.5 px-3 text-sm font-semibold focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none shadow-sm cursor-pointer"
-                            >
-                                <option value="Mới nhất">Mới nhất</option>
-                                <option value="Đánh giá cao">Đánh giá cao</option>
-                                <option value="Tải nhiều nhất">Tải nhiều nhất</option>
-                                <option value="Cũ nhất">Cũ nhất</option>
-                            </select>
-                        </div>
-                    </div>
+          {/* Nhóm Ngành Học */}
+          <div className="flex flex-col gap-1 mb-6">
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">
+              Ngành Học
+            </h3>
+            <button
+              onClick={() => {
+                setActiveCategory("");
+                setCurrentPage(0);
+              }}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeCategory === "" ? "text-indigo-600 font-bold bg-indigo-50" : "text-slate-600 hover:bg-slate-100"}`}
+            >
+              <span>Tất cả ngành học</span>
+            </button>
+            {dynamicCategories.map((cat) => {
+              const config = CATEGORY_MAP[cat.id] || {
+                name: cat.name,
+                icon: Monitor,
+              };
+              const IconComponent = config.icon;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setActiveCategory(cat.id);
+                    setCurrentPage(0);
+                  }}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeCategory === cat.id
+                      ? "bg-indigo-50 text-indigo-700 font-bold"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <IconComponent className="w-5 h-5 text-slate-500" />
+                  <span>{config.name}</span>
+                </button>
+              );
+            })}
+          </div>
 
-                    {/* DANH SÁCH TÀI LIỆU */}
-                    {isLoading ? (
-                        <div className="flex justify-center items-center py-20 text-indigo-600 font-bold animate-pulse">
-                            Đang tìm kiếm tài liệu...
-                        </div>
-                    ) : documents.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-                            <FileText className="w-16 h-16 text-slate-300 mb-4" />
-                            <p className="text-lg font-bold text-slate-700">Không tìm thấy tài liệu nào</p>
-                            <p className="text-sm">Hãy thử thay đổi từ khóa hoặc bộ lọc của bạn.</p>
-                        </div>
-                    ) : (
-                        /* Lưới Grid hiển thị đồng bộ tất cả các cột */
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {documents.map((doc) => (
-                                <div 
-                                    key={doc.id} 
-                                    onClick={() => navigate(`/document/${doc.id}`)}
-                                    className="group bg-white rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden flex flex-col cursor-pointer"
-                                >
-                                    {/* Khung chứa ảnh tỉ lệ chuẩn hình chữ nhật 16/10 cho tất cả */}
-                                    <div className="relative w-full bg-slate-50 overflow-hidden aspect-[16/10]">
-                                        <img
-                                            alt={doc.title}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            src={doc.thumbnailUrl ? `http://localhost:8080/api/v1.0${doc.thumbnailUrl}` : "http://localhost:8080/uploads/thumbnails/default-doc.png"}
-                                            onError={(e) => { e.target.src = "http://localhost:8080/uploads/thumbnails/default-doc.png"; }}
-                                        />
-                                        <div className="absolute top-3 left-3 bg-white text-indigo-600 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm uppercase">
-                                            {getFileIcon(doc.docType)} {doc.docType}
-                                        </div>
-                                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-slate-900 px-2.5 py-1 rounded-lg text-xs font-semibold shadow-sm border border-slate-200">
-                                            {doc.creditCost === 0 ? "Miễn phí" : `${doc.creditCost} Xu`}
-                                        </div>
-                                    </div>
-                                    <div className="p-4 flex flex-col flex-1">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            {doc.universityCode && (
-                                                <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded text-[10px] uppercase font-semibold tracking-wide border border-slate-200">
-                                                    {doc.universityCode}
-                                                </span>
-                                            )}
-                                            {doc.subjectCode && (
-                                                <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded text-[10px] uppercase font-semibold tracking-wide border border-slate-200 truncate max-w-[100px]">
-                                                    {doc.subjectCode}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <h3 className="text-base font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-                                            {doc.title}
-                                        </h3>
-                                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-200">
-                                            <div className="flex items-center gap-1 text-amber-500">
-                                                <Star className="w-4 h-4 fill-amber-500" />
-                                                <span className="text-xs font-bold">{doc.rating?.toFixed(1) || "0.0"}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1 text-slate-500">
-                                                <Download className="w-4 h-4" />
-                                                <span className="text-xs font-semibold">{doc.downloadCount || 0}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+          {/* Nhóm Trường Đại Học */}
+          <div className="flex flex-col gap-1 mb-8">
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">
+              Trường Đại Học
+            </h3>
+            <button
+              onClick={() => {
+                setActiveUniversity("");
+                setCurrentPage(0);
+              }}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeUniversity === "" ? "text-indigo-600 font-bold bg-indigo-50" : "text-slate-600 hover:bg-slate-100"}`}
+            >
+              <span>Tất cả trường</span>
+            </button>
+            {dynamicUniversities.map((uni) => {
+              const config = UNIVERSITY_MAP[uni.id] || {
+                name: uni.name,
+                icon: BookOpen,
+              };
+              const IconComponent = config.icon;
+              return (
+                <button
+                  key={uni.id}
+                  onClick={() => {
+                    setActiveUniversity(uni.id);
+                    setCurrentPage(0);
+                  }}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeUniversity === uni.id
+                      ? "bg-indigo-50 text-indigo-700 font-bold"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <IconComponent className="w-5 h-5 text-slate-500" />
+                  <span>{config.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
 
-                    {totalPages > 1 && (
-                        <div className="flex justify-center items-center gap-2 mt-12 mb-8">
-                            <button 
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                disabled={currentPage === 0}
-                                className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ThemeChevronLeft className="w-5 h-5" />
-                            </button>
-
-                            {[...Array(totalPages)].map((_, i) => (
-                                <button 
-                                    key={i}
-                                    onClick={() => handlePageChange(i)}
-                                    className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
-                                        currentPage === i 
-                                        ? "bg-indigo-600 text-white shadow-sm" 
-                                        : "border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600"
-                                    }`}
-                                >
-                                    {i + 1}
-                                </button>
-                            ))}
-
-                            <button 
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                disabled={currentPage === totalPages - 1}
-                                className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronRight className="w-5 h-5" />
-                            </button>
-                        </div>
-                    )}
-                </main>
+        {/* NỘI DUNG CHÍNH BÊN PHẢI */}
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+          {/* THANH TÌM KIẾM */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-8">
+            <div className="relative w-full max-w-lg group">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Search className="h-4.5 w-4.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="Nhập tên tài liệu, môn học, mã học phần..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(0);
+                }}
+                className="block w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:text-sm font-medium transition-all shadow-sm"
+              />
             </div>
-        </div>
-    );
+          </div>
+
+          {/* HEADER CONTENT */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 border-b border-slate-200 pb-5">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">
+                {searchQuery ? `Kết quả cho: "${searchQuery}"` : activeExplore}
+              </h1>
+              <p className="text-sm text-slate-500 mt-1">
+                Khám phá hàng ngàn tài liệu học tập từ các trường đại học.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-slate-500">Sắp xếp theo:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setCurrentPage(0);
+                }}
+                className="bg-white border border-slate-200 rounded-lg py-2.5 px-3 text-sm font-semibold focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none shadow-sm cursor-pointer"
+              >
+                <option value="Mới nhất">Mới nhất</option>
+                <option value="Đánh giá cao">Đánh giá cao</option>
+                <option value="Tải nhiều nhất">Tải nhiều nhất</option>
+                <option value="Cũ nhất">Cũ nhất</option>
+              </select>
+            </div>
+          </div>
+
+          {/* DANH SÁCH TÀI LIỆU */}
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20 text-indigo-600 font-bold animate-pulse">
+              Đang tìm kiếm tài liệu...
+            </div>
+          ) : documents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+              <FileText className="w-16 h-16 text-slate-300 mb-4" />
+              <p className="text-lg font-bold text-slate-700">
+                Không tìm thấy tài liệu nào
+              </p>
+              <p className="text-sm">
+                Hãy thử thay đổi từ khóa hoặc bộ lọc của bạn.
+              </p>
+            </div>
+          ) : (
+            /* Lưới Grid hiển thị đồng bộ tất cả các cột */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  onClick={() => navigate(`/document/${doc.id}`)}
+                  className="group bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer"
+                >
+                  <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
+                    <ThumbnailImage
+                      src={doc.thumbnailUrl}
+                      alt={doc.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+
+                    <span className="absolute top-2 left-2 bg-slate-800/80 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 flex items-center gap-1">
+                      {doc.docType || "Tài liệu"}
+                    </span>
+
+                    <span className="absolute bottom-2 right-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10">
+                      {doc.creditCost === 0
+                        ? "Miễn phí"
+                        : `${doc.creditCost} Xu`}
+                    </span>
+                  </div>
+
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase text-slate-500">
+                        <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
+                          {doc.universityId === "OTHER_UNI"
+                            ? doc.customUniversity
+                            : doc.universityId}
+                        </span>
+                        <span className="truncate max-w-[120px]">
+                          {doc.subjectCode}
+                        </span>
+                      </div>
+
+                      <h3 className="font-bold text-[13px] text-slate-900 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
+                        {doc.title}
+                      </h3>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                        <span className="text-slate-800">
+                          {doc.rating || 0}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Download className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{doc.downloadCount || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-12 mb-8">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 0}
+                className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => handlePageChange(i)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === i
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages - 1}
+                className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
 }

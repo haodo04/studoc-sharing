@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
-import { FileText, Coins, Sparkles, UploadIcon } from 'lucide-react';
+import { FileText, Coins, Sparkles, UploadIcon, LayoutDashboard } from 'lucide-react'; 
 import { useUserCredits } from '../../context/UserCreditsContext';
 
 const NavbarPage = () => {
@@ -40,6 +40,7 @@ const NavbarPage = () => {
     <header className="sticky top-0 z-50 bg-white border-b border-slate-200/80 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
+        {/* Logo */}
         <div onClick={() => navigate('/home')} className="flex items-center gap-2.5 group cursor-pointer">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform duration-200">
             <FileText className="text-white stroke-[2.2]" size={19} />
@@ -49,6 +50,7 @@ const NavbarPage = () => {
           </span>
         </div>
 
+        {/* Navigation Tabs */}
         <nav className="hidden md:flex items-center gap-8 text-[13px] font-bold">
           <span
             onClick={() => navigate('/home')}
@@ -80,6 +82,7 @@ const NavbarPage = () => {
           </span>
         </nav>
 
+        {/* Right Actions Menu */}
         <div className="flex items-center gap-4">
 
           <button
@@ -100,7 +103,15 @@ const NavbarPage = () => {
           <div className="h-6 w-px bg-slate-200" />
 
           <div className="hover:scale-105 transition-transform duration-200">
-            <UserButton afterSignOutUrl="/" />
+            <UserButton afterSignOutUrl="/">
+              <UserButton.MenuItems>
+                <UserButton.Link
+                  label="Dashboard của tôi"
+                  labelIcon={<LayoutDashboard size={15} className="text-slate-500" />}
+                  href="/user/dashboard"
+                />
+              </UserButton.MenuItems>
+            </UserButton>
           </div>
         </div>
 

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.4",
+    "@clerk/localizations": "^4.7.1",
     "axios": "^1.14.0",
     "lucide-react": "^1.7.0",
     "react": "^19.1.1",

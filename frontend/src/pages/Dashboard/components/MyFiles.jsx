@@ -1,6 +1,6 @@
 import DashboardLayout from "../../../components/layout/DashboardLayout";
 import { useEffect, useState } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import apiEndpoints from "../../../api/apiEndpoint";
 import {
   Copy,
@@ -29,6 +29,7 @@ const MyFiles = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const { getToken } = useAuth();
   const navigate = useNavigate();
+  const { user } = useUser();
   
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     isOpen: false,
@@ -42,12 +43,16 @@ const MyFiles = () => {
   }); 
 
   const fetchFiles = async () => {
+    if (!user?.id) return;
+
     setLoading(true);
     try {
       const token = await getToken();
-      const response = await axios.get(apiEndpoints.FETCH_FILES, {
+      
+      const response = await axios.get(apiEndpoints.FETCH_FILES(user.id), {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
       if (response.status === 200) {
         setFiles(Array.isArray(response.data) ? response.data : response.data.files || []);
       }
@@ -60,13 +65,15 @@ const MyFiles = () => {
   };
 
   useEffect(() => {
-    fetchFiles();
-  }, [getToken]);
+    if (user?.id) {
+      fetchFiles();
+    }
+  }, [user, getToken]);
 
   const handleTogglePublic = async (id) => {
     try {
       const token = await getToken();
-      const response = await axios.put(apiEndpoints.TOGGLE_FILE(id), {}, {
+      const response = await axios.patch(apiEndpoints.TOGGLE_FILE(id), {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.status === 200) {

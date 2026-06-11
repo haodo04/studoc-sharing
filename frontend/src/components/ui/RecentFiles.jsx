@@ -2,33 +2,18 @@ import { useState } from "react";
 import {
   FileIcon,
   FileText,
-  Image,
-  Music,
-  Video,
   Lock,
   Globe,
   Search,
-  SlidersHorizontal,
-  FolderOpen,
-  ArrowUpRight
+  FolderOpen
 } from "lucide-react";
 
 const RecentFiles = ({ files = [] }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState("all");
 
   const getFileIcon = (file) => {
     const extension = file.name?.split(".").pop()?.toLowerCase();
-    if (["jpg", "jpeg", "png", "gif", "svg", "webp"].includes(extension)) {
-      return <Image size={15} className="text-indigo-500" />;
-    }
-    if (["mp4", "webm", "mov", "avi", "mkv"].includes(extension)) {
-      return <Video size={15} className="text-sky-500" />;
-    }
-    if (["mp3", "wav", "ogg", "flac", "m4a"].includes(extension)) {
-      return <Music size={15} className="text-emerald-500" />;
-    }
-    if (["pdf", "doc", "docx", "txt", "rtf"].includes(extension)) {
+    if (["pdf", "doc", "docx", "txt", "rtf", "xls", "xlsx", "ppt", "pptx"].includes(extension)) {
       return <FileText size={15} className="text-amber-500" />;
     }
     return <FileIcon size={15} className="text-indigo-500" />;
@@ -54,61 +39,27 @@ const RecentFiles = ({ files = [] }) => {
   };
 
   const filteredFiles = files.filter(file => {
-    const matchesSearch = file.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    if (selectedType === "all") return matchesSearch;
-    
-    const ext = file.name?.split(".").pop()?.toLowerCase();
-    if (selectedType === "document") return matchesSearch && ["pdf", "doc", "docx", "txt"].includes(ext);
-    if (selectedType === "image") return matchesSearch && ["jpg", "jpeg", "png", "webp", "svg"].includes(ext);
-    return matchesSearch;
+    return file.name?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col h-full">
-      {/* Top Section Actions */}
-      <div className="p-5 border-b border-slate-100 bg-slate-50/50 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">Tài liệu vừa tải lên</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Danh sách hồ sơ dữ liệu cá nhân của bạn</p>
-          </div>
-          {/* Quick Stats Counter */}
-          <div className="text-xs text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-lg font-medium self-start sm:self-center shadow-sm">
-            Tổng tài liệu: <span className="text-indigo-600 font-bold">{files.length}</span>
-          </div>
-        </div>
-
-        {/* Interactive Search + Filter Row */}
-        <div className="flex flex-col sm:flex-row gap-2">
+      
+      {/* Top Section Actions - GỌN GÀNG & SẠCH SẼ */}
+      <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Tìm nhanh tài liệu..."
+              placeholder="Tìm nhanh tài liệu trong danh sách..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-700 transition-all placeholder:text-slate-400"
             />
           </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            <button
-              onClick={() => setSelectedType("all")}
-              className={`px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${selectedType === "all" ? "bg-indigo-600 text-white shadow-sm shadow-indigo-100" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}
-            >
-              Tất cả
-            </button>
-            <button
-              onClick={() => setSelectedType("document")}
-              className={`px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${selectedType === "document" ? "bg-indigo-600 text-white shadow-sm shadow-indigo-100" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}
-            >
-              Văn bản
-            </button>
-            <button
-              onClick={() => setSelectedType("image")}
-              className={`px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${selectedType === "image" ? "bg-indigo-600 text-white shadow-sm shadow-indigo-100" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}
-            >
-              Hình ảnh
-            </button>
+          <div className="text-xs text-slate-500 bg-white border border-slate-200 px-3 py-2 rounded-lg font-medium shadow-sm whitespace-nowrap">
+            Tổng: <span className="text-indigo-600 font-bold">{files.length}</span>
           </div>
         </div>
       </div>
@@ -122,7 +73,7 @@ const RecentFiles = ({ files = [] }) => {
             </div>
             <p className="text-sm font-medium text-slate-700">Chưa tìm thấy tài liệu nào</p>
             <p className="text-xs text-slate-400 max-w-[240px] mt-1">
-              Hãy thử thay đổi từ khóa tìm kiếm hoặc tiến hành kéo thả tệp mới ở bên cạnh.
+              Hãy thử thay đổi từ khóa tìm kiếm hoặc tiến hành tải lên tài liệu mới.
             </p>
           </div>
         ) : (
@@ -165,7 +116,7 @@ const RecentFiles = ({ files = [] }) => {
                       {file.isPublic ? (
                         <div className="flex items-center gap-1 text-emerald-700 bg-emerald-50 border-emerald-100 rounded-full px-2 py-0.5">
                           <Globe size={11} />
-                          <span>Cộng đồng</span>
+                          <span>Công khai</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 text-slate-600 bg-slate-50 border-slate-200/60 rounded-full px-2 py-0.5">

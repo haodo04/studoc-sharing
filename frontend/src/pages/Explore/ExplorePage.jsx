@@ -217,7 +217,7 @@ const ThumbnailImage = ({ src, alt, className }) => {
       alt={alt}
       className={className}
       onError={() => {
-        setImgSrc("http://localhost:8080/uploads/thumbnails/default-doc.png");
+        setImgSrc("https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60");
       }}
     />
   );
@@ -511,34 +511,11 @@ export default function ExplorePage() {
                     className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer"
                   >
                     <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
-                      {doc.thumbnailUrl &&
-                      doc.thumbnailUrl !==
-                        "/uploads/thumbnails/default-doc.png" ? (
-                        <>
-                          <img
-                            src={`http://localhost:8080/api/v1.0${doc.thumbnailUrl}`}
-                            alt={doc.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 block"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.style.display = "none";
-                              const fallbackIcon = e.target.nextSibling;
-                              if (fallbackIcon) {
-                                fallbackIcon.style.display = "flex";
-                              }
-                            }}
-                          />
-
-                          <div
-                            style={{ display: "none" }}
-                            className="w-full h-full items-center justify-center"
-                          >
-                            <FileText className="w-12 h-12 text-indigo-500 stroke-[1.2] group-hover:scale-110 transition-transform duration-300" />
-                          </div>
-                        </>
-                      ) : (
-                        <FileText className="w-12 h-12 text-indigo-500 stroke-[1.2] group-hover:scale-110 transition-transform duration-300" />
-                      )}
+                      <ThumbnailImage
+                        src={doc.thumbnailUrl}
+                        alt={doc.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
 
                       <span className="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10">
                         {doc.docType || "Tài liệu"}
@@ -554,7 +531,7 @@ export default function ExplorePage() {
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase text-slate-500">
                           <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
-                            {doc.universityId === "OTHER"
+                            {doc.universityId === "OTHER_UNI"
                               ? doc.customUniversity
                               : doc.universityId}
                           </span>
@@ -599,34 +576,11 @@ export default function ExplorePage() {
                     className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer"
                   >
                     <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
-                      {doc.thumbnailUrl &&
-                      doc.thumbnailUrl !==
-                        "/uploads/thumbnails/default-doc.png" ? (
-                        <>
-                          <img
-                            src={`http://localhost:8080/api/v1.0${doc.thumbnailUrl}`}
-                            alt={doc.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 block"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.style.display = "none";
-                              const fallbackIcon = e.target.nextSibling;
-                              if (fallbackIcon) {
-                                fallbackIcon.style.display = "flex";
-                              }
-                            }}
-                          />
-
-                          <div
-                            style={{ display: "none" }}
-                            className="w-full h-full items-center justify-center"
-                          >
-                            <FileText className="w-12 h-12 text-emerald-500 stroke-[1.2] group-hover:scale-110 transition-transform duration-300" />
-                          </div>
-                        </>
-                      ) : (
-                        <FileText className="w-12 h-12 text-emerald-500 stroke-[1.2] group-hover:scale-110 transition-transform duration-300" />
-                      )}
+                      <ThumbnailImage
+                        src={doc.thumbnailUrl}
+                        alt={doc.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
 
                       <span className="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10">
                         {doc.docType || "Tài liệu"}
@@ -642,7 +596,7 @@ export default function ExplorePage() {
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase text-slate-500">
                           <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
-                            {doc.universityId === "OTHER"
+                            {doc.universityId === "OTHER_UNI"
                               ? doc.customUniversity
                               : doc.universityId}
                           </span>
@@ -688,34 +642,11 @@ export default function ExplorePage() {
                     className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer"
                   >
                     <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
-                      {doc.thumbnailUrl &&
-                      doc.thumbnailUrl !==
-                        "/uploads/thumbnails/default-doc.png" ? (
-                        <>
-                          <img
-                            src={`http://localhost:8080/api/v1.0${doc.thumbnailUrl}`}
-                            alt={doc.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 block"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.style.display = "none";
-                              const fallbackIcon = e.target.nextSibling;
-                              if (fallbackIcon) {
-                                fallbackIcon.style.display = "flex";
-                              }
-                            }}
-                          />
-
-                          <div
-                            style={{ display: "none" }}
-                            className="w-full h-full items-center justify-center"
-                          >
-                            <FileText className="w-12 h-12 text-emerald-500 stroke-[1.2] group-hover:scale-110 transition-transform duration-300" />
-                          </div>
-                        </>
-                      ) : (
-                        <FileText className="w-12 h-12 text-emerald-500 stroke-[1.2] group-hover:scale-110 transition-transform duration-300" />
-                      )}
+                      <ThumbnailImage
+                        src={doc.thumbnailUrl}
+                        alt={doc.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
 
                       <span className="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10">
                         {doc.docType || "Tài liệu"}
@@ -731,7 +662,7 @@ export default function ExplorePage() {
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase text-slate-500">
                           <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
-                            {doc.universityId === "OTHER"
+                            {doc.universityId === "OTHER_UNI"
                               ? doc.customUniversity
                               : doc.universityId}
                           </span>

@@ -1,13 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
-import {
-  UploadCloud,
-  FileText,
-  X,
-  AlertCircle,
-  HelpCircle,
-} from "lucide-react";
+import { UploadCloud, FileText, X, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import NavbarPage from "../../components/common/NavbarPage";
@@ -18,8 +12,10 @@ export default function UploadPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
   const { fetchUserCredits } = useUserCredits();
+  const [dbUniversities, setDbUniversities] = useState([]);
+  const [dbCategories, setDbCategories] = useState([]);
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
 
-  // State quản lý form dữ liệu khớp chuẩn 100% với các trường hiển thị của FileMetadataDocument
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -27,7 +23,7 @@ export default function UploadPage() {
     categoryId: "",
     subjectCode: "",
     subjectName: "",
-    docType: "Đề thi", // Mặc định chọn Đề thi
+    docType: "Đề thi",
     creditCost: 0,
     isPublic: true,
   });
@@ -36,33 +32,30 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Danh sách Trường Đại học (Có thể map dữ liệu thật từ DB của bạn hoặc để Mockup chuẩn)
-  const universities = [
-    { id: "HUST", name: "Đại học Bách Khoa Hà Nội (HUST)" },
-    { id: "NEU", name: "Đại học Kinh tế Quốc dân (NEU)" },
-    { id: "HCMUTE", name: "Đại học Sư phạm Kỹ thuật TP.HCM (HCMUTE)" },
-    { id: "VNU", name: "Đại học Quốc gia Hà Nội (VNU)" },
-    { id: "UFE", name: "Đại học Nông Lâm TP.HCM" },
-    { id: "OTHER", name: "Khác... (Tự nhập trường của bạn)" },
-  ];
-
-  // Danh mục chuyên ngành chung
-  const categories = [
-    { id: "cong-nghe-thong-tin", name: "Công nghệ thông tin" },
-    { id: "kinh-te-quan-tri", name: "Kinh tế & Quản trị" },
-    { id: "luat-phap-ly", name: "Luật & Pháp lý" },
-    { id: "mon-dai-cuong", name: "Môn học đại cương" },
-    { id: "khoa-hoc-co-ban", name: "Khoa học cơ bản" },
-    { id: "OTHER", name: "Khác... (Tự nhập chuyên ngành)" },
-  ];
-
-  // Phân loại tài liệu học tập theo quy ước của db docType
   const documentTypes = ["Đề thi", "Bài tập", "Bài giảng", "Tóm tắt"];
 
   const [customUniversity, setCustomUniversity] = useState("");
   const [customCategory, setCustomCategory] = useState("");
 
-  // Xử lý thay đổi dữ liệu đầu vào
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const [uniRes, catRes] = await Promise.all([
+          axios.get(apiEndpoints.GET_UNIVERSITIES),
+          axios.get(apiEndpoints.GET_CATEGORIES),
+        ]);
+        setDbUniversities(uniRes.data || []);
+        setDbCategories(catRes.data || []);
+      } catch (error) {
+        console.error("Lỗi khi tải metadata học thuật:", error);
+        toast.error("Không thể load danh sách trường học và chuyên ngành!");
+      } finally {
+        setIsLoadingMetadata(false);
+      }
+    };
+    fetchMetadata();
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -96,63 +89,64 @@ export default function UploadPage() {
     }
   };
 
-const handleFormSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!selectedFile) {
-    toast.error("Vui lòng chọn hoặc kéo thả tệp tin tài liệu!");
-    return;
-  }
-  if (!formData.universityId || !formData.categoryId) {
-    toast.error("Vui lòng chọn đầy đủ Trường học và Chuyên ngành!");
-    return;
-  }
-  if (formData.universityId === "OTHER" && !customUniversity.trim()) {
-    toast.error("Vui lòng nhập tên Trường Đại học của bạn!");
-    return;
-  }
-  if (formData.categoryId === "OTHER" && !customCategory.trim()) {
-    toast.error("Vui lòng nhập tên Chuyên ngành của bạn!");
-    return;
-  }
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
 
-  setIsSubmitting(true);
-  const toastId = toast.loading("Đang xử lý và tải file lên...");
+    // VÀO LUỒNG KIỂM TRA ĐIỀU KIỆN (VALIDATION)
+    if (!selectedFile) {
+      toast.error("Vui lòng chọn hoặc kéo thả tệp tin tài liệu!");
+      return;
+    }
+    if (!formData.universityId || !formData.categoryId) {
+      toast.error("Vui lòng chọn đầy đủ Trường học và Chuyên ngành!");
+      return;
+    }
 
-  try {
-    const token = await getToken();
-    const sendData = new FormData();
-    sendData.append("files", selectedFile);
+    if (formData.universityId === "OTHER_UNI" && !customUniversity.trim()) {
+      toast.error("Vui lòng nhập tên Trường Đại học của bạn!");
+      return;
+    }
+    if (formData.categoryId === "OTHER_CAT" && !customCategory.trim()) {
+      toast.error("Vui lòng nhập tên Chuyên ngành của bạn!");
+      return;
+    }
 
-    const metadata = {
-      title: formData.title,
-      description: formData.description,
-      
-      universityId: formData.universityId === "OTHER" ? "OTHER_UNI" : formData.universityId,
-      customUniversity: formData.universityId === "OTHER" ? customUniversity.trim() : null,
-      
-      categoryId: formData.categoryId === "OTHER" ? "OTHER_CAT" : formData.categoryId,
-      customCategory: formData.categoryId === "OTHER" ? customCategory.trim() : null,
+    setIsSubmitting(true);
+    const toastId = toast.loading("Đang xử lý và tải file lên...");
 
-      subjectCode: formData.subjectCode ? formData.subjectCode.toUpperCase() : "",
-      subjectName: formData.subjectName,
-      docType: formData.docType,
-      creditCost: formData.creditCost,
-      isPublic: formData.isPublic
-    };
-    
-    sendData.append("metadata", JSON.stringify(metadata));
+    try {
+      const token = await getToken();
+      const sendData = new FormData();
+      sendData.append("files", selectedFile);
 
-      const response = await axios.post(
-        apiEndpoints.UPLOAD_FILE || "/api/files/upload",
-        sendData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+      const metadata = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        universityId: formData.universityId,
+        customUniversity:
+          formData.universityId === "OTHER_UNI"
+            ? customUniversity.trim()
+            : null,
+        categoryId: formData.categoryId,
+        customCategory:
+          formData.categoryId === "OTHER_CAT" ? customCategory.trim() : null,
+        subjectCode: formData.subjectCode
+          ? formData.subjectCode.toUpperCase().trim()
+          : "CHƯA_CÓ",
+        subjectName: formData.subjectName.trim(),
+        docType: formData.docType,
+        creditCost: parseInt(formData.creditCost) || 0,
+        isPublic: formData.isPublic,
+      };
+
+      sendData.append("metadata", JSON.stringify(metadata));
+
+      const response = await axios.post(apiEndpoints.UPLOAD_FILE, sendData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-      );
+      });
 
       if (response.status === 200 || response.status === 201) {
         await fetchUserCredits();
@@ -179,7 +173,7 @@ const handleFormSubmit = async (e) => {
 
       <main className="grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12">
-          {/* CỘT TRÁI: KHU VỰC HƯỚNG DẪN QUY ĐỊNH (Chiếm 4/12 cột) */}
+          {/* CỘT TRÁI: KHU VỰC HƯỚNG DẪN QUY ĐỊNH */}
           <div className="lg:col-span-4 bg-slate-900 text-slate-200 p-6 lg:p-8 flex flex-col justify-between border-r border-slate-800">
             <div className="space-y-6">
               <div>
@@ -237,17 +231,17 @@ const handleFormSubmit = async (e) => {
               />
               <span>
                 Hệ thống sẽ tự động phân tích cấu trúc của file để trích xuất dữ
-                liệu số trang, dung lượng và định dạng file.
+                liệu số trang, dung lượng và định dạng file thông qua hệ thống
+                lưu trữ Cloud.
               </span>
             </div>
           </div>
 
-          {/* CỘT PHẢI: KHU VỰC ĐIỀN FORM RỘNG RÃI (Chiếm 8/12 cột) */}
+          {/* CỘT PHẢI: KHU VỰC ĐIỀN FORM */}
           <form
             onSubmit={handleFormSubmit}
             className="lg:col-span-8 p-6 lg:p-8 space-y-6"
           >
-            {/* 1. KHU VỰC CHỌN/KÉO THẢ TỆP TIN */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
                 Tệp tin đính kèm
@@ -355,23 +349,31 @@ const handleFormSubmit = async (e) => {
                   name="universityId"
                   value={formData.universityId}
                   onChange={handleInputChange}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer transition-all"
+                  disabled={isLoadingMetadata}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer transition-all disabled:opacity-60"
                   required
                 >
-                  <option value="">-- Chọn trường đại học liên kết --</option>
-                  {universities.map((uni) => (
+                  <option value="">
+                    {isLoadingMetadata
+                      ? "-- Đang tải trường học... --"
+                      : "-- Chọn trường đại học liên kết --"}
+                  </option>
+                  {dbUniversities.map((uni) => (
                     <option key={uni.id} value={uni.id}>
-                      {uni.name}
+                      {uni.name} {uni.shortName ? `(${uni.shortName})` : ""}
                     </option>
                   ))}
+                  <option value="OTHER_UNI">
+                    Khác... (Tự nhập trường của bạn)
+                  </option>
                 </select>
-                {formData.universityId === "OTHER" && (
+                {formData.universityId === "OTHER_UNI" && (
                   <input
                     type="text"
                     placeholder="Nhập tên Trường Đại học của bạn..."
                     value={customUniversity}
                     onChange={(e) => setCustomUniversity(e.target.value)}
-                    className="w-full text-xs px-3 py-2 mt-2 border border-amber-300 bg-amber-50/20 rounded-xl focus:outline-none focus:border-amber-500 placeholder:text-slate-400 transition-all animate-fadeIn"
+                    className="w-full text-xs px-3 py-2 mt-2 border border-amber-300 bg-amber-50/20 rounded-xl focus:outline-none focus:border-amber-500 placeholder:text-slate-400 transition-all"
                   />
                 )}
               </div>
@@ -384,29 +386,36 @@ const handleFormSubmit = async (e) => {
                   name="categoryId"
                   value={formData.categoryId}
                   onChange={handleInputChange}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer transition-all"
+                  disabled={isLoadingMetadata}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer transition-all disabled:opacity-60"
                   required
                 >
-                  <option value="">-- Chọn ngành phân loại --</option>
-                  {categories.map((cat) => (
+                  <option value="">
+                    {isLoadingMetadata
+                      ? "-- Đang tải chuyên ngành... --"
+                      : "-- Chọn ngành phân loại --"}
+                  </option>
+                  {dbCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
                     </option>
                   ))}
+                  <option value="OTHER_CAT">
+                    Khác... (Tự nhập chuyên ngành)
+                  </option>
                 </select>
-                {formData.categoryId === "OTHER" && (
+                {formData.categoryId === "OTHER_CAT" && (
                   <input
                     type="text"
                     placeholder="Nhập tên chuyên ngành học khác..."
                     value={customCategory}
                     onChange={(e) => setCustomCategory(e.target.value)}
-                    className="w-full text-xs px-3 py-2 mt-2 border border-amber-300 bg-amber-50/20 rounded-xl focus:outline-none focus:border-amber-500 placeholder:text-slate-400 transition-all animate-fadeIn"
+                    className="w-full text-xs px-3 py-2 mt-2 border border-amber-300 bg-amber-50/20 rounded-xl focus:outline-none focus:border-amber-500 placeholder:text-slate-400 transition-all"
                   />
                 )}
               </div>
             </div>
 
-            {/* 4. KHU VỰC ĐỊNH DANH MÔN HỌC CHI TIẾT */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
@@ -439,7 +448,6 @@ const handleFormSubmit = async (e) => {
               </div>
             </div>
 
-            {/* 5. CẤU HÌNH PHÂN LOẠI FILE & GIÁ BÁN XU */}
             <div className="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
@@ -501,7 +509,6 @@ const handleFormSubmit = async (e) => {
               </div>
             </div>
 
-            {/* ACTION FOOTER BUTTONS */}
             <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
               <button
                 type="button"

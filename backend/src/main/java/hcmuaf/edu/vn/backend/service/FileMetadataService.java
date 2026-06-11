@@ -1,18 +1,19 @@
 package hcmuaf.edu.vn.backend.service;
 
-import com.documents4j.api.IConverter;
-import com.documents4j.job.LocalConverter;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import hcmuaf.edu.vn.backend.document.DownloadHistoryDocument;
 import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
 import hcmuaf.edu.vn.backend.document.ProfileDocument;
+import hcmuaf.edu.vn.backend.dto.DownloadHistoryDTO;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
 import hcmuaf.edu.vn.backend.dto.response.FileDetailResponseDTO;
 import hcmuaf.edu.vn.backend.exceptions.BadRequestException;
 import hcmuaf.edu.vn.backend.exceptions.ResourceNotFoundException;
+import hcmuaf.edu.vn.backend.repository.DownloadHistoryRepository;
 import hcmuaf.edu.vn.backend.repository.FileMetadataRepository;
 import hcmuaf.edu.vn.backend.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,20 +24,11 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,7 +36,7 @@ import java.util.stream.Collectors;
 public class FileMetadataService {
 
     @Autowired
-    private  ProfileService profileService;
+    private ProfileService profileService;
     @Autowired
     private FileMetadataRepository fileMetadataRepository;
     @Autowired
@@ -53,16 +45,12 @@ public class FileMetadataService {
     private MongoTemplate mongoTemplate;
     @Autowired
     private ProfileRepository profileRepository;
-
-    private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
-    private final String UPLOAD_DIR = "uploads/";
-    private final String THUMBNAIL_DIR = "uploads/thumbnails/";
+    @Autowired
+    private DownloadHistoryRepository downloadHistoryRepository;
+    @Autowired
+    private Cloudinary cloudinary;
 
     public List<FileMetadataDTO> upLoadFiles(MultipartFile[] files, FileMetadataDTO dto) throws IOException {
-        if (!Files.exists(this.fileStorageLocation)) {
-            Files.createDirectories(this.fileStorageLocation);
-        }
-
         ProfileDocument currentProfile = profileService.getCurrentProfile();
         String clerkId = currentProfile.getClerkId();
 
@@ -78,20 +66,56 @@ public class FileMetadataService {
                 fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
             }
 
-            String storedFileName = UUID.randomUUID().toString() + fileExtension;
-            String fileIdClean = storedFileName.replace(fileExtension, ""); // Cắt bỏ extension để lấy fileId sạch
+            Map<String, Object> params = ObjectUtils.asMap(
+                    "asset_folder", "studoc-share/documents",
+                    "use_filename_as_display_name", true,
+                    "resource_type", "raw",
+                    "unique_filename", true,
+                    "pages", true
+            );
 
-            Path targetLocation = this.fileStorageLocation.resolve(storedFileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+            String cloudinaryUrl = (String) uploadResult.get("secure_url");
+            String publicId = (String) uploadResult.get("public_id");
 
             FileMetadataDocument document = new FileMetadataDocument();
-
             document.setName(originalFileName);
             document.setType(file.getContentType());
             document.setSize(file.getSize());
-            document.setFileLocation(targetLocation.toString());
+            document.setFileLocation(cloudinaryUrl);
             document.setClerkId(clerkId);
             document.setUploadedAt(LocalDateTime.now());
+
+            String lowerExtension = fileExtension.toLowerCase();
+            String thumbnailPublicId = publicId;
+
+            if (lowerExtension.equals(".docx") || lowerExtension.equals(".doc") ||
+                    lowerExtension.equals(".pptx") || lowerExtension.equals(".ppt")) {
+                try {
+                    byte[] pdfBytes = convertOfficeToPdf(file.getInputStream(), lowerExtension);
+
+                    Map<String, Object> thumbParams = ObjectUtils.asMap(
+                            "asset_folder", "studoc-share/temp-thumbs",
+                            "resource_type", "auto"
+                    );
+                    Map thumbResult = cloudinary.uploader().upload(pdfBytes, thumbParams);
+                    thumbnailPublicId = (String) thumbResult.get("public_id");
+                } catch (Exception e) {
+                    System.err.println("Lỗi convert sinh ảnh bìa thực tế, gán biến tạm: " + e.getMessage());
+                }
+            }
+
+            String cleanId = thumbnailPublicId;
+            if (cleanId.endsWith(".pdf")) {
+                cleanId = cleanId.substring(0, cleanId.lastIndexOf("."));
+            }
+
+            String generatedThumbUrl = cloudinary.url()
+                    .resourceType("image")
+                    .transformation(new com.cloudinary.Transformation().width(400).height(250).crop("fill"))
+                    .generate(cleanId + ".jpg");
+
+            document.setThumbnailUrl(generatedThumbUrl);
 
             document.setTitle(StringUtils.hasText(dto.getTitle()) ? dto.getTitle() : originalFileName.replace(fileExtension, ""));
             document.setDescription(dto.getDescription());
@@ -103,7 +127,12 @@ public class FileMetadataService {
             document.setDownloadCount(0);
             document.setRating(0.0);
             document.setReviewCount(0);
-            document.setPageCount(1);
+
+            int pages = 1;
+            if (uploadResult.containsKey("pages")) {
+                pages = Integer.parseInt(uploadResult.get("pages").toString());
+            }
+            document.setPageCount(pages);
 
             if ("OTHER_UNI".equals(dto.getUniversityId()) && StringUtils.hasText(dto.getCustomUniversity())) {
                 document.setUniversityId(dto.getCustomUniversity());
@@ -117,25 +146,11 @@ public class FileMetadataService {
                 document.setCategoryId(dto.getCategoryId());
             }
 
-            document.setSubjectCode(StringUtils.hasText(dto.getSubjectCode()) ? dto.getSubjectCode() : "CHƯA_CÓ");
+            document.setSubjectCode(StringUtils.hasText(dto.getSubjectCode()) ? dto.getSubjectCode().toUpperCase() : "CHƯA_CÓ");
             document.setSubjectName(StringUtils.hasText(dto.getSubjectName()) ? dto.getSubjectName() : "Tài liệu tự do");
-
-            if (file.getContentType() != null && (
-                    file.getContentType().equalsIgnoreCase("application/pdf") ||
-                            file.getContentType().contains("word") ||
-                            file.getContentType().contains("officedocument.wordprocessingml.document")
-            )) {
-
-                String thumbUrl = generateMultiFormatThumbnail(targetLocation.toString(), fileIdClean, file.getContentType());
-
-                document.setThumbnailUrl(thumbUrl != null ? thumbUrl : "/uploads/thumbnails/default-doc.png");
-            } else {
-                document.setThumbnailUrl("/uploads/thumbnails/default-doc.png");
-            }
 
             FileMetadataDocument savedDoc = fileMetadataRepository.save(document);
             uploadedFilesResult.add(mapToDTO(savedDoc));
-
             successfullyUploadedCount++;
         }
 
@@ -144,6 +159,24 @@ public class FileMetadataService {
         }
 
         return uploadedFilesResult;
+    }
+
+    private byte[] convertOfficeToPdf(java.io.InputStream officeInputStream, String extension) throws IOException {
+        java.io.ByteArrayOutputStream pdfOutputStream = new java.io.ByteArrayOutputStream();
+        try {
+            com.documents4j.api.IConverter converter = com.documents4j.job.LocalConverter.builder().build();
+            if (extension.contains("doc")) {
+                converter.convert(officeInputStream).as(com.documents4j.api.DocumentType.MS_WORD)
+                        .to(pdfOutputStream).as(com.documents4j.api.DocumentType.PDF).execute();
+            } else if (extension.contains("ppt")) {
+                com.documents4j.api.DocumentType pptType = new com.documents4j.api.DocumentType("application/vnd.ms-powerpoint");
+                converter.convert(officeInputStream).as(pptType)
+                        .to(pdfOutputStream).as(com.documents4j.api.DocumentType.PDF).execute();
+            }
+            return pdfOutputStream.toByteArray();
+        } finally {
+            pdfOutputStream.close();
+        }
     }
 
     private FileMetadataDTO mapToDTO(FileMetadataDocument doc) {
@@ -175,9 +208,7 @@ public class FileMetadataService {
                 .description(doc.getDescription())
                 .type(doc.getType())
                 .size(doc.getSize())
-
                 .fileLocation(doc.getFileLocation())
-
                 .universityId(uniId)
                 .categoryId(catId)
                 .customUniversity(customUni)
@@ -197,81 +228,39 @@ public class FileMetadataService {
                 .build();
     }
 
-    private String generateMultiFormatThumbnail(String filePath, String fileId, String contentType) {
-        try {
-            Path thumbnailDirectory = this.fileStorageLocation.resolve("thumbnails");
-            if (!Files.exists(thumbnailDirectory)) {
-                Files.createDirectories(thumbnailDirectory);
-            }
-
-            File inputFile = new File(filePath);
-            File pdfFileForRendering = null;
-
-            if (contentType != null && contentType.equalsIgnoreCase("application/pdf")) {
-                pdfFileForRendering = inputFile;
-            }
-            else if (contentType != null && (contentType.contains("word") || contentType.contains("officedocument.wordprocessingml.document"))) {
-                File parentDir = inputFile.getParentFile();
-                pdfFileForRendering = new File(parentDir, fileId + "_temp.pdf");
-
-                try (InputStream docxInputStream = Files.newInputStream(inputFile.toPath());
-                     OutputStream pdfOutputStream = Files.newOutputStream(pdfFileForRendering.toPath())) {
-                    IConverter converter = LocalConverter.builder().build();
-                    converter.convert(docxInputStream).as(com.documents4j.api.DocumentType.DOCX)
-                            .to(pdfOutputStream).as(com.documents4j.api.DocumentType.PDF)
-                            .execute();
-                }
-            }
-
-            if (pdfFileForRendering != null && pdfFileForRendering.exists()) {
-                try (PDDocument document = PDDocument.load(pdfFileForRendering)) {
-                    if (document.getNumberOfPages() > 0) {
-                        PDFRenderer pdfRenderer = new PDFRenderer(document);
-                        BufferedImage bufferedImage = pdfRenderer.renderImageWithDPI(0, 120);
-
-                        String thumbnailFileName = fileId + ".png";
-
-                        File outputImageFile = thumbnailDirectory.resolve(thumbnailFileName).toFile();
-
-                        ImageIO.write(bufferedImage, "png", outputImageFile);
-
-                        if (!inputFile.equals(pdfFileForRendering)) {
-                            pdfFileForRendering.delete();
-                        }
-
-                        return "/uploads/thumbnails/" + thumbnailFileName;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Lỗi sinh thumbnail tự động cho file " + fileId + ": " + e.getMessage());
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
     public List<FileMetadataDTO> getFiles() {
         return fileMetadataRepository.findAll().stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
-    public void deleteFile(String id) {
-        FileMetadataDocument document = fileMetadataRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Tài liệu không tồn tại với ID: " + id));
+    public void deleteFile(String fileId) throws IOException {
+        FileMetadataDocument document = fileMetadataRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu cần xóa"));
 
-        ProfileDocument currentProfile = profileService.getCurrentProfile();
+        String fileLocation = document.getFileLocation();
 
-        if (!document.getClerkId().equals(currentProfile.getClerkId())) {
-            throw new BadRequestException("Bạn không có quyền xóa tài liệu của người khác!");
-        }
+        if (fileLocation != null && fileLocation.contains("cloudinary.com")) {
+            try {
+                String[] urlParts = fileLocation.split("/upload/");
+                if (urlParts.length > 1) {
+                    String path = urlParts[1];
+                    if (path.startsWith("v")) {
+                        path = path.substring(path.indexOf("/") + 1);
+                    }
 
-        try {
-            Path filePath = Paths.get(document.getFileLocation());
-            Files.deleteIfExists(filePath);
-        } catch (IOException e) {
-            System.err.println("Lỗi vật lý khi xóa tệp tin trên đĩa: " + e.getMessage());
+                    String publicId = path;
+                    if (publicId.contains(".")) {
+                        publicId = publicId.substring(0, publicId.lastIndexOf("."));
+                    }
+
+                    cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "raw"));
+                    cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "image"));
+                    System.out.println("Đã tiến hành xóa file thành công trên Cloudinary: " + publicId);
+                }
+            } catch (Exception e) {
+                System.err.println("Lỗi khi xóa file trên Cloudinary nhưng vẫn tiếp tục xóa DB: " + e.getMessage());
+            }
         }
 
         fileMetadataRepository.delete(document);
@@ -291,7 +280,6 @@ public class FileMetadataService {
         return mapToDTO(fileMetadataRepository.save(document));
     }
 
-
     public FileMetadataDTO processDownloadRequest(String fileId, String clerkId) {
         try {
             FileMetadataDocument document = fileMetadataRepository.findById(fileId)
@@ -299,10 +287,29 @@ public class FileMetadataService {
 
             int cost = document.getCreditCost() != null ? document.getCreditCost() : 0;
 
-            userCreditsService.deductCreditsForDownload(clerkId, cost);
+            boolean hasDownloadedBefore = downloadHistoryRepository
+                    .findByClerkIdOrderByDownloadedAtDesc(clerkId)
+                    .stream()
+                    .anyMatch(history -> history.getFileId().equals(fileId));
+
+            if (hasDownloadedBefore) {
+                cost = 0;
+            }
+
+            if (cost > 0) {
+                userCreditsService.deductCreditsForDownload(clerkId, cost);
+            }
+
+            DownloadHistoryDocument historyRecord = DownloadHistoryDocument.builder()
+                    .clerkId(clerkId)
+                    .fileId(fileId)
+                    .creditsSpent(cost)
+                    .downloadedAt(java.time.LocalDateTime.now())
+                    .build();
+
+            downloadHistoryRepository.save(historyRecord);
 
             document.setDownloadCount(document.getDownloadCount() + 1);
-
             FileMetadataDocument savedDoc = fileMetadataRepository.save(document);
 
             return mapToDTO(savedDoc);
@@ -329,44 +336,8 @@ public class FileMetadataService {
                 .findByCategoryIdAndIsPublicTrueAndIdNot(currentFile.getCategoryId(), id, pageable);
 
         return relatedDocuments.stream()
-                .map(this::convertToDTO)
+                .map(this::mapToDTO)
                 .toList();
-    }
-
-    private FileMetadataDTO convertToDTO(FileMetadataDocument doc) {
-        if (doc == null) {
-            return null;
-        }
-
-        FileMetadataDTO dto = new FileMetadataDTO();
-        dto.setId(doc.getId());
-        dto.setName(doc.getName());
-        dto.setTitle(doc.getTitle());
-        dto.setType(doc.getType());
-        dto.setSize(doc.getSize());
-        dto.setClerkId(doc.getClerkId());
-        dto.setIsPublic(doc.getIsPublic());
-        dto.setFileLocation(doc.getFileLocation());
-        dto.setUploadedAt(doc.getUploadedAt());
-
-        dto.setUniversityId(doc.getUniversityId());
-        dto.setSubjectCode(doc.getSubjectCode());
-        dto.setSubjectName(doc.getSubjectName());
-        dto.setCategoryId(doc.getCategoryId());
-        dto.setCustomUniversity(doc.getCustomUniversity());
-        dto.setCustomCategory(doc.getCustomCategory());
-        dto.setDocType(doc.getDocType());
-        dto.setDescription(doc.getDescription());
-        dto.setThumbnailUrl(doc.getThumbnailUrl());
-
-        dto.setPageCount(doc.getPageCount());
-        dto.setCreditCost(doc.getCreditCost());
-        dto.setViewCount(doc.getViewCount());
-        dto.setDownloadCount(doc.getDownloadCount());
-        dto.setRating(doc.getRating());
-        dto.setReviewCount(doc.getReviewCount());
-
-        return dto;
     }
 
     public FileDetailResponseDTO getFileById(String id) {
@@ -431,4 +402,33 @@ public class FileMetadataService {
         return dto;
     }
 
+    public List<FileMetadataDTO> getFilesByClerkId(String clerkId) {
+        List<FileMetadataDocument> entities = fileMetadataRepository.findByClerkIdOrderByUploadedAtDesc(clerkId);
+
+        return entities.stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+
+    public List<DownloadHistoryDTO> getDownloadHistoryByClerkId(String clerkId) {
+        List<DownloadHistoryDocument> histories = downloadHistoryRepository.findByClerkIdOrderByDownloadedAtDesc(clerkId);
+
+        return histories.stream().map(history -> {
+            DownloadHistoryDTO dto = DownloadHistoryDTO.builder()
+                    .id(history.getId())
+                    .clerkId(history.getClerkId())
+                    .fileId(history.getFileId())
+                    .creditsSpent(history.getCreditsSpent())
+                    .downloadedAt(history.getDownloadedAt())
+                    .build();
+
+            fileMetadataRepository.findById(history.getFileId()).ifPresent(file -> {
+                dto.setFileName(file.getName());
+                dto.setFileSize(file.getSize());
+                dto.setFileType(file.getType());
+            });
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
 }

@@ -15,12 +15,15 @@ import ExplorePage from "../pages/Explore/ExplorePage";
 import DocumentDetailPage from "../pages/DocumentDetail/DocumentDetailPage";
 import UploadPage from "../pages/Upload/Upload";
 import PremiumPage from "../pages/Premium/PremiumPage";
+import History from "../pages/Dashboard/components/History";
 
 const ProtectedLayout = ({ children }) => {
   return (
     <>
       <SignedIn>{children}</SignedIn>
-      <SignedOut><RedirectToSignIn /></SignedOut>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
     </>
   );
 };
@@ -28,22 +31,22 @@ const ProtectedLayout = ({ children }) => {
 const AppRoutes = () => {
   return (
     <Routes>
+
       <Route path="/" element={<Landing />} />
       <Route path="/file/:fileId" element={<PublicFileView />} />
+      <Route path="/category" element={<CategoryPage />} />
+      <Route path="/premium" element={<PremiumPage />} />
 
       <Route path="/home" element={<ProtectedLayout><ExplorePage /></ProtectedLayout>} />
       <Route path="/explore" element={<ProtectedLayout><ExplorePage /></ProtectedLayout>} />
       <Route path="/document/:id" element={<ProtectedLayout><DocumentDetailPage /></ProtectedLayout>} />
-      <Route path="/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
-      <Route path="/my-files" element={<ProtectedLayout><MyFiles /></ProtectedLayout>} />
-      <Route path="/subscriptions" element={<ProtectedLayout><Subscription /></ProtectedLayout>} />
-      <Route path="/transactions" element={<ProtectedLayout><Transaction /></ProtectedLayout>} />
-      <Route path="/shared" element={<ProtectedLayout><SharedPage /></ProtectedLayout>} />
-      <Route path="/favorites" element={<ProtectedLayout><FavoritesPage /></ProtectedLayout>} />
-      <Route path="/trash" element={<ProtectedLayout><TrashPage /></ProtectedLayout>} />
-      <Route path="/upload" element={<UploadPage />} />
-      <Route path="/category" element={<CategoryPage />} />
-      <Route path="/premium" element={<PremiumPage />} />
+      <Route path="/upload" element={<ProtectedLayout><UploadPage /></ProtectedLayout>} />
+
+      <Route path="/user/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
+      <Route path="/user/my-files" element={<ProtectedLayout><MyFiles /></ProtectedLayout>} />
+      <Route path="/user/history" element={<ProtectedLayout><History /></ProtectedLayout>} />
+      <Route path="/user/transactions" element={<ProtectedLayout><Transaction /></ProtectedLayout>} />
+      <Route path="/user/favorites" element={<ProtectedLayout><FavoritesPage /></ProtectedLayout>} />
 
       <Route path="/*" element={<Navigate to="/home" replace />} />
     </Routes>

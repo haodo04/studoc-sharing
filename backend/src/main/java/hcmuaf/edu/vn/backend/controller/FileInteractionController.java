@@ -1,14 +1,12 @@
 package hcmuaf.edu.vn.backend.controller;
 
+import hcmuaf.edu.vn.backend.dto.DownloadHistoryDTO;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
 import hcmuaf.edu.vn.backend.service.FileMetadataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -17,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
+import java.util.List;
 
 @RestController
 @RequestMapping("/files/interaction")
@@ -56,5 +55,18 @@ public class FileInteractionController {
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .body(resource);
+    }
+
+    @GetMapping("/history/{clerkId}")
+    public ResponseEntity<List<DownloadHistoryDTO>> getDownloadHistory(
+            @PathVariable String clerkId,
+            Principal principal
+    ) {
+        if (principal == null || !principal.getName().equals(clerkId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<DownloadHistoryDTO> historyList = fileMetadataService.getDownloadHistoryByClerkId(clerkId);
+        return ResponseEntity.ok(historyList);
     }
 }

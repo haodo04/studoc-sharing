@@ -15,18 +15,19 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/files/manage")
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.POST, RequestMethod.DELETE, RequestMethod.PATCH})
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.POST, RequestMethod.DELETE, RequestMethod.PATCH, RequestMethod.GET})
 public class FileUploadController {
 
     private final FileMetadataService fileMetadataService;
+
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @PostMapping("/upload")
     public ResponseEntity<List<FileMetadataDTO>> uploadFile(
             @RequestParam("files") MultipartFile[] files,
             @RequestParam("metadata") String metadataJson
     ) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         FileMetadataDTO dto = objectMapper.readValue(metadataJson, FileMetadataDTO.class);
         List<FileMetadataDTO> result = fileMetadataService.upLoadFiles(files, dto);
@@ -34,7 +35,7 @@ public class FileUploadController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFile(@PathVariable String id) {
+    public ResponseEntity<Void> deleteFile(@PathVariable String id) throws IOException {
         fileMetadataService.deleteFile(id);
         return ResponseEntity.noContent().build();
     }
@@ -43,5 +44,11 @@ public class FileUploadController {
     public ResponseEntity<FileMetadataDTO> togglePublic(@PathVariable String id) {
         FileMetadataDTO file = fileMetadataService.togglePublic(id);
         return ResponseEntity.ok(file);
+    }
+
+    @GetMapping("/user/{clerkId}")
+    public ResponseEntity<List<FileMetadataDTO>> getFilesByUser(@PathVariable String clerkId) {
+        List<FileMetadataDTO> result = fileMetadataService.getFilesByClerkId(clerkId);
+        return ResponseEntity.ok(result);
     }
 }
