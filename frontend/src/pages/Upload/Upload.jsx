@@ -1,13 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
-import {
-  UploadCloud,
-  FileText,
-  X,
-  AlertCircle,
-  HelpCircle,
-} from "lucide-react";
+import { UploadCloud, FileText, X, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import NavbarPage from "../../components/common/NavbarPage";
@@ -22,7 +16,6 @@ export default function UploadPage() {
   const [dbCategories, setDbCategories] = useState([]);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
 
-  // State quản lý form dữ liệu khớp chuẩn 100% với các trường hiển thị của FileMetadataDocument
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -30,7 +23,7 @@ export default function UploadPage() {
     categoryId: "",
     subjectCode: "",
     subjectName: "",
-    docType: "Đề thi", // Mặc định chọn Đề thi
+    docType: "Đề thi",
     creditCost: 0,
     isPublic: true,
   });
@@ -39,7 +32,6 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Phân loại tài liệu học tập theo quy ước của db docType
   const documentTypes = ["Đề thi", "Bài tập", "Bài giảng", "Tóm tắt"];
 
   const [customUniversity, setCustomUniversity] = useState("");
@@ -64,7 +56,6 @@ export default function UploadPage() {
     fetchMetadata();
   }, []);
 
-  // Xử lý thay đổi dữ liệu đầu vào
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -101,6 +92,7 @@ export default function UploadPage() {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
+    // VÀO LUỒNG KIỂM TRA ĐIỀU KIỆN (VALIDATION)
     if (!selectedFile) {
       toast.error("Vui lòng chọn hoặc kéo thả tệp tin tài liệu!");
       return;
@@ -109,11 +101,12 @@ export default function UploadPage() {
       toast.error("Vui lòng chọn đầy đủ Trường học và Chuyên ngành!");
       return;
     }
-    if (formData.universityId === "OTHER" && !customUniversity.trim()) {
+
+    if (formData.universityId === "OTHER_UNI" && !customUniversity.trim()) {
       toast.error("Vui lòng nhập tên Trường Đại học của bạn!");
       return;
     }
-    if (formData.categoryId === "OTHER" && !customCategory.trim()) {
+    if (formData.categoryId === "OTHER_CAT" && !customCategory.trim()) {
       toast.error("Vui lòng nhập tên Chuyên ngành của bạn!");
       return;
     }
@@ -127,23 +120,20 @@ export default function UploadPage() {
       sendData.append("files", selectedFile);
 
       const metadata = {
-        title: formData.title,
-        description: formData.description,
-
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         universityId: formData.universityId,
         customUniversity:
           formData.universityId === "OTHER_UNI"
             ? customUniversity.trim()
             : null,
-
         categoryId: formData.categoryId,
         customCategory:
           formData.categoryId === "OTHER_CAT" ? customCategory.trim() : null,
-
         subjectCode: formData.subjectCode
-          ? formData.subjectCode.toUpperCase()
+          ? formData.subjectCode.toUpperCase().trim()
           : "CHƯA_CÓ",
-        subjectName: formData.subjectName,
+        subjectName: formData.subjectName.trim(),
         docType: formData.docType,
         creditCost: parseInt(formData.creditCost) || 0,
         isPublic: formData.isPublic,
@@ -183,7 +173,7 @@ export default function UploadPage() {
 
       <main className="grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12">
-          {/* CỘT TRÁI: KHU VỰC HƯỚNG DẪN QUY ĐỊNH (Chiếm 4/12 cột) */}
+          {/* CỘT TRÁI: KHU VỰC HƯỚNG DẪN QUY ĐỊNH */}
           <div className="lg:col-span-4 bg-slate-900 text-slate-200 p-6 lg:p-8 flex flex-col justify-between border-r border-slate-800">
             <div className="space-y-6">
               <div>
@@ -241,17 +231,17 @@ export default function UploadPage() {
               />
               <span>
                 Hệ thống sẽ tự động phân tích cấu trúc của file để trích xuất dữ
-                liệu số trang, dung lượng và định dạng file.
+                liệu số trang, dung lượng và định dạng file thông qua hệ thống
+                lưu trữ Cloud.
               </span>
             </div>
           </div>
 
-          {/* CỘT PHẢI: KHU VỰC ĐIỀN FORM RỘNG RÃI (Chiếm 8/12 cột) */}
+          {/* CỘT PHẢI: KHU VỰC ĐIỀN FORM */}
           <form
             onSubmit={handleFormSubmit}
             className="lg:col-span-8 p-6 lg:p-8 space-y-6"
           >
-            {/* 1. KHU VỰC CHỌN/KÉO THẢ TỆP TIN */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
                 Tệp tin đính kèm
@@ -383,7 +373,7 @@ export default function UploadPage() {
                     placeholder="Nhập tên Trường Đại học của bạn..."
                     value={customUniversity}
                     onChange={(e) => setCustomUniversity(e.target.value)}
-                    className="w-full text-xs px-3 py-2 mt-2 border border-amber-300 bg-amber-50/20 rounded-xl focus:outline-none focus:border-amber-500 placeholder:text-slate-400 transition-all animate-fadeIn"
+                    className="w-full text-xs px-3 py-2 mt-2 border border-amber-300 bg-amber-50/20 rounded-xl focus:outline-none focus:border-amber-500 placeholder:text-slate-400 transition-all"
                   />
                 )}
               </div>
@@ -420,13 +410,12 @@ export default function UploadPage() {
                     placeholder="Nhập tên chuyên ngành học khác..."
                     value={customCategory}
                     onChange={(e) => setCustomCategory(e.target.value)}
-                    className="w-full text-xs px-3 py-2 mt-2 border border-amber-300 bg-amber-50/20 rounded-xl focus:outline-none focus:border-amber-500 placeholder:text-slate-400 transition-all animate-fadeIn"
+                    className="w-full text-xs px-3 py-2 mt-2 border border-amber-300 bg-amber-50/20 rounded-xl focus:outline-none focus:border-amber-500 placeholder:text-slate-400 transition-all"
                   />
                 )}
               </div>
             </div>
 
-            {/* 4. KHU VỰC ĐỊNH DANH MÔN HỌC CHI TIẾT */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
@@ -459,7 +448,6 @@ export default function UploadPage() {
               </div>
             </div>
 
-            {/* 5. CẤU HÌNH PHÂN LOẠI FILE & GIÁ BÁN XU */}
             <div className="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
@@ -521,7 +509,6 @@ export default function UploadPage() {
               </div>
             </div>
 
-            {/* ACTION FOOTER BUTTONS */}
             <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
               <button
                 type="button"

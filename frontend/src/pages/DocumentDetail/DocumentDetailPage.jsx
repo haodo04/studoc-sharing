@@ -39,7 +39,10 @@ import DocumentPreview from "./components/DocumentPreview";
 import RatingSection from "./components/RatingSection";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import {UserCreditsContext, useUserCredits}  from '../../context/UserCreditsContext';
+import {
+  UserCreditsContext,
+  useUserCredits,
+} from "../../context/UserCreditsContext";
 
 export default function DocumentDetailPage() {
   const navigate = useNavigate();
@@ -81,6 +84,29 @@ export default function DocumentDetailPage() {
       console.error("Lỗi khi làm mới chi tiết tài liệu:", err);
     }
   }, [id]);
+
+  const ThumbnailImage = ({ src, alt, className }) => {
+    const [imgSrc, setImgSrc] = useState(src);
+    useEffect(() => {
+      setImgSrc(src);
+    }, [src]);
+
+    return (
+      <img
+        src={
+          imgSrc ||
+          "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60"
+        }
+        alt={alt}
+        className={className}
+        onError={() => {
+          setImgSrc(
+            "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60",
+          );
+        }}
+      />
+    );
+  };
 
   useEffect(() => {
     const loadDocumentAndRelated = async () => {
@@ -197,9 +223,8 @@ export default function DocumentDetailPage() {
                   toast.success("Tải tài liệu thành công!", {
                     id: downloadToastId,
                   });
-                  
-                  await fetchUserCredits();
 
+                  await fetchUserCredits();
                 } catch (err) {
                   console.error("Lỗi khi tải tài liệu:", err);
 
@@ -302,16 +327,15 @@ export default function DocumentDetailPage() {
           </span>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-slate-600 hover:text-indigo-600 cursor-pointer">
-            {documentData.customCategory ||
-              documentData.categoryId ||
-              "Tài liệu"}
+            {documentData.categoryId === "OTHER_CAT"
+              ? documentData.customCategory
+              : documentData.categoryId || "Tài liệu"}
           </span>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-slate-600 hover:text-indigo-600 cursor-pointer">
-            Tài liệu{" "}
-            {documentData.customUniversity ||
-              documentData.universityId ||
-              "Các trường"}
+            {documentData.universityId === "OTHER_UNI"
+              ? documentData.customUniversity
+              : documentData.universityId || "Các trường"}
           </span>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-slate-900 truncate">
@@ -329,10 +353,12 @@ export default function DocumentDetailPage() {
             <DocumentHeaderInfo documentData={documentData} />
 
             {/* Khối 2: Trình xem trước tài liệu */}
-            <DocumentPreview
-              documentData={documentData}
-              handleDownload={handleDownload}
-            />
+            {documentData && (
+              <DocumentPreview
+                documentData={documentData}
+                handleDownload={handleDownload}
+              />
+            )}
 
             {/* KHỐI MÔ TẢ NỘI DUNG */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
@@ -399,9 +425,23 @@ export default function DocumentDetailPage() {
               <div className="flex justify-between py-1 border-b border-slate-50">
                 <span className="text-slate-500">Định dạng file:</span>
                 <span className="text-slate-800 font-bold">
-                  {documentData.type
-                    ? documentData.type.split("/")[1]?.toUpperCase()
-                    : "PDF"}
+                  {(() => {
+                    const mime = documentData.type?.toLowerCase() || "";
+                    if (
+                      mime.includes("word") ||
+                      mime.includes("officedocument.wordprocessingml")
+                    )
+                      return "DOCX/DOC";
+                    if (
+                      mime.includes("presentation") ||
+                      mime.includes("powerpoint")
+                    )
+                      return "PPTX/PPT";
+                    if (mime.includes("pdf")) return "PDF";
+                    if (mime.includes("zip") || mime.includes("rar"))
+                      return "ZIP/RAR";
+                    return documentData.docType?.toUpperCase() || "DOCUMENT";
+                  })()}
                 </span>
               </div>
               <div className="flex justify-between py-1">
@@ -481,7 +521,7 @@ export default function DocumentDetailPage() {
           </div>
         </div>
 
-        {/* TÀI LIỆU LIÊN QUAN (SỬA ĐỔI SỬ DỤNG RELATEDDOCS TỪ DB) */}
+        {/* TÀI LIỆU LIÊN QUAN */}
         <div className="mt-12 pt-8 border-t border-slate-200 space-y-5">
           <div className="flex justify-between items-end">
             <h2 className="text-base md:text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
@@ -496,47 +536,66 @@ export default function DocumentDetailPage() {
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {relatedDocs.map((doc) => {
-                // Xử lý an toàn đường dẫn ảnh thumbnail của tài liệu liên quan
-                const thumbUrl = doc.thumbnailUrl
-                  ? doc.thumbnailUrl.startsWith("http")
-                    ? doc.thumbnailUrl
-                    : `${BASE_URL}${doc.thumbnailUrl}`
-                  : "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=500";
+              {relatedDocs.map((doc) => (
+                <div
+                  key={doc.id || doc._id}
+                  onClick={() => {
+                    navigate(`/document/${doc.id || doc._id}`);
+                    window.scrollTo({ top: 0, behavior: "smooth" }); 
+                  }}
+                  className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer"
+                >
+                  <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
+                    <ThumbnailImage
+                      src={doc.thumbnailUrl}
+                      alt={doc.title || doc.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
 
-                return (
-                  <div
-                    key={doc.id || doc._id}
-                    onClick={() => navigate(`/document/${doc.id || doc._id}`)}
-                    className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md hover:border-indigo-400 transition-all cursor-pointer flex flex-col justify-between group"
-                  >
-                    <div className="h-32 w-full overflow-hidden relative bg-slate-100 border-b border-slate-100">
-                      <img
-                        src={thumbUrl}
-                        alt={doc.title || doc.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <span className="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
-                        {doc.docType || "Tài liệu"}
-                      </span>
-                    </div>
-                    <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
-                      <h4 className="font-bold text-slate-900 text-xs leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                    <span className="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 uppercase">
+                      {doc.docType || "Tài liệu"}
+                    </span>
+                    <span className="absolute bottom-2 right-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10">
+                      {doc.creditCost === 0
+                        ? "Miễn phí"
+                        : `${doc.creditCost} Xu`}
+                    </span>
+                  </div>
+
+                  {/* Khối thông tin chi tiết */}
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase text-slate-500">
+                        <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
+                          {doc.universityId === "OTHER_UNI"
+                            ? doc.customUniversity
+                            : doc.universityId}
+                        </span>
+                        <span className="truncate max-w-[120px]">
+                          {doc.subjectCode}
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-[13px] text-slate-900 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
                         {doc.title || doc.name}
-                      </h4>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 font-semibold border-t border-slate-50 pt-2">
-                        <div className="flex items-center gap-1">
-                          <Flame className="w-3.5 h-3.5 text-amber-500" />{" "}
-                          {doc.downloadCount || 0} tải
-                        </div>
-                        <div className="text-indigo-600 font-bold">
-                          {doc.creditCost || 0} Xu
-                        </div>
+                      </h3>
+                    </div>
+
+                    {/* Thanh thông số dưới đáy card */}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                        <span className="text-slate-800">
+                          {doc.rating?.toFixed(1) || "0.0"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Download className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{doc.downloadCount || 0}</span>
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>
