@@ -104,6 +104,7 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
 
         } catch (Exception e) {
+            System.err.println("JWT validation failed: " + e.getClass().getName() + " - " + e.getMessage());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token: " + e.getMessage());
         }
     }

@@ -1,21 +1,21 @@
 package hcmuaf.edu.vn.backend.controller;
 
+import com.cloudinary.Cloudinary;
 import hcmuaf.edu.vn.backend.dto.DownloadHistoryDTO;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
 import hcmuaf.edu.vn.backend.service.FileMetadataService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/files/interaction")
@@ -24,37 +24,18 @@ import java.util.List;
 public class FileInteractionController {
 
     private final FileMetadataService fileMetadataService;
+    private final Cloudinary cloudinary;
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<Resource> download(
-            @PathVariable String id,
-            Principal principal
-    ) throws IOException {
+    public ResponseEntity<?> download(@PathVariable String id, Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        if (principal == null) {
-            return ResponseEntity.status(401).build();
-        }
+        FileMetadataDTO file = fileMetadataService.processDownloadRequest(id, principal.getName());
 
-        String clerkId = principal.getName();
-
-        FileMetadataDTO downloadableFile = fileMetadataService.processDownloadRequest(id, clerkId);
-
-        Path path = Paths.get(downloadableFile.getFileLocation());
-        Resource resource = new UrlResource(path.toUri());
-
-        String contentType = Files.probeContentType(path);
-        if (contentType == null) {
-            contentType = "application/octet-stream";
-        }
-
-        ContentDisposition contentDisposition = ContentDisposition.attachment()
-                .filename(downloadableFile.getName(), StandardCharsets.UTF_8)
-                .build();
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
-                .body(resource);
+        Map<String, String> response = new java.util.HashMap<>();
+        response.put("downloadUrl", file.getFileLocation());
+        response.put("fileName", file.getName());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/history/{clerkId}")
