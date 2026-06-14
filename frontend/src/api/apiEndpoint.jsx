@@ -18,7 +18,12 @@ const apiEndpoints = {
 
     // tài khoản và ví xu
     GET_CREDITS: `${BASE_URL}/users/credits`,
-    GET_PAYMENT_HISTORY: (clerkId) => `${BASE_URL}/payments/history/${clerkId}`
+    GET_PAYMENT_HISTORY: (clerkId) => `${BASE_URL}/payments/history/${clerkId}`,
+
+    // yêu thích
+    GET_FAVORITES: `${BASE_URL}/favorites`,
+    TOGGLE_FAVORITE: (fileId) => `${BASE_URL}/favorites/${fileId}/toggle`,
+    CHECK_FAVORITE: (fileId) => `${BASE_URL}/favorites/check/${fileId}`
 };
 
 export default apiEndpoints;
