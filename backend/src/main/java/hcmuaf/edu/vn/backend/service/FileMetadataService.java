@@ -50,6 +50,7 @@ public class FileMetadataService {
     @Autowired
     private Cloudinary cloudinary;
 
+
     public List<FileMetadataDTO> upLoadFiles(MultipartFile[] files, FileMetadataDTO dto) throws IOException {
         ProfileDocument currentProfile = profileService.getCurrentProfile();
         String clerkId = currentProfile.getClerkId();
@@ -65,13 +66,17 @@ public class FileMetadataService {
             if (originalFileName.contains(".")) {
                 fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
             }
+            String lowerExtension = fileExtension.toLowerCase();
+
+            String resourceType = lowerExtension.equals(".pdf") ? "image" : "raw";
 
             Map<String, Object> params = ObjectUtils.asMap(
                     "asset_folder", "studoc-share/documents",
                     "use_filename_as_display_name", true,
-                    "resource_type", "raw",
+                    "resource_type", resourceType,
                     "unique_filename", true,
-                    "pages", true
+                    "pages", true,
+                    "access_mode", "public"
             );
 
             Map uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
@@ -86,7 +91,6 @@ public class FileMetadataService {
             document.setClerkId(clerkId);
             document.setUploadedAt(LocalDateTime.now());
 
-            String lowerExtension = fileExtension.toLowerCase();
             String thumbnailPublicId = publicId;
 
             if (lowerExtension.equals(".docx") || lowerExtension.equals(".doc") ||
@@ -96,24 +100,29 @@ public class FileMetadataService {
 
                     Map<String, Object> thumbParams = ObjectUtils.asMap(
                             "asset_folder", "studoc-share/temp-thumbs",
-                            "resource_type", "auto"
+                            "resource_type", "image"
                     );
                     Map thumbResult = cloudinary.uploader().upload(pdfBytes, thumbParams);
                     thumbnailPublicId = (String) thumbResult.get("public_id");
                 } catch (Exception e) {
-                    System.err.println("Lỗi convert sinh ảnh bìa thực tế, gán biến tạm: " + e.getMessage());
+                    System.err.println("Lỗi convert Office→PDF để lấy thumbnail: " + e.getMessage());
                 }
             }
 
-            String cleanId = thumbnailPublicId;
-            if (cleanId.endsWith(".pdf")) {
-                cleanId = cleanId.substring(0, cleanId.lastIndexOf("."));
+            String cleanThumbId = thumbnailPublicId;
+            if (cleanThumbId.endsWith(".pdf")) {
+                cleanThumbId = cleanThumbId.substring(0, cleanThumbId.lastIndexOf("."));
             }
 
             String generatedThumbUrl = cloudinary.url()
                     .resourceType("image")
-                    .transformation(new com.cloudinary.Transformation().width(400).height(250).crop("fill"))
-                    .generate(cleanId + ".jpg");
+                    .transformation(
+                            new com.cloudinary.Transformation()
+                                    .width(400).height(250).crop("fill")
+                                    .page(1)
+                    )
+                    .format("jpg")
+                    .generate(cleanThumbId);
 
             document.setThumbnailUrl(generatedThumbUrl);
 
@@ -129,8 +138,10 @@ public class FileMetadataService {
             document.setReviewCount(0);
 
             int pages = 1;
-            if (uploadResult.containsKey("pages")) {
-                pages = Integer.parseInt(uploadResult.get("pages").toString());
+            if (uploadResult.containsKey("pages") && uploadResult.get("pages") != null) {
+                try {
+                    pages = Integer.parseInt(uploadResult.get("pages").toString());
+                } catch (NumberFormatException ignored) {}
             }
             document.setPageCount(pages);
 
@@ -159,6 +170,45 @@ public class FileMetadataService {
         }
 
         return uploadedFilesResult;
+    }
+
+    public void deleteFile(String fileId) throws IOException {
+        FileMetadataDocument document = fileMetadataRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu cần xóa"));
+
+        String fileLocation = document.getFileLocation();
+
+        if (fileLocation != null && fileLocation.contains("cloudinary.com")) {
+            try {
+                String[] urlParts = fileLocation.split("/upload/");
+                if (urlParts.length > 1) {
+                    String path = urlParts[1];
+                    if (path.startsWith("v")) {
+                        path = path.substring(path.indexOf("/") + 1);
+                    }
+                    String publicId = path;
+                    if (publicId.contains(".")) {
+                        publicId = publicId.substring(0, publicId.lastIndexOf("."));
+                    }
+
+                    try {
+                        cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "image"));
+                        System.out.println("Đã xóa file (image) trên Cloudinary: " + publicId);
+                    } catch (Exception e1) {
+                        try {
+                            cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "raw"));
+                            System.out.println("Đã xóa file (raw) trên Cloudinary: " + publicId);
+                        } catch (Exception e2) {
+                            System.err.println("Không thể xóa file trên Cloudinary: " + e2.getMessage());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Lỗi khi xóa file trên Cloudinary nhưng vẫn tiếp tục xóa DB: " + e.getMessage());
+            }
+        }
+
+        fileMetadataRepository.delete(document);
     }
 
     private byte[] convertOfficeToPdf(java.io.InputStream officeInputStream, String extension) throws IOException {
@@ -234,38 +284,6 @@ public class FileMetadataService {
                 .collect(Collectors.toList());
     }
 
-    public void deleteFile(String fileId) throws IOException {
-        FileMetadataDocument document = fileMetadataRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu cần xóa"));
-
-        String fileLocation = document.getFileLocation();
-
-        if (fileLocation != null && fileLocation.contains("cloudinary.com")) {
-            try {
-                String[] urlParts = fileLocation.split("/upload/");
-                if (urlParts.length > 1) {
-                    String path = urlParts[1];
-                    if (path.startsWith("v")) {
-                        path = path.substring(path.indexOf("/") + 1);
-                    }
-
-                    String publicId = path;
-                    if (publicId.contains(".")) {
-                        publicId = publicId.substring(0, publicId.lastIndexOf("."));
-                    }
-
-                    cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "raw"));
-                    cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "image"));
-                    System.out.println("Đã tiến hành xóa file thành công trên Cloudinary: " + publicId);
-                }
-            } catch (Exception e) {
-                System.err.println("Lỗi khi xóa file trên Cloudinary nhưng vẫn tiếp tục xóa DB: " + e.getMessage());
-            }
-        }
-
-        fileMetadataRepository.delete(document);
-    }
-
     public FileMetadataDTO togglePublic(String id) {
         FileMetadataDocument document = fileMetadataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tài liệu không tồn tại với ID: " + id));
@@ -281,43 +299,33 @@ public class FileMetadataService {
     }
 
     public FileMetadataDTO processDownloadRequest(String fileId, String clerkId) {
-        try {
-            FileMetadataDocument document = fileMetadataRepository.findById(fileId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu"));
+        FileMetadataDocument document = fileMetadataRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu"));
 
-            int cost = document.getCreditCost() != null ? document.getCreditCost() : 0;
+        int cost = document.getCreditCost() != null ? document.getCreditCost() : 0;
 
-            boolean hasDownloadedBefore = downloadHistoryRepository
-                    .findByClerkIdOrderByDownloadedAtDesc(clerkId)
-                    .stream()
-                    .anyMatch(history -> history.getFileId().equals(fileId));
+        boolean hasDownloadedBefore = downloadHistoryRepository
+                .findByClerkIdOrderByDownloadedAtDesc(clerkId)
+                .stream()
+                .anyMatch(history -> history.getFileId().equals(fileId));
 
-            if (hasDownloadedBefore) {
-                cost = 0;
-            }
-
+        if (hasDownloadedBefore) {
+            cost = 0;
+        } else {
             if (cost > 0) {
                 userCreditsService.deductCreditsForDownload(clerkId, cost);
             }
-
             DownloadHistoryDocument historyRecord = DownloadHistoryDocument.builder()
                     .clerkId(clerkId)
                     .fileId(fileId)
                     .creditsSpent(cost)
                     .downloadedAt(java.time.LocalDateTime.now())
                     .build();
-
             downloadHistoryRepository.save(historyRecord);
-
-            document.setDownloadCount(document.getDownloadCount() + 1);
-            FileMetadataDocument savedDoc = fileMetadataRepository.save(document);
-
-            return mapToDTO(savedDoc);
-
-        } catch (NullPointerException npe) {
-            npe.printStackTrace();
-            throw npe;
         }
+
+        document.setDownloadCount(document.getDownloadCount() + 1);
+        return mapToDTO(fileMetadataRepository.save(document));
     }
 
     public List<FileMetadataDTO> getPublicFiles() {

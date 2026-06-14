@@ -11,4 +11,7 @@ public interface FavoriteRepository extends MongoRepository<FavoriteDocument, St
 
     // Xóa bookmark khi người dùng bấm hủy lưu
     void deleteByClerkIdAndFileId(String clerkId, String fileId);
+
+    // Lấy danh sách yêu thích của người dùng
+    java.util.List<FavoriteDocument> findByClerkIdOrderBySavedAtDesc(String clerkId);
 }

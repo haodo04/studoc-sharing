@@ -38,7 +38,7 @@ import DocumentHeaderInfo from "./components/DocumentHeaderInfo";
 import DocumentPreview from "./components/DocumentPreview";
 import RatingSection from "./components/RatingSection";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import {
   UserCreditsContext,
   useUserCredits,
@@ -182,43 +182,37 @@ export default function DocumentDetailPage() {
 
                 try {
                   const token = await getToken();
+
                   const response = await axios.get(
                     `${BASE_URL}/files/interaction/${id}/download`,
-                    {
-                      responseType: "blob",
-                      headers: { Authorization: `Bearer ${token}` },
-                    },
+                    { headers: { Authorization: `Bearer ${token}` } },
                   );
 
-                  const blob = new Blob([response.data], {
-                    type: response.headers["content-type"],
-                  });
-                  const downloadUrl = window.URL.createObjectURL(blob);
+                  const { downloadUrl, fileName } = response.data;
 
-                  let fileName = documentData.title || "tai-lieu-studocshare";
-                  const fileExtension =
-                    documentData.type && !documentData.type.includes("/")
-                      ? documentData.type
-                      : documentData.type?.split("/")[1] === "pdf"
-                        ? "pdf"
-                        : "docx";
+                  const fileResponse = await fetch(downloadUrl);
 
-                  if (
-                    !fileName
-                      .toLowerCase()
-                      .endsWith(`.${fileExtension.toLowerCase()}`)
-                  ) {
-                    fileName = `${fileName}.${fileExtension}`;
+                  if (!fileResponse.ok) {
+                    throw new Error(
+                      `Không thể tải file từ máy chủ (HTTP ${fileResponse.status})`,
+                    );
                   }
 
+                  const blob = await fileResponse.blob();
+
+                  if (blob.size === 0) {
+                    throw new Error("File tải về bị lỗi, vui lòng thử lại!");
+                  }
+
+                  const blobUrl = window.URL.createObjectURL(blob);
                   const link = document.createElement("a");
-                  link.href = downloadUrl;
-                  link.setAttribute("download", fileName);
+                  link.href = blobUrl;
+                  link.download = fileName;
+                  link.style.display = "none";
                   document.body.appendChild(link);
                   link.click();
-
                   document.body.removeChild(link);
-                  window.URL.revokeObjectURL(downloadUrl);
+                  window.URL.revokeObjectURL(blobUrl);
 
                   toast.success("Tải tài liệu thành công!", {
                     id: downloadToastId,
@@ -237,24 +231,6 @@ export default function DocumentDetailPage() {
                   ) {
                     customErrorMessage =
                       "Phiên đăng nhập hết hạn hoặc bạn không có quyền tải file này. Vui lòng đăng nhập lại!";
-                  } else if (
-                    err.response &&
-                    err.response.data instanceof Blob
-                  ) {
-                    try {
-                      const textError = await err.response.data.text();
-                      if (textError && textError.trim().length > 0) {
-                        const errorObj = JSON.parse(textError);
-                        if (errorObj && errorObj.message) {
-                          customErrorMessage = errorObj.message;
-                        }
-                      }
-                    } catch (parseObjErr) {
-                      console.error(
-                        "Không thể parse nội dung lỗi:",
-                        parseObjErr,
-                      );
-                    }
                   } else if (err.message) {
                     customErrorMessage = err.message;
                   }
@@ -312,7 +288,6 @@ export default function DocumentDetailPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased selection:bg-indigo-500 selection:text-white">
-      <Toaster position="top-center" reverseOrder={false} />
       {/* HEADER STICKY */}
       <NavbarPage />
 
@@ -541,7 +516,7 @@ export default function DocumentDetailPage() {
                   key={doc.id || doc._id}
                   onClick={() => {
                     navigate(`/document/${doc.id || doc._id}`);
-                    window.scrollTo({ top: 0, behavior: "smooth" }); 
+                    window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer"
                 >
