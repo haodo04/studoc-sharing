@@ -11,7 +11,7 @@ import java.security.Principal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/favorites")
+@RequestMapping("/favorites")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class FavoriteController {
@@ -19,7 +19,7 @@ public class FavoriteController {
     private final FavoriteService favoriteService;
 
     @PostMapping("/{fileId}/toggle")
-    public ResponseEntity<Boolean> toggleFavorite(@PathVariable String fileId, Principal principal) {
+    public ResponseEntity<Boolean> toggleFavorite(@PathVariable("fileId") String fileId, Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -29,7 +29,7 @@ public class FavoriteController {
     }
 
     @GetMapping("/check/{fileId}")
-    public ResponseEntity<Boolean> checkFavoriteStatus(@PathVariable String fileId, Principal principal) {
+    public ResponseEntity<Boolean> checkFavoriteStatus(@PathVariable("fileId") String fileId, Principal principal) {
         if (principal == null) {
             return ResponseEntity.ok(false);
         }

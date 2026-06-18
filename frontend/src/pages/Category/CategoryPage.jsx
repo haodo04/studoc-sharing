@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import NavbarPage from "../../components/common/NavbarPage";
 import { documentApi } from "../../api/documentApi";
+import { useAuth } from "@clerk/clerk-react";
+import axios from "axios";
+import apiEndpoints from "../../api/apiEndpoint";
+import toast from "react-hot-toast";
+import DocumentCard from "../../components/common/DocumentCard";
 import {
   Search,
   Compass,
@@ -43,28 +48,6 @@ const UNIVERSITY_MAP = {
   NEU: { name: "NEU - Kinh tế QD", icon: BookOpen },
 };
 
-const ThumbnailImage = ({ src, alt, className }) => {
-  const [imgSrc, setImgSrc] = useState(src);
-  useEffect(() => {
-    setImgSrc(src);
-  }, [src]);
-
-  return (
-    <img
-      src={
-        imgSrc ||
-        "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60"
-      }
-      alt={alt}
-      className={className}
-      onError={() => {
-        setImgSrc(
-          "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60",
-        );
-      }}
-    />
-  );
-};
 
 export default function CategoryPage() {
   const navigate = useNavigate();
@@ -82,6 +65,58 @@ export default function CategoryPage() {
 
   const [dynamicCategories, setDynamicCategories] = useState([]);
   const [dynamicUniversities, setDynamicUniversities] = useState([]);
+
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const [favoriteFileIds, setFavoriteFileIds] = useState(new Set());
+
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!isLoaded || !isSignedIn) return;
+      try {
+        const token = await getToken();
+        const response = await axios.get(apiEndpoints.GET_FAVORITES, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.status === 200) {
+          const ids = response.data.map(f => f.fileId);
+          setFavoriteFileIds(new Set(ids));
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách yêu thích:", error);
+      }
+    };
+    fetchFavorites();
+  }, [isLoaded, isSignedIn, getToken]);
+
+  const handleToggleFavorite = async (fileId) => {
+    if (!isSignedIn) {
+      toast.error("Vui lòng đăng nhập để thêm vào yêu thích!");
+      return;
+    }
+    try {
+      const token = await getToken();
+      const response = await axios.post(apiEndpoints.TOGGLE_FAVORITE(fileId), {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.status === 200) {
+        const isFavorited = response.data;
+        setFavoriteFileIds(prev => {
+          const newSet = new Set(prev);
+          if (isFavorited) {
+            newSet.add(fileId);
+            toast.success("Đã thêm vào yêu thích");
+          } else {
+            newSet.delete(fileId);
+            toast.success("Đã bỏ yêu thích");
+          }
+          return newSet;
+        });
+      }
+    } catch (error) {
+      console.error("Lỗi khi cập nhật yêu thích:", error);
+      toast.error("Có lỗi xảy ra, vui lòng thử lại!");
+    }
+  };
 
   useEffect(() => {
     const fetchFiltersData = async () => {
@@ -154,17 +189,7 @@ export default function CategoryPage() {
     }
   };
 
-  const getFileIcon = (docType) => {
-    const type = docType?.toLowerCase();
-    if (type === "pdf") return <FileText className="w-4 h-4 text-red-500" />;
-    if (type === "docx" || type === "doc")
-      return <FileText className="w-4 h-4 text-blue-500" />;
-    if (type === "pptx" || type === "ppt")
-      return <Presentation className="w-4 h-4 text-orange-500" />;
-    if (type === "zip" || type === "rar")
-      return <Archive className="w-4 h-4 text-emerald-500" />;
-    return <File className="w-4 h-4 text-slate-500" />;
-  };
+
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
@@ -359,61 +384,12 @@ export default function CategoryPage() {
             /* Lưới Grid hiển thị đồng bộ tất cả các cột */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  onClick={() => navigate(`/document/${doc.id}`)}
-                  className="group bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer"
-                >
-                  <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
-                    <ThumbnailImage
-                      src={doc.thumbnailUrl}
-                      alt={doc.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-
-                    <span className="absolute top-2 left-2 bg-slate-800/80 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 flex items-center gap-1">
-                      {doc.docType || "Tài liệu"}
-                    </span>
-
-                    <span className="absolute bottom-2 right-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10">
-                      {doc.creditCost === 0
-                        ? "Miễn phí"
-                        : `${doc.creditCost} Xu`}
-                    </span>
-                  </div>
-
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase text-slate-500">
-                        <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
-                          {doc.universityId === "OTHER_UNI"
-                            ? doc.customUniversity
-                            : doc.universityId}
-                        </span>
-                        <span className="truncate max-w-[120px]">
-                          {doc.subjectCode}
-                        </span>
-                      </div>
-
-                      <h3 className="font-bold text-[13px] text-slate-900 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
-                        {doc.title}
-                      </h3>
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                        <span className="text-slate-800">
-                          {doc.rating || 0}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Download className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{doc.downloadCount || 0}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <DocumentCard 
+                  key={doc.id || doc._id} 
+                  doc={doc} 
+                  isFavorited={favoriteFileIds.has(doc.id || doc._id)}
+                  onToggleFavorite={handleToggleFavorite}
+                />
               ))}
             </div>
           )}
