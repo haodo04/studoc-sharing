@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import NavbarPage from "../../components/common/NavbarPage";
 import { documentApi } from "../../api/documentApi";
 import { useAuth } from "@clerk/clerk-react";
@@ -50,7 +49,6 @@ const UNIVERSITY_MAP = {
 
 
 export default function CategoryPage() {
-  const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeExplore, setActiveExplore] = useState("Tất cả");
