@@ -37,6 +37,8 @@ import { getCommentsByFileId } from "../../api/commentApi";
 import DocumentHeaderInfo from "./components/DocumentHeaderInfo";
 import DocumentPreview from "./components/DocumentPreview";
 import RatingSection from "./components/RatingSection";
+import DocumentCard from "../../components/common/DocumentCard";
+import apiEndpoints from "../../api/apiEndpoint";
 import axios from "axios";
 import toast from "react-hot-toast";
 import {
@@ -56,7 +58,57 @@ export default function DocumentDetailPage() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const [favoriteFileIds, setFavoriteFileIds] = useState(new Set());
+
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!isLoaded || !isSignedIn) return;
+      try {
+        const token = await getToken();
+        const response = await axios.get(apiEndpoints.GET_FAVORITES, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.status === 200) {
+          const ids = response.data.map(f => f.fileId);
+          setFavoriteFileIds(new Set(ids));
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách yêu thích:", error);
+      }
+    };
+    fetchFavorites();
+  }, [isLoaded, isSignedIn, getToken]);
+
+  const handleToggleFavorite = async (fileId) => {
+    if (!isSignedIn) {
+      toast.error("Vui lòng đăng nhập để thêm vào yêu thích!");
+      return;
+    }
+    try {
+      const token = await getToken();
+      const response = await axios.post(apiEndpoints.TOGGLE_FAVORITE(fileId), {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.status === 200) {
+        const isFavorited = response.data;
+        setFavoriteFileIds(prev => {
+          const newSet = new Set(prev);
+          if (isFavorited) {
+            newSet.add(fileId);
+            toast.success("Đã thêm vào yêu thích");
+          } else {
+            newSet.delete(fileId);
+            toast.success("Đã bỏ yêu thích");
+          }
+          return newSet;
+        });
+      }
+    } catch (error) {
+      console.error("Lỗi khi cập nhật yêu thích:", error);
+      toast.error("Có lỗi xảy ra, vui lòng thử lại!");
+    }
+  };
 
   // hàm lấy danh sách bình luận
   const fetchComments = useCallback(async () => {
@@ -85,28 +137,7 @@ export default function DocumentDetailPage() {
     }
   }, [id]);
 
-  const ThumbnailImage = ({ src, alt, className }) => {
-    const [imgSrc, setImgSrc] = useState(src);
-    useEffect(() => {
-      setImgSrc(src);
-    }, [src]);
 
-    return (
-      <img
-        src={
-          imgSrc ||
-          "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60"
-        }
-        alt={alt}
-        className={className}
-        onError={() => {
-          setImgSrc(
-            "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60",
-          );
-        }}
-      />
-    );
-  };
 
   useEffect(() => {
     const loadDocumentAndRelated = async () => {
@@ -325,7 +356,11 @@ export default function DocumentDetailPage() {
           {/* CỘT TRÁI */}
           <div className="lg:col-span-2 space-y-6">
             {/* Khối 1: Thông tin tiêu đề & Header */}
-            <DocumentHeaderInfo documentData={documentData} />
+            <DocumentHeaderInfo 
+              documentData={documentData} 
+              isFavorited={favoriteFileIds.has(id)}
+              onToggleFavorite={() => handleToggleFavorite(id)}
+            />
 
             {/* Khối 2: Trình xem trước tài liệu */}
             {documentData && (
@@ -512,64 +547,12 @@ export default function DocumentDetailPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {relatedDocs.map((doc) => (
-                <div
-                  key={doc.id || doc._id}
-                  onClick={() => {
-                    navigate(`/document/${doc.id || doc._id}`);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow group cursor-pointer"
-                >
-                  <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
-                    <ThumbnailImage
-                      src={doc.thumbnailUrl}
-                      alt={doc.title || doc.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-
-                    <span className="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 uppercase">
-                      {doc.docType || "Tài liệu"}
-                    </span>
-                    <span className="absolute bottom-2 right-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10">
-                      {doc.creditCost === 0
-                        ? "Miễn phí"
-                        : `${doc.creditCost} Xu`}
-                    </span>
-                  </div>
-
-                  {/* Khối thông tin chi tiết */}
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase text-slate-500">
-                        <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
-                          {doc.universityId === "OTHER_UNI"
-                            ? doc.customUniversity
-                            : doc.universityId}
-                        </span>
-                        <span className="truncate max-w-[120px]">
-                          {doc.subjectCode}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-[13px] text-slate-900 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
-                        {doc.title || doc.name}
-                      </h3>
-                    </div>
-
-                    {/* Thanh thông số dưới đáy card */}
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                        <span className="text-slate-800">
-                          {doc.rating?.toFixed(1) || "0.0"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Download className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{doc.downloadCount || 0}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <DocumentCard 
+                  key={doc.id || doc._id} 
+                  doc={doc} 
+                  isFavorited={favoriteFileIds.has(doc.id || doc._id)}
+                  onToggleFavorite={handleToggleFavorite}
+                />
               ))}
             </div>
           )}

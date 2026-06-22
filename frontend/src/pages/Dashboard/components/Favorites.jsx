@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+    Heart,
     Star,
     FileText,
     Image as ImageIcon,
@@ -124,7 +125,7 @@ const FavoritesPage = () => {
                         </div>
                     ) : favorites.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-16 bg-surface-container-lowest rounded-xl border border-outline-variant">
-                            <Star size={48} className="text-outline mb-4" />
+                            <Heart size={48} className="text-outline mb-4" />
                             <p className="font-headline-sm text-on-surface">Chưa có tài liệu yêu thích</p>
                             <p className="text-on-surface-variant text-sm mt-2">Hãy đánh dấu sao các tài liệu quan trọng để truy cập nhanh ở đây.</p>
                         </div>
@@ -143,7 +144,7 @@ const FavoritesPage = () => {
                                                 className="group bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:bg-surface-bright transition-colors cursor-pointer flex flex-col h-48 relative"
                                             >
                                                 {/* Thumbnail / Image Area */}
-                                                <Link to={`/file/${item.fileId}`} className="flex-1 bg-surface-container-low bg-cover bg-center relative block">
+                                                <Link to={`/document/${item.fileId}`} className="flex-1 bg-surface-container-low bg-cover bg-center relative block">
                                                     {item.file?.thumbnailUrl ? (
                                                         <div 
                                                             className="absolute inset-0 bg-cover bg-center"
@@ -161,11 +162,11 @@ const FavoritesPage = () => {
                                                     className="absolute top-3 right-3 bg-surface/80 backdrop-blur-sm p-1.5 rounded-full flex items-center justify-center hover:scale-110 transition-transform z-10"
                                                     title="Bỏ yêu thích"
                                                 >
-                                                    <Star size={16} className="text-primary" fill="currentColor" />
+                                                    <Heart size={16} className="text-pink-500" fill="currentColor" />
                                                 </button>
 
                                                 {/* Info Area */}
-                                                <Link to={`/file/${item.fileId}`} className="p-4 border-t border-outline-variant bg-surface-container-lowest flex items-center gap-3 block">
+                                                <Link to={`/document/${item.fileId}`} className="p-4 border-t border-outline-variant bg-surface-container-lowest flex items-center gap-3 block">
                                                     <div className="flex items-center gap-3">
                                                         {getFileIcon(item.file?.name)}
                                                         <div className="min-w-0">
@@ -215,13 +216,13 @@ const FavoritesPage = () => {
                                             <div className="flex items-center gap-4 w-1/2 min-w-0">
                                                 <button 
                                                     onClick={() => handleToggleFavorite(item.fileId)}
-                                                    className="text-primary opacity-100 flex items-center hover:scale-110 transition-transform"
+                                                    className="text-pink-500 opacity-100 flex items-center hover:scale-110 transition-transform"
                                                     title="Bỏ yêu thích"
                                                 >
-                                                    <Star size={20} fill="currentColor" />
+                                                    <Heart size={20} fill="currentColor" />
                                                 </button>
                                                 {getFileIcon(item.file?.name)}
-                                                <Link to={`/file/${item.fileId}`} className="font-body-md text-body-md text-on-surface truncate hover:text-primary transition-colors block flex-1" title={item.file?.title || item.file?.name}>
+                                                <Link to={`/document/${item.fileId}`} className="font-body-md text-body-md text-on-surface truncate hover:text-primary transition-colors block flex-1" title={item.file?.title || item.file?.name}>
                                                     {item.file?.title || item.file?.name}
                                                 </Link>
                                             </div>
