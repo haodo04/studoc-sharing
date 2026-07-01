@@ -44,3 +44,4 @@ backend/.settings
 .idea
 .DS_Store
 Thumbs.db
+uploads/
