@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import hcmuaf.edu.vn.backend.document.DownloadHistoryDocument;
 import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
 import hcmuaf.edu.vn.backend.document.ProfileDocument;
+import hcmuaf.edu.vn.backend.document.UnlockHistoryDocument;
 import hcmuaf.edu.vn.backend.dto.DownloadHistoryDTO;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
 import hcmuaf.edu.vn.backend.dto.response.FileDetailResponseDTO;
@@ -13,6 +14,7 @@ import hcmuaf.edu.vn.backend.exceptions.ResourceNotFoundException;
 import hcmuaf.edu.vn.backend.repository.DownloadHistoryRepository;
 import hcmuaf.edu.vn.backend.repository.FileMetadataRepository;
 import hcmuaf.edu.vn.backend.repository.ProfileRepository;
+import hcmuaf.edu.vn.backend.repository.UnlockHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -49,6 +51,8 @@ public class FileMetadataService {
     private DownloadHistoryRepository downloadHistoryRepository;
     @Autowired
     private Cloudinary cloudinary;
+    @Autowired
+    private UnlockHistoryRepository unlockHistoryRepository;
 
 
     public List<FileMetadataDTO> upLoadFiles(MultipartFile[] files, FileMetadataDTO dto) throws IOException {
@@ -336,10 +340,7 @@ public class FileMetadataService {
             return;
         }
 
-        boolean hasUnlockedBefore = downloadHistoryRepository
-                .findByClerkIdOrderByDownloadedAtDesc(clerkId)
-                .stream()
-                .anyMatch(history -> history.getFileId().equals(fileId));
+        boolean hasUnlockedBefore = unlockHistoryRepository.existsByClerkIdAndFileId(clerkId, fileId);
 
         if (hasUnlockedBefore) {
             return;
@@ -351,13 +352,13 @@ public class FileMetadataService {
             userCreditsService.deductCreditsForDownload(clerkId, cost);
         }
 
-        DownloadHistoryDocument historyRecord = DownloadHistoryDocument.builder()
+        UnlockHistoryDocument unlockRecord = UnlockHistoryDocument.builder()
                 .clerkId(clerkId)
                 .fileId(fileId)
-                .creditsSpent(cost)
-                .downloadedAt(java.time.LocalDateTime.now())
+                .creditSpent(cost)
+                .unlockedAt(java.time.LocalDateTime.now())
                 .build();
-        downloadHistoryRepository.save(historyRecord);
+        unlockHistoryRepository.save(unlockRecord);
     }
 
     public FileMetadataDTO processCleanDownloadRequest(String fileId, String clerkId) {
@@ -365,9 +366,7 @@ public class FileMetadataService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu"));
 
         boolean isOwnerOrPurchased = clerkId.equals(document.getClerkId()) ||
-                downloadHistoryRepository.findByClerkIdOrderByDownloadedAtDesc(clerkId)
-                        .stream()
-                        .anyMatch(history -> history.getFileId().equals(fileId));
+                unlockHistoryRepository.existsByClerkIdAndFileId(clerkId, fileId);
 
         if (!isOwnerOrPurchased) {
             throw new SecurityException("Bạn chưa mở khóa tài liệu này. Vui lòng thanh toán bằng xu trước!");
@@ -440,10 +439,7 @@ public class FileMetadataService {
             if (currentClerkId.equals(updatedDoc.getClerkId())) {
                 isUnlocked = true;
             } else {
-                isUnlocked = downloadHistoryRepository
-                        .findByClerkIdOrderByDownloadedAtDesc(currentClerkId)
-                        .stream()
-                        .anyMatch(history -> history.getFileId().equals(id));
+                isUnlocked = unlockHistoryRepository.existsByClerkIdAndFileId(currentClerkId, id);
             }
         }
         dto.setUnlocked(isUnlocked);
