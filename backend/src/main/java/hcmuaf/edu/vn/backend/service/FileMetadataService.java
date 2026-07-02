@@ -328,6 +328,55 @@ public class FileMetadataService {
         return mapToDTO(fileMetadataRepository.save(document));
     }
 
+    public void unlockDocument(String fileId, String clerkId) {
+        FileMetadataDocument document = fileMetadataRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu cần mở khóa."));
+
+        if (clerkId.equals(document.getClerkId())) {
+            return;
+        }
+
+        boolean hasUnlockedBefore = downloadHistoryRepository
+                .findByClerkIdOrderByDownloadedAtDesc(clerkId)
+                .stream()
+                .anyMatch(history -> history.getFileId().equals(fileId));
+
+        if (hasUnlockedBefore) {
+            return;
+        }
+
+        int cost = document.getCreditCost() != null ? document.getCreditCost() : 0;
+
+        if (cost > 0) {
+            userCreditsService.deductCreditsForDownload(clerkId, cost);
+        }
+
+        DownloadHistoryDocument historyRecord = DownloadHistoryDocument.builder()
+                .clerkId(clerkId)
+                .fileId(fileId)
+                .creditsSpent(cost)
+                .downloadedAt(java.time.LocalDateTime.now())
+                .build();
+        downloadHistoryRepository.save(historyRecord);
+    }
+
+    public FileMetadataDTO processCleanDownloadRequest(String fileId, String clerkId) {
+        FileMetadataDocument document = fileMetadataRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu"));
+
+        boolean isOwnerOrPurchased = clerkId.equals(document.getClerkId()) ||
+                downloadHistoryRepository.findByClerkIdOrderByDownloadedAtDesc(clerkId)
+                        .stream()
+                        .anyMatch(history -> history.getFileId().equals(fileId));
+
+        if (!isOwnerOrPurchased) {
+            throw new SecurityException("Bạn chưa mở khóa tài liệu này. Vui lòng thanh toán bằng xu trước!");
+        }
+
+        document.setDownloadCount(document.getDownloadCount() + 1);
+        return mapToDTO(fileMetadataRepository.save(document));
+    }
+
     public List<FileMetadataDTO> getPublicFiles() {
         return fileMetadataRepository.findByIsPublicTrue().stream()
                 .map(this::mapToDTO)
@@ -348,7 +397,7 @@ public class FileMetadataService {
                 .toList();
     }
 
-    public FileDetailResponseDTO getFileById(String id) {
+    public FileDetailResponseDTO getFileById(String id, String currentClerkId) {
         org.springframework.data.mongodb.core.query.Query query =
                 new org.springframework.data.mongodb.core.query.Query(org.springframework.data.mongodb.core.query.Criteria.where("_id").is(id));
         org.springframework.data.mongodb.core.query.Update update =
@@ -386,24 +435,31 @@ public class FileMetadataService {
                 .thumbnailUrl(updatedDoc.getThumbnailUrl())
                 .build();
 
+        boolean isUnlocked = false;
+        if (currentClerkId != null) {
+            if (currentClerkId.equals(updatedDoc.getClerkId())) {
+                isUnlocked = true;
+            } else {
+                isUnlocked = downloadHistoryRepository
+                        .findByClerkIdOrderByDownloadedAtDesc(currentClerkId)
+                        .stream()
+                        .anyMatch(history -> history.getFileId().equals(id));
+            }
+        }
+        dto.setUnlocked(isUnlocked);
+
         dto.setAuthorName("Thành viên StuDoc");
         dto.setAuthorAvatar("https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100");
 
         String uploaderClerkId = updatedDoc.getClerkId();
         if (uploaderClerkId != null) {
             ProfileDocument profile = profileRepository.findByClerkId(uploaderClerkId);
-
             if (profile != null) {
                 String firstName = profile.getFirstName() != null ? profile.getFirstName() : "";
                 String lastName = profile.getLastName() != null ? profile.getLastName() : "";
                 String fullName = (firstName + " " + lastName).trim();
-
-                if (!fullName.isEmpty()) {
-                    dto.setAuthorName(fullName);
-                }
-                if (profile.getPhotoUrl() != null) {
-                    dto.setAuthorAvatar(profile.getPhotoUrl());
-                }
+                if (!fullName.isEmpty()) dto.setAuthorName(fullName);
+                if (profile.getPhotoUrl() != null) dto.setAuthorAvatar(profile.getPhotoUrl());
             }
         }
 

@@ -29,8 +29,10 @@ public class FileDocumentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<FileDetailResponseDTO> getDocumentDetails(@PathVariable String id) {
-        FileDetailResponseDTO file = fileMetadataService.getFileById(id);
+    public ResponseEntity<FileDetailResponseDTO> getDocumentDetails(@PathVariable String id, java.security.Principal principal) {
+        String currentClerkId = (principal != null) ? principal.getName() : null;
+
+        FileDetailResponseDTO file = fileMetadataService.getFileById(id, currentClerkId);
         return ResponseEntity.ok(file);
     }
 
