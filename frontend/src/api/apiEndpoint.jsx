@@ -9,6 +9,7 @@ const apiEndpoints = {
     TOGGLE_FILE: (id) => `${BASE_URL}/files/manage/${id}/toggle-public`,
 
     // tương tác tài liệu
+    UNLOCK_FILE: (id) => `${BASE_URL}/files/interaction/${id}/unlock`,
     DOWNLOAD_FILE: (id) => `${BASE_URL}/files/interaction/${id}/download`, 
     GET_DOWNLOAD_HISTORY: (clerkId) => `${BASE_URL}/files/interaction/history/${clerkId}`,
 
