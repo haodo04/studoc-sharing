@@ -46,6 +46,7 @@ import {
   UserCreditsContext,
   useUserCredits,
 } from "../../context/UserCreditsContext";
+import AiAnalysisCard from "./components/AiAnalysisCard";
 
 export default function DocumentDetailPage() {
   const navigate = useNavigate();
@@ -519,6 +520,39 @@ export default function DocumentDetailPage() {
                 {documentData.description ||
                   "Chưa có mô tả chi tiết cho tài liệu này."}
               </p>
+            </div>
+
+            {/* KHỐI PHÂN TÍCH AI */}
+            <div
+              onClick={() => {
+                if (!hasUnlockedFull) {
+                  onUnlockDocument();
+                  return;
+                }
+                navigate(`/documents/${id}/ai-studio`);
+              }}
+              className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl p-5 shadow-md cursor-pointer hover:shadow-lg transition-all active:scale-[0.99] flex items-center justify-between gap-4 text-white"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="bg-white/15 p-2.5 rounded-xl shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-extrabold text-sm md:text-base tracking-tight">
+                    Trợ lý học tập AI
+                  </h3>
+                  <p className="text-[11px] md:text-xs text-indigo-100 font-medium truncate">
+                    {hasUnlockedFull
+                      ? "Tóm tắt, giải thích khái niệm, flashcard và trò chuyện với tài liệu này"
+                      : "Mở khóa tài liệu để sử dụng Trợ lý AI (tóm tắt, flashcard, chat...)"}
+                  </p>
+                </div>
+              </div>
+              {hasUnlockedFull ? (
+                <ChevronRight className="w-5 h-5 shrink-0" />
+              ) : (
+                <Lock className="w-5 h-5 shrink-0" />
+              )}
             </div>
 
             <RatingSection

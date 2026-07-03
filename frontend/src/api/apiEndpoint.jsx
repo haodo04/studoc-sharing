@@ -12,6 +12,10 @@ const apiEndpoints = {
     UNLOCK_FILE: (id) => `${BASE_URL}/files/interaction/${id}/unlock`,
     DOWNLOAD_FILE: (id) => `${BASE_URL}/files/interaction/${id}/download`, 
     GET_DOWNLOAD_HISTORY: (clerkId) => `${BASE_URL}/files/interaction/history/${clerkId}`,
+    AI_ANALYZE_FILE: (id) => `${BASE_URL}/files/${id}/ai-analyze`,
+    // AI Studio
+    GET_AI_STUDY_CONTENT: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/content`,
+    POST_AI_CHAT: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/chat`,
 
     // metadata hệ thống
     GET_UNIVERSITIES: `${BASE_URL}/metadata/universities`,
