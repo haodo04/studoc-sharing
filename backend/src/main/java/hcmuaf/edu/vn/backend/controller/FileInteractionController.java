@@ -8,11 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +25,33 @@ public class FileInteractionController {
     public ResponseEntity<?> download(@PathVariable String id, Principal principal) {
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        FileMetadataDTO file = fileMetadataService.processDownloadRequest(id, principal.getName());
+        try {
+            FileMetadataDTO file = fileMetadataService.processCleanDownloadRequest(id, principal.getName());
 
-        Map<String, String> response = new java.util.HashMap<>();
-        response.put("downloadUrl", file.getFileLocation());
-        response.put("fileName", file.getName());
-        return ResponseEntity.ok(response);
+            Map<String, String> response = new java.util.HashMap<>();
+            response.put("downloadUrl", file.getFileLocation());
+            response.put("fileName", file.getName());
+            return ResponseEntity.ok(response);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/unlock")
+    public ResponseEntity<?> unlock(@PathVariable String id, Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        try {
+            fileMetadataService.unlockDocument(id, principal.getName());
+
+            return ResponseEntity.ok(Map.of("message", "Mở khóa tài liệu thành công!"));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
     }
 
     @GetMapping("/history/{clerkId}")

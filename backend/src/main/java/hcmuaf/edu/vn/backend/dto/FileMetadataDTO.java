@@ -38,4 +38,5 @@ public class FileMetadataDTO {
     private Double rating;
     private Integer reviewCount;
     private String thumbnailUrl;
+    private String viewableUrl;
 }

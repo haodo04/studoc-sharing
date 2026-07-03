@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import hcmuaf.edu.vn.backend.document.DownloadHistoryDocument;
 import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
 import hcmuaf.edu.vn.backend.document.ProfileDocument;
+import hcmuaf.edu.vn.backend.document.UnlockHistoryDocument;
 import hcmuaf.edu.vn.backend.dto.DownloadHistoryDTO;
 import hcmuaf.edu.vn.backend.dto.FileMetadataDTO;
 import hcmuaf.edu.vn.backend.dto.response.FileDetailResponseDTO;
@@ -13,6 +14,7 @@ import hcmuaf.edu.vn.backend.exceptions.ResourceNotFoundException;
 import hcmuaf.edu.vn.backend.repository.DownloadHistoryRepository;
 import hcmuaf.edu.vn.backend.repository.FileMetadataRepository;
 import hcmuaf.edu.vn.backend.repository.ProfileRepository;
+import hcmuaf.edu.vn.backend.repository.UnlockHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -49,6 +51,8 @@ public class FileMetadataService {
     private DownloadHistoryRepository downloadHistoryRepository;
     @Autowired
     private Cloudinary cloudinary;
+    @Autowired
+    private UnlockHistoryRepository unlockHistoryRepository;
 
 
     public List<FileMetadataDTO> upLoadFiles(MultipartFile[] files, FileMetadataDTO dto) throws IOException {
@@ -92,22 +96,34 @@ public class FileMetadataService {
             document.setUploadedAt(LocalDateTime.now());
 
             String thumbnailPublicId = publicId;
+            String viewableUrl = null;
 
-            if (lowerExtension.equals(".docx") || lowerExtension.equals(".doc") ||
-                    lowerExtension.equals(".pptx") || lowerExtension.equals(".ppt")) {
+            boolean isPdf = lowerExtension.equals(".pdf");
+            boolean isOffice = lowerExtension.equals(".docx") || lowerExtension.equals(".doc") ||
+                    lowerExtension.equals(".pptx") || lowerExtension.equals(".ppt");
+
+            if (isPdf) {
+                viewableUrl = cloudinaryUrl;
+            } else if (isOffice) {
                 try {
                     byte[] pdfBytes = convertOfficeToPdf(file.getInputStream(), lowerExtension);
 
-                    Map<String, Object> thumbParams = ObjectUtils.asMap(
-                            "asset_folder", "studoc-share/temp-thumbs",
-                            "resource_type", "image"
+                    Map<String, Object> viewParams = ObjectUtils.asMap(
+                            "asset_folder", "studoc-share/viewable",
+                            "resource_type", "image",
+                            "unique_filename", true,
+                            "access_mode", "public"
                     );
-                    Map thumbResult = cloudinary.uploader().upload(pdfBytes, thumbParams);
-                    thumbnailPublicId = (String) thumbResult.get("public_id");
+                    Map viewResult = cloudinary.uploader().upload(pdfBytes, viewParams);
+
+                    viewableUrl = (String) viewResult.get("secure_url");
+                    thumbnailPublicId = (String) viewResult.get("public_id");
                 } catch (Exception e) {
-                    System.err.println("Lỗi convert Office→PDF để lấy thumbnail: " + e.getMessage());
+                    System.err.println("Lỗi convert Office→PDF (thumbnail + viewable): " + e.getMessage());
                 }
             }
+
+            document.setViewableUrl(viewableUrl);
 
             String cleanThumbId = thumbnailPublicId;
             if (cleanThumbId.endsWith(".pdf")) {
@@ -266,6 +282,7 @@ public class FileMetadataService {
                 .subjectCode(doc.getSubjectCode())
                 .subjectName(doc.getSubjectName())
                 .thumbnailUrl(doc.getThumbnailUrl())
+                .viewableUrl(doc.getViewableUrl())
                 .docType(doc.getDocType())
                 .creditCost(doc.getCreditCost())
                 .isPublic(doc.getIsPublic())
@@ -328,6 +345,50 @@ public class FileMetadataService {
         return mapToDTO(fileMetadataRepository.save(document));
     }
 
+    public void unlockDocument(String fileId, String clerkId) {
+        FileMetadataDocument document = fileMetadataRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu cần mở khóa."));
+
+        if (clerkId.equals(document.getClerkId())) {
+            return;
+        }
+
+        boolean hasUnlockedBefore = unlockHistoryRepository.existsByClerkIdAndFileId(clerkId, fileId);
+
+        if (hasUnlockedBefore) {
+            return;
+        }
+
+        int cost = document.getCreditCost() != null ? document.getCreditCost() : 0;
+
+        if (cost > 0) {
+            userCreditsService.deductCreditsForDownload(clerkId, cost);
+        }
+
+        UnlockHistoryDocument unlockRecord = UnlockHistoryDocument.builder()
+                .clerkId(clerkId)
+                .fileId(fileId)
+                .creditSpent(cost)
+                .unlockedAt(java.time.LocalDateTime.now())
+                .build();
+        unlockHistoryRepository.save(unlockRecord);
+    }
+
+    public FileMetadataDTO processCleanDownloadRequest(String fileId, String clerkId) {
+        FileMetadataDocument document = fileMetadataRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu"));
+
+        boolean isOwnerOrPurchased = clerkId.equals(document.getClerkId()) ||
+                unlockHistoryRepository.existsByClerkIdAndFileId(clerkId, fileId);
+
+        if (!isOwnerOrPurchased) {
+            throw new SecurityException("Bạn chưa mở khóa tài liệu này. Vui lòng thanh toán bằng xu trước!");
+        }
+
+        document.setDownloadCount(document.getDownloadCount() + 1);
+        return mapToDTO(fileMetadataRepository.save(document));
+    }
+
     public List<FileMetadataDTO> getPublicFiles() {
         return fileMetadataRepository.findByIsPublicTrue().stream()
                 .map(this::mapToDTO)
@@ -348,7 +409,7 @@ public class FileMetadataService {
                 .toList();
     }
 
-    public FileDetailResponseDTO getFileById(String id) {
+    public FileDetailResponseDTO getFileById(String id, String currentClerkId) {
         org.springframework.data.mongodb.core.query.Query query =
                 new org.springframework.data.mongodb.core.query.Query(org.springframework.data.mongodb.core.query.Criteria.where("_id").is(id));
         org.springframework.data.mongodb.core.query.Update update =
@@ -384,7 +445,18 @@ public class FileMetadataService {
                 .rating(updatedDoc.getRating())
                 .reviewCount(updatedDoc.getReviewCount())
                 .thumbnailUrl(updatedDoc.getThumbnailUrl())
+                .viewableUrl(updatedDoc.getViewableUrl())
                 .build();
+
+        boolean isUnlocked = false;
+        if (currentClerkId != null) {
+            if (currentClerkId.equals(updatedDoc.getClerkId())) {
+                isUnlocked = true;
+            } else {
+                isUnlocked = unlockHistoryRepository.existsByClerkIdAndFileId(currentClerkId, id);
+            }
+        }
+        dto.setUnlocked(isUnlocked);
 
         dto.setAuthorName("Thành viên StuDoc");
         dto.setAuthorAvatar("https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100");
@@ -392,18 +464,12 @@ public class FileMetadataService {
         String uploaderClerkId = updatedDoc.getClerkId();
         if (uploaderClerkId != null) {
             ProfileDocument profile = profileRepository.findByClerkId(uploaderClerkId);
-
             if (profile != null) {
                 String firstName = profile.getFirstName() != null ? profile.getFirstName() : "";
                 String lastName = profile.getLastName() != null ? profile.getLastName() : "";
                 String fullName = (firstName + " " + lastName).trim();
-
-                if (!fullName.isEmpty()) {
-                    dto.setAuthorName(fullName);
-                }
-                if (profile.getPhotoUrl() != null) {
-                    dto.setAuthorAvatar(profile.getPhotoUrl());
-                }
+                if (!fullName.isEmpty()) dto.setAuthorName(fullName);
+                if (profile.getPhotoUrl() != null) dto.setAuthorAvatar(profile.getPhotoUrl());
             }
         }
 

@@ -48,14 +48,39 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
         boolean isBasePublic = lowerURI.contains("/webhooks") || lowerURI.contains("/register") || lowerURI.contains("/uploads");
         boolean isPublicFiles = lowerURI.contains("/files/public/");
         boolean isGetComments = lowerURI.contains("/comments") && "GET".equalsIgnoreCase(method);
-        boolean isGetDocumentDetail = lowerURI.contains("/files/") && "GET".equalsIgnoreCase(method) && !lowerURI.contains("/interaction");
         boolean isDocumentsPublic = lowerURI.contains("/documents/");
 
-        if (isMetadataPublic || isBasePublic || isPublicFiles || isGetComments || isGetDocumentDetail || isVnPayReturn || isDocumentsPublic) {
+        boolean isGetDocumentDetail = "GET".equalsIgnoreCase(method) &&
+                (lowerURI.contains("/related") || (lowerURI.contains("/files/")
+                        && !lowerURI.contains("/interaction")
+                        && !lowerURI.contains("/manage")
+                        && !lowerURI.contains("/ai-studio")));
+
+        // Nhóm 1: public tuyệt đối, không cần biết user là ai -> bỏ qua luôn, KHÔNG parse token
+        boolean isFullyPublic = isMetadataPublic || isBasePublic || isGetComments || isVnPayReturn || isDocumentsPublic;
+
+        if (isFullyPublic) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        // Nhóm 2: public nhưng cần biết user nếu có đăng nhập (
+        boolean isOptionalAuth = isGetDocumentDetail || isPublicFiles;
+
+        if (isOptionalAuth) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                try {
+                    authenticate(authHeader.substring(7), request);
+                } catch (Exception e) {
+                    System.err.println("Optional auth: JWT không hợp lệ, tiếp tục như khách - " + e.getMessage());
+                }
+            }
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Nhóm 3: route bắt buộc phải đăng nhập
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -64,48 +89,51 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
         }
 
         try {
-            String token = authHeader.substring(7);
-            String[] chunks = token.split("\\.");
-
-            if (chunks.length < 3) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token format");
-                return;
-            }
-
-            String headerJson = new String(Base64.getUrlDecoder().decode(chunks[0]));
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode headerNode = mapper.readTree(headerJson);
-
-            if (!headerNode.has("kid")) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token header is missing kid");
-                return;
-            }
-
-            String kid = headerNode.get("kid").asText();
-            PublicKey publicKey = jwksProvider.getPublicKey(kid);
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(publicKey)
-                    .setAllowedClockSkewSeconds(60)
-                    .requireIssuer(clerkIssuer)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-
-            String clerkId = claims.getSubject();
-
-            request.setAttribute("clerkId", clerkId);
-
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                    clerkId, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
-            );
-            authenticationToken.setDetails(new org.springframework.security.web.authentication.WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-
+            authenticate(authHeader.substring(7), request);
             filterChain.doFilter(request, response);
-
         } catch (Exception e) {
             System.err.println("JWT validation failed: " + e.getClass().getName() + " - " + e.getMessage());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token: " + e.getMessage());
         }
+    }
+
+    /**
+     * Parse + verify JWT, set SecurityContext nếu hợp lệ.
+     * Ném exception nếu token sai định dạng / chữ ký / issuer -> caller tự quyết định xử lý (chặn hay bỏ qua).
+     */
+    private void authenticate(String token, HttpServletRequest request) throws Exception {
+        String[] chunks = token.split("\\.");
+
+        if (chunks.length < 3) {
+            throw new IllegalArgumentException("Invalid JWT token format");
+        }
+
+        String headerJson = new String(Base64.getUrlDecoder().decode(chunks[0]));
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode headerNode = mapper.readTree(headerJson);
+
+        if (!headerNode.has("kid")) {
+            throw new IllegalArgumentException("Token header is missing kid");
+        }
+
+        String kid = headerNode.get("kid").asText();
+        PublicKey publicKey = jwksProvider.getPublicKey(kid);
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(publicKey)
+                .setAllowedClockSkewSeconds(60)
+                .requireIssuer(clerkIssuer)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        String clerkId = claims.getSubject();
+
+        request.setAttribute("clerkId", clerkId);
+
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                clerkId, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+        authenticationToken.setDetails(new org.springframework.security.web.authentication.WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 }

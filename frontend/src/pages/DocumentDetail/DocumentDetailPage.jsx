@@ -29,6 +29,7 @@ import {
   Landmark,
   PenTool,
   Lightbulb,
+  Unlock,
 } from "lucide-react";
 
 import { documentApi } from "../../api/documentApi";
@@ -45,6 +46,7 @@ import {
   UserCreditsContext,
   useUserCredits,
 } from "../../context/UserCreditsContext";
+import AiAnalysisCard from "./components/AiAnalysisCard";
 
 export default function DocumentDetailPage() {
   const navigate = useNavigate();
@@ -58,6 +60,9 @@ export default function DocumentDetailPage() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // kiểm tra trạng thái tài liệu mở khóa chưa
+  const [hasUnlockedFull, setHasUnlockedFull] = useState(false);
+
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const [favoriteFileIds, setFavoriteFileIds] = useState(new Set());
 
@@ -67,10 +72,10 @@ export default function DocumentDetailPage() {
       try {
         const token = await getToken();
         const response = await axios.get(apiEndpoints.GET_FAVORITES, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (response.status === 200) {
-          const ids = response.data.map(f => f.fileId);
+          const ids = response.data.map((f) => f.fileId);
           setFavoriteFileIds(new Set(ids));
         }
       } catch (error) {
@@ -87,12 +92,16 @@ export default function DocumentDetailPage() {
     }
     try {
       const token = await getToken();
-      const response = await axios.post(apiEndpoints.TOGGLE_FAVORITE(fileId), {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.post(
+        apiEndpoints.TOGGLE_FAVORITE(fileId),
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       if (response.status === 200) {
         const isFavorited = response.data;
-        setFavoriteFileIds(prev => {
+        setFavoriteFileIds((prev) => {
           const newSet = new Set(prev);
           if (isFavorited) {
             newSet.add(fileId);
@@ -128,18 +137,22 @@ export default function DocumentDetailPage() {
   const fetchDocumentDetails = useCallback(async () => {
     if (!id || id === "undefined") return;
     try {
-      const response = await documentApi.fetchDocumentDetails(id);
+      const token = isSignedIn ? await getToken() : null;
+      const response = await documentApi.fetchDocumentDetails(id, token);
       if (response.status === 200 && response.data) {
         setDocumentData(response.data);
+        setHasUnlockedFull(
+          response.data.unlocked || response.data.purchased || false,
+        );
       }
     } catch (err) {
       console.error("Lỗi khi làm mới chi tiết tài liệu:", err);
     }
-  }, [id]);
-
-
+  }, [id, isSignedIn, getToken]);
 
   useEffect(() => {
+    if (!isLoaded) return;
+
     const loadDocumentAndRelated = async () => {
       if (!id || id === "undefined") {
         console.error("Tham số id tài liệu trên thanh URL không hợp lệ:", id);
@@ -152,13 +165,20 @@ export default function DocumentDetailPage() {
         setIsLoading(true);
         setError(null);
 
+        const token = isSignedIn ? await getToken() : null;
+
         const [response] = await Promise.all([
-          documentApi.fetchDocumentDetails(id),
+          documentApi.fetchDocumentDetails(id, token),
           fetchComments(),
         ]);
 
         if (response.status === 200 && response.data) {
           setDocumentData(response.data);
+
+          setHasUnlockedFull(
+            response.data.unlocked || response.data.purchased || false,
+          );
+
           if (response.data.comments) {
             setCommentsList(response.data.comments);
           }
@@ -186,96 +206,175 @@ export default function DocumentDetailPage() {
     };
 
     loadDocumentAndRelated();
-  }, [id, fetchComments]);
-  const { fetchUserCredits } = useUserCredits();
+  }, [id, fetchComments, isLoaded, isSignedIn, getToken]);
 
-  const handleDownload = () => {
+  const { refreshCredits, fetchUserCredits } = useUserCredits();
+
+  // const handleDownload = () => {
+  //   if (!documentData) return;
+
+  //   toast(
+  //     (t) => (
+  //       <div className="flex flex-col gap-2 p-1 text-xs">
+  //         <p className="font-medium text-slate-700">
+  //           Hệ thống sẽ trừ{" "}
+  //           <span className="font-extrabold text-indigo-600">
+  //             {documentData.creditCost ?? 0} Xu
+  //           </span>{" "}
+  //           trong tài khoản để tải xuống tài liệu này.
+  //         </p>
+  //         <div className="flex justify-end gap-2 mt-1">
+  //           <button
+  //             onClick={async () => {
+  //               toast.dismiss(t.id);
+
+  //               const downloadToastId = toast.loading(
+  //                 "Đang chuẩn bị tệp tin...",
+  //               );
+
+  //               try {
+  //                 const token = await getToken();
+
+  //                 const response = await axios.get(
+  //                   `${BASE_URL}/files/interaction/${id}/download`,
+  //                   { headers: { Authorization: `Bearer ${token}` } },
+  //                 );
+
+  //                 const { downloadUrl, fileName } = response.data;
+
+  //                 const fileResponse = await fetch(downloadUrl);
+
+  //                 if (!fileResponse.ok) {
+  //                   throw new Error(
+  //                     `Không thể tải file từ máy chủ (HTTP ${fileResponse.status})`,
+  //                   );
+  //                 }
+
+  //                 const blob = await fileResponse.blob();
+
+  //                 if (blob.size === 0) {
+  //                   throw new Error("File tải về bị lỗi, vui lòng thử lại!");
+  //                 }
+
+  //                 const blobUrl = window.URL.createObjectURL(blob);
+  //                 const link = document.createElement("a");
+  //                 link.href = blobUrl;
+  //                 link.download = fileName;
+  //                 link.style.display = "none";
+  //                 document.body.appendChild(link);
+  //                 link.click();
+  //                 document.body.removeChild(link);
+  //                 window.URL.revokeObjectURL(blobUrl);
+
+  //                 toast.success("Tải tài liệu thành công!", {
+  //                   id: downloadToastId,
+  //                 });
+
+  //                 await fetchUserCredits();
+  //               } catch (err) {
+  //                 console.error("Lỗi khi tải tài liệu:", err);
+
+  //                 let customErrorMessage =
+  //                   "Tải file thất bại hoặc tài khoản không đủ số dư!";
+
+  //                 if (
+  //                   err.response &&
+  //                   (err.response.status === 401 || err.response.status === 403)
+  //                 ) {
+  //                   customErrorMessage =
+  //                     "Phiên đăng nhập hết hạn hoặc bạn không có quyền tải file này. Vui lòng đăng nhập lại!";
+  //                 } else if (err.message) {
+  //                   customErrorMessage = err.message;
+  //                 }
+
+  //                 toast.error(customErrorMessage, { id: downloadToastId });
+  //               }
+  //             }}
+  //             className="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+  //           >
+  //             Xác nhận trừ Xu
+  //           </button>
+  //           <button
+  //             onClick={() => toast.dismiss(t.id)}
+  //             className="bg-slate-100 text-slate-500 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors"
+  //           >
+  //             Hủy
+  //           </button>
+  //         </div>
+  //       </div>
+  //     ),
+  //     {
+  //       duration: 8000,
+  //       icon: "💡",
+  //       style: {
+  //         borderRadius: "16px",
+  //         background: "#ffffff",
+  //         border: "1px solid #e2e8f0",
+  //         boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)",
+  //         maxWidth: "360px",
+  //       },
+  //     },
+  //   );
+  // };
+  // LUỒNG MỚI 1: Hàm kích hoạt trừ xu mở khóa tài liệu vĩnh viễn
+  const onUnlockDocument = () => {
+    if (!isSignedIn) {
+      toast.error("Vui lòng đăng nhập để mở khóa tài liệu!");
+      return;
+    }
     if (!documentData) return;
 
     toast(
       (t) => (
         <div className="flex flex-col gap-2 p-1 text-xs">
           <p className="font-medium text-slate-700">
-            Hệ thống sẽ trừ{" "}
-            <span className="font-extrabold text-indigo-600">
+            Hệ thống sẽ khấu trừ{" "}
+            <span className="font-extrabold text-indigo-500">
               {documentData.creditCost ?? 0} Xu
             </span>{" "}
-            trong tài khoản để tải xuống tài liệu này.
+            để mở khóa vĩnh viễn quyền tải & xem online toàn bộ tài liệu này.
           </p>
           <div className="flex justify-end gap-2 mt-1">
             <button
               onClick={async () => {
                 toast.dismiss(t.id);
-
-                const downloadToastId = toast.loading(
-                  "Đang chuẩn bị tệp tin...",
-                );
+                const unlockToastId = toast.loading("Đang xử lý trừ xu...");
 
                 try {
                   const token = await getToken();
 
-                  const response = await axios.get(
-                    `${BASE_URL}/files/interaction/${id}/download`,
+                  await axios.post(
+                    apiEndpoints.UNLOCK_FILE(id),
+                    {},
                     { headers: { Authorization: `Bearer ${token}` } },
                   );
 
-                  const { downloadUrl, fileName } = response.data;
-
-                  const fileResponse = await fetch(downloadUrl);
-
-                  if (!fileResponse.ok) {
-                    throw new Error(
-                      `Không thể tải file từ máy chủ (HTTP ${fileResponse.status})`,
-                    );
-                  }
-
-                  const blob = await fileResponse.blob();
-
-                  if (blob.size === 0) {
-                    throw new Error("File tải về bị lỗi, vui lòng thử lại!");
-                  }
-
-                  const blobUrl = window.URL.createObjectURL(blob);
-                  const link = document.createElement("a");
-                  link.href = blobUrl;
-                  link.download = fileName;
-                  link.style.display = "none";
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  window.URL.revokeObjectURL(blobUrl);
-
-                  toast.success("Tải tài liệu thành công!", {
-                    id: downloadToastId,
+                  toast.success("Mở khóa tài liệu thành công!", {
+                    id: unlockToastId,
                   });
 
-                  await fetchUserCredits();
+                  setHasUnlockedFull(true);
+
+                  if (refreshCredits) await refreshCredits();
+                  else if (fetchUserCredits) await fetchUserCredits();
+
+                  await fetchDocumentDetails();
                 } catch (err) {
-                  console.error("Lỗi khi tải tài liệu:", err);
-
-                  let customErrorMessage =
-                    "Tải file thất bại hoặc tài khoản không đủ số dư!";
-
-                  if (
-                    err.response &&
-                    (err.response.status === 401 || err.response.status === 403)
-                  ) {
-                    customErrorMessage =
-                      "Phiên đăng nhập hết hạn hoặc bạn không có quyền tải file này. Vui lòng đăng nhập lại!";
-                  } else if (err.message) {
-                    customErrorMessage = err.message;
-                  }
-
-                  toast.error(customErrorMessage, { id: downloadToastId });
+                  console.error("Lỗi khi mở khóa:", err);
+                  let errMsg =
+                    "Mở khóa thất bại hoặc tài khoản không đủ số dư!";
+                  if (err.response?.data?.message)
+                    errMsg = err.response.data.message;
+                  toast.error(errMsg, { id: unlockToastId });
                 }
               }}
-              className="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+              className="bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors shadow-sm"
             >
-              Xác nhận trừ Xu
+              Xác nhận mở khóa
             </button>
             <button
               onClick={() => toast.dismiss(t.id)}
-              className="bg-slate-100 text-slate-500 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors"
+              className="bg-slate-100 text-slate-500 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-200"
             >
               Hủy
             </button>
@@ -283,17 +382,57 @@ export default function DocumentDetailPage() {
         </div>
       ),
       {
-        duration: 8000,
-        icon: "💡",
+        duration: 6000,
         style: {
           borderRadius: "16px",
           background: "#ffffff",
           border: "1px solid #e2e8f0",
-          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)",
           maxWidth: "360px",
         },
       },
     );
+  };
+
+  // Hàm tải file miễn phí hoàn toàn sau khi đã mở khóa
+  const handleDownload = async () => {
+    if (!isSignedIn) {
+      toast.error("Vui lòng đăng nhập để thực hiện chức năng!");
+      return;
+    }
+    // Nếu chưa mở khóa, chuyển hướng bắt người dùng mở khóa trước
+    if (!hasUnlockedFull) {
+      onUnlockDocument();
+      return;
+    }
+
+    const downloadToastId = toast.loading("Đang chuẩn bị tệp tin tải xuống...");
+    try {
+      const token = await getToken();
+      const response = await axios.get(
+        `${BASE_URL}/files/interaction/${id}/download`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      const { downloadUrl, fileName } = response.data;
+      const fileResponse = await fetch(downloadUrl);
+      if (!fileResponse.ok)
+        throw new Error(`Lỗi kết nối tệp tin (HTTP ${fileResponse.status})`);
+
+      const blob = await fileResponse.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName || documentData.title || "document";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+
+      toast.success("Tải tài liệu thành công!", { id: downloadToastId });
+    } catch (err) {
+      console.error("Lỗi tải file:", err);
+      toast.error(err.message || "Tải file thất bại!", { id: downloadToastId });
+    }
   };
 
   if (isLoading) {
@@ -356,8 +495,8 @@ export default function DocumentDetailPage() {
           {/* CỘT TRÁI */}
           <div className="lg:col-span-2 space-y-6">
             {/* Khối 1: Thông tin tiêu đề & Header */}
-            <DocumentHeaderInfo 
-              documentData={documentData} 
+            <DocumentHeaderInfo
+              documentData={documentData}
               isFavorited={favoriteFileIds.has(id)}
               onToggleFavorite={() => handleToggleFavorite(id)}
             />
@@ -367,6 +506,8 @@ export default function DocumentDetailPage() {
               <DocumentPreview
                 documentData={documentData}
                 handleDownload={handleDownload}
+                hasUnlockedFull={hasUnlockedFull}
+                onUnlockFull={onUnlockDocument}
               />
             )}
 
@@ -379,6 +520,39 @@ export default function DocumentDetailPage() {
                 {documentData.description ||
                   "Chưa có mô tả chi tiết cho tài liệu này."}
               </p>
+            </div>
+
+            {/* KHỐI PHÂN TÍCH AI */}
+            <div
+              onClick={() => {
+                if (!hasUnlockedFull) {
+                  onUnlockDocument();
+                  return;
+                }
+                navigate(`/documents/${id}/ai-studio`);
+              }}
+              className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl p-5 shadow-md cursor-pointer hover:shadow-lg transition-all active:scale-[0.99] flex items-center justify-between gap-4 text-white"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="bg-white/15 p-2.5 rounded-xl shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-extrabold text-sm md:text-base tracking-tight">
+                    Trợ lý học tập AI
+                  </h3>
+                  <p className="text-[11px] md:text-xs text-indigo-100 font-medium truncate">
+                    {hasUnlockedFull
+                      ? "Tóm tắt, giải thích khái niệm, flashcard và trò chuyện với tài liệu này"
+                      : "Mở khóa tài liệu để sử dụng Trợ lý AI (tóm tắt, flashcard, chat...)"}
+                  </p>
+                </div>
+              </div>
+              {hasUnlockedFull ? (
+                <ChevronRight className="w-5 h-5 shrink-0" />
+              ) : (
+                <Lock className="w-5 h-5 shrink-0" />
+              )}
             </div>
 
             <RatingSection
@@ -413,12 +587,22 @@ export default function DocumentDetailPage() {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={handleDownload}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold tracking-tight py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95 text-xs md:text-sm flex justify-center items-center gap-2"
-              >
-                <Download className="w-4 h-4" /> Tải Xuống Bản Đầy Đủ
-              </button>
+              {hasUnlockedFull ? (
+                <button
+                  onClick={handleDownload}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold tracking-tight py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95 text-xs md:text-sm flex justify-center items-center gap-2"
+                >
+                  <Download className="w-4 h-4" /> Tải File Gốc Miễn Phí
+                </button>
+              ) : (
+                <button
+                  onClick={onUnlockDocument}
+                  className="w-full bg-gradient-to-r bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold tracking-tight py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95 text-xs md:text-sm flex justify-center items-center gap-2 uppercase text-center"
+                >
+                  <Unlock className="w-4 h-4" /> Mở Khóa Tài Liệu (
+                  {documentData.creditCost ?? 0} Xu)
+                </button>
+              )}
               <p className="text-[10px] text-slate-500 text-center leading-normal">
                 *Tài liệu sau khi dùng lượt tải về thành công sẽ nằm trong Tab
                 Lịch sử để tải lại hoàn toàn miễn phí mãi mãi.
@@ -547,9 +731,9 @@ export default function DocumentDetailPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {relatedDocs.map((doc) => (
-                <DocumentCard 
-                  key={doc.id || doc._id} 
-                  doc={doc} 
+                <DocumentCard
+                  key={doc.id || doc._id}
+                  doc={doc}
                   isFavorited={favoriteFileIds.has(doc.id || doc._id)}
                   onToggleFavorite={handleToggleFavorite}
                 />

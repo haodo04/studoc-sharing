@@ -3,8 +3,11 @@ import apiEndpoints from './apiEndpoint';
 
 export const documentApi = {
     // 1. Xem chi tiết tài liệu 
-    fetchDocumentDetails: async (documentId) => {
-        const response = await axios.get(apiEndpoints.PUBLIC_VIEW_FILE(documentId));
+    fetchDocumentDetails: async (documentId, token = null) => {
+        const response = await axios.get(
+            apiEndpoints.PUBLIC_VIEW_FILE(documentId),
+            token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+        );
         return { 
             data: response.data, 
             status: response.status 

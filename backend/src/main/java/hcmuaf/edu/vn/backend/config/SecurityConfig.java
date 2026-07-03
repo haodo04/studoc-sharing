@@ -50,14 +50,22 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        .requestMatchers("/files/public/**", "/files/*").permitAll()
-                        .requestMatchers("/files/**").permitAll()
+                        .requestMatchers("/files/interaction/**").authenticated()
+                        .requestMatchers("/files/manage/**").authenticated()
+                        .requestMatchers("/favorites/**").authenticated()
+                        .requestMatchers("/users/credits").authenticated()
+
+                        .requestMatchers("/files/*/ai-studio/**").authenticated()
+
+                        .requestMatchers("/files/public/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/files/{id}/related").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/files/{id}").permitAll()
+
                         .requestMatchers("/comments/**", "/webhooks/**", "/register").permitAll()
                         .requestMatchers("/api/payment/vnpay_return").permitAll()
                         .requestMatchers("/payments/**").permitAll()
                         .requestMatchers("/uploads/**", "/documents/**", "/error").permitAll()
                         .requestMatchers("/metadata/**").permitAll()
-                        .requestMatchers("/files/interaction/*/download").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
