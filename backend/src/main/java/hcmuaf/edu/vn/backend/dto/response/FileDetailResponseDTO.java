@@ -32,5 +32,6 @@ public class FileDetailResponseDTO {
     private String authorName;
     private String authorAvatar;
     private String thumbnailUrl;
+    private String viewableUrl;
     private boolean isUnlocked;
 }

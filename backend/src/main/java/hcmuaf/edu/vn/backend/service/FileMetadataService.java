@@ -96,22 +96,34 @@ public class FileMetadataService {
             document.setUploadedAt(LocalDateTime.now());
 
             String thumbnailPublicId = publicId;
+            String viewableUrl = null;
 
-            if (lowerExtension.equals(".docx") || lowerExtension.equals(".doc") ||
-                    lowerExtension.equals(".pptx") || lowerExtension.equals(".ppt")) {
+            boolean isPdf = lowerExtension.equals(".pdf");
+            boolean isOffice = lowerExtension.equals(".docx") || lowerExtension.equals(".doc") ||
+                    lowerExtension.equals(".pptx") || lowerExtension.equals(".ppt");
+
+            if (isPdf) {
+                viewableUrl = cloudinaryUrl;
+            } else if (isOffice) {
                 try {
                     byte[] pdfBytes = convertOfficeToPdf(file.getInputStream(), lowerExtension);
 
-                    Map<String, Object> thumbParams = ObjectUtils.asMap(
-                            "asset_folder", "studoc-share/temp-thumbs",
-                            "resource_type", "image"
+                    Map<String, Object> viewParams = ObjectUtils.asMap(
+                            "asset_folder", "studoc-share/viewable",
+                            "resource_type", "image",
+                            "unique_filename", true,
+                            "access_mode", "public"
                     );
-                    Map thumbResult = cloudinary.uploader().upload(pdfBytes, thumbParams);
-                    thumbnailPublicId = (String) thumbResult.get("public_id");
+                    Map viewResult = cloudinary.uploader().upload(pdfBytes, viewParams);
+
+                    viewableUrl = (String) viewResult.get("secure_url");
+                    thumbnailPublicId = (String) viewResult.get("public_id");
                 } catch (Exception e) {
-                    System.err.println("Lỗi convert Office→PDF để lấy thumbnail: " + e.getMessage());
+                    System.err.println("Lỗi convert Office→PDF (thumbnail + viewable): " + e.getMessage());
                 }
             }
+
+            document.setViewableUrl(viewableUrl);
 
             String cleanThumbId = thumbnailPublicId;
             if (cleanThumbId.endsWith(".pdf")) {
@@ -270,6 +282,7 @@ public class FileMetadataService {
                 .subjectCode(doc.getSubjectCode())
                 .subjectName(doc.getSubjectName())
                 .thumbnailUrl(doc.getThumbnailUrl())
+                .viewableUrl(doc.getViewableUrl())
                 .docType(doc.getDocType())
                 .creditCost(doc.getCreditCost())
                 .isPublic(doc.getIsPublic())
@@ -432,6 +445,7 @@ public class FileMetadataService {
                 .rating(updatedDoc.getRating())
                 .reviewCount(updatedDoc.getReviewCount())
                 .thumbnailUrl(updatedDoc.getThumbnailUrl())
+                .viewableUrl(updatedDoc.getViewableUrl())
                 .build();
 
         boolean isUnlocked = false;
