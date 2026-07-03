@@ -51,7 +51,10 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
         boolean isDocumentsPublic = lowerURI.contains("/documents/");
 
         boolean isGetDocumentDetail = "GET".equalsIgnoreCase(method) &&
-                (lowerURI.contains("/related") || (lowerURI.contains("/files/") && !lowerURI.contains("/interaction") && !lowerURI.contains("/manage")));
+                (lowerURI.contains("/related") || (lowerURI.contains("/files/")
+                        && !lowerURI.contains("/interaction")
+                        && !lowerURI.contains("/manage")
+                        && !lowerURI.contains("/ai-studio")));
 
         // Nhóm 1: public tuyệt đối, không cần biết user là ai -> bỏ qua luôn, KHÔNG parse token
         boolean isFullyPublic = isMetadataPublic || isBasePublic || isGetComments || isVnPayReturn || isDocumentsPublic;
