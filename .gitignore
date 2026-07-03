@@ -45,3 +45,6 @@ backend/.settings
 .DS_Store
 Thumbs.db
 uploads/
+
+# backend configuration
+backend/src/main/resources/application.properties

@@ -74,11 +74,11 @@ const HeroSection = () => {
                     <h1 className="text-4xl tracking-tight font-extrabold text-slate-900 sm:text-5xl md:text-6xl leading-none">
                         <span className="block mb-2">Chia sẻ tài liệu học tập</span>
                         <span className="block bg-gradient-to-r from-indigo-600 via-blue-600 to-teal-500 bg-clip-text text-transparent">
-                            CloudShare
+                            StudocShare
                         </span>
                     </h1>
                     <p className="mt-6 max-w-2xl mx-auto text-lg text-slate-500 sm:text-xl md:mt-6">
-                        Upload, manage, and share your files securely. Accessible anywhere, anytime. Experienced academic space built for modern workflows.
+                        Đăng tải, chia sẻ tài liệu — Học tập mọi lúc, mọi nơi — Không gian tri thức chuẩn thời đại số.
                     </p>
                     
                     <div className="mt-10 flex justify-center">
