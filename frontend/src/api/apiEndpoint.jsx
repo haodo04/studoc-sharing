@@ -13,9 +13,20 @@ const apiEndpoints = {
     DOWNLOAD_FILE: (id) => `${BASE_URL}/files/interaction/${id}/download`, 
     GET_DOWNLOAD_HISTORY: (clerkId) => `${BASE_URL}/files/interaction/history/${clerkId}`,
     AI_ANALYZE_FILE: (id) => `${BASE_URL}/files/${id}/ai-analyze`,
-    // AI Studio
-    GET_AI_STUDY_CONTENT: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/content`,
+
+    // AI Studio 
+    GET_AI_SUMMARY: (fileId, lang = "vi", regenerate = false) =>
+        `${BASE_URL}/files/${fileId}/ai-studio/summary?lang=${lang}&regenerate=${regenerate}`,
+    GET_AI_CONCEPTS: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/concepts`,
     POST_AI_CHAT: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/chat`,
+
+    // AI Studio - Flashcards
+    GET_AI_FLASHCARD_SETS: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/flashcards/sets`,
+    GET_AI_FLASHCARD_SET_DETAIL: (fileId, setId) => `${BASE_URL}/files/${fileId}/ai-studio/flashcards/sets/${setId}`,
+    GENERATE_AI_FLASHCARD_SET: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/flashcards/generate`,
+    MARK_FLASHCARD_KNOWN: (fileId, setId, cardId) => `${BASE_URL}/files/${fileId}/ai-studio/flashcards/sets/${setId}/cards/${cardId}`,
+    RESET_FLASHCARD_PROGRESS: (fileId, setId) => `${BASE_URL}/files/${fileId}/ai-studio/flashcards/sets/${setId}/reset`,
+    DELETE_FLASHCARD_SET: (fileId, setId) => `${BASE_URL}/files/${fileId}/ai-studio/flashcards/sets/${setId}`,
 
     // metadata hệ thống
     GET_UNIVERSITIES: `${BASE_URL}/metadata/universities`,

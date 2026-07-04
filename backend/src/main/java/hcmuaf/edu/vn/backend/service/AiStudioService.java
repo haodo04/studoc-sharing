@@ -1,8 +1,7 @@
 package hcmuaf.edu.vn.backend.service;
 
 import hcmuaf.edu.vn.backend.document.*;
-import hcmuaf.edu.vn.backend.dto.*;
-import hcmuaf.edu.vn.backend.dto.response.ChatResponseDTO;
+import hcmuaf.edu.vn.backend.dto.response.*;
 import hcmuaf.edu.vn.backend.exceptions.ResourceNotFoundException;
 import hcmuaf.edu.vn.backend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,9 @@ public class AiStudioService {
 
     private final FileMetadataRepository fileMetadataRepository;
     private final UnlockHistoryRepository unlockHistoryRepository;
-    private final AiStudyContentRepository aiStudyContentRepository;
+    private final AiSummaryRepository aiSummaryRepository;
+    private final AiConceptsRepository aiConceptsRepository;
+    private final AiFlashcardSetRepository aiFlashcardSetRepository;
     private final AiChatSessionRepository aiChatSessionRepository;
     private final GeminiClientService geminiClientService;
     private final RestTemplate restTemplate = new RestTemplate();
@@ -69,115 +70,337 @@ public class AiStudioService {
         return bytes;
     }
 
-    public AiStudyContentDTO getOrGenerateStudyContent(String fileId, String clerkId) {
+    public SummaryResponseDTO getOrGenerateSummary(String fileId, String clerkId, String language, boolean regenerate) {
         FileMetadataDocument file = requireUnlockedFile(fileId, clerkId);
+        String lang = normalizeLanguage(language);
 
-        return aiStudyContentRepository.findByFileId(fileId)
-                .map(this::toDTO)
-                .orElseGet(() -> generateAndCacheStudyContent(fileId, file));
+        if (!regenerate) {
+            Optional<AiSummaryDocument> cached = aiSummaryRepository.findByFileIdAndLanguage(fileId, lang);
+            if (cached.isPresent()) {
+                return toSummaryDTO(cached.get());
+            }
+        }
+
+        byte[] pdfBytes = downloadPdfBytes(file);
+        String prompt = buildSummaryPrompt(lang);
+        String summaryText = geminiClientService.generateText(pdfBytes, prompt, regenerate ? 1.0 : 0.7);
+
+        AiSummaryDocument doc = aiSummaryRepository.findByFileIdAndLanguage(fileId, lang)
+                .map(existing -> {
+                    existing.setContent(summaryText);
+                    existing.setGeneratedAt(LocalDateTime.now());
+                    return existing;
+                })
+                .orElseGet(() -> AiSummaryDocument.builder()
+                        .fileId(fileId)
+                        .language(lang)
+                        .content(summaryText)
+                        .generatedAt(LocalDateTime.now())
+                        .build());
+
+        try {
+            aiSummaryRepository.save(doc);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            return aiSummaryRepository.findByFileIdAndLanguage(fileId, lang)
+                    .map(this::toSummaryDTO)
+                    .orElseThrow(() -> e);
+        }
+
+        return toSummaryDTO(doc);
     }
 
-    private AiStudyContentDTO generateAndCacheStudyContent(String fileId, FileMetadataDocument file) {
+    private String normalizeLanguage(String language) {
+        return "en".equalsIgnoreCase(language) ? "en" : "vi";
+    }
+
+    private String buildSummaryPrompt(String lang) {
+        if ("en".equals(lang)) {
+            return """
+                You are a study assistant. Read the attached PDF document and write a clear,
+                well-structured summary in English (around 200-300 words), covering the main
+                ideas and key points. Only return the summary text itself, no preamble.
+                """;
+        }
+        return """
+            Bạn là trợ lý học tập. Đọc tài liệu PDF đính kèm và viết một bản tóm tắt rõ ràng,
+            mạch lạc bằng tiếng Việt (khoảng 200-300 từ), nêu bật các ý chính và điểm quan trọng.
+            Chỉ trả về nội dung tóm tắt, không thêm lời dẫn hay giải thích nào khác.
+            """;
+    }
+
+    private SummaryResponseDTO toSummaryDTO(AiSummaryDocument doc) {
+        return SummaryResponseDTO.builder()
+                .content(doc.getContent())
+                .language(doc.getLanguage())
+                .build();
+    }
+
+    public ConceptsResponseDTO getOrGenerateConcepts(String fileId, String clerkId) {
+        FileMetadataDocument file = requireUnlockedFile(fileId, clerkId);
+
+        return aiConceptsRepository.findByFileId(fileId)
+                .map(this::toConceptsDTO)
+                .orElseGet(() -> generateAndCacheConcepts(fileId, file));
+    }
+
+    private ConceptsResponseDTO generateAndCacheConcepts(String fileId, FileMetadataDocument file) {
         byte[] pdfBytes = downloadPdfBytes(file);
 
         Map<String, Object> schema = Map.of(
                 "type", "OBJECT",
                 "properties", Map.of(
-                        "summary", Map.of("type", "STRING"),
                         "concepts", Map.of("type", "ARRAY", "items", Map.of(
                                 "type", "OBJECT",
                                 "properties", Map.of(
-                                        "term", Map.of("type", "STRING"),
-                                        "explanation", Map.of("type", "STRING")
-                                )
-                        )),
-                        "flashcards", Map.of("type", "ARRAY", "items", Map.of(
-                                "type", "OBJECT",
-                                "properties", Map.of(
-                                        "question", Map.of("type", "STRING"),
-                                        "answer", Map.of("type", "STRING")
-                                )
+                                        "term", Map.of("type", "STRING", "maxLength", 100),
+                                        "explanation", Map.of("type", "STRING", "maxLength", 300)
+                                ),
+                                "required", List.of("term", "explanation")
                         ))
                 )
         );
 
         String prompt = """
-        Bạn là trợ lý học tập. Đọc tài liệu PDF đính kèm và trả về bằng tiếng Việt:
-        1. summary: tóm tắt nội dung chính (khoảng 200-300 từ, dạng markdown).
-        2. concepts: 5-10 khái niệm/thuật ngữ quan trọng nhất kèm giải thích ngắn gọn.
-        3. flashcards: 8-12 câu hỏi-đáp để ôn tập, bám sát nội dung tài liệu.
-        Chỉ trả JSON đúng schema, không thêm text nào khác.
-        """;
+            Bạn là trợ lý học tập. Đọc tài liệu PDF đính kèm và liệt kê 5-10 khái niệm/thuật ngữ
+            quan trọng nhất xuất hiện trong tài liệu, kèm giải thích ngắn gọn, dễ hiểu bằng tiếng Việt.
+            Chỉ trả JSON đúng schema, không thêm text nào khác.
+            """;
 
         Map<String, Object> result = geminiClientService.generateJsonFromPdf(pdfBytes, prompt, schema);
-        String jsonText = geminiClientService.extractText(result);
+        String json = geminiClientService.extractText(result);
 
-        AiStudyContentDocument parsed = parseStudyContentJson(jsonText, fileId);
+        AiConceptsDocument doc = parseConceptsJson(json, fileId);
 
         try {
-            aiStudyContentRepository.save(parsed);
+            aiConceptsRepository.save(doc);
         } catch (org.springframework.dao.DuplicateKeyException e) {
-            return aiStudyContentRepository.findByFileId(fileId)
-                    .map(this::toDTO)
+            return aiConceptsRepository.findByFileId(fileId)
+                    .map(this::toConceptsDTO)
                     .orElseThrow(() -> e);
         }
 
-        return toDTO(parsed);
+        return toConceptsDTO(doc);
     }
 
-    private AiStudyContentDocument parseStudyContentJson(String json, String fileId) {
+    private AiConceptsDocument parseConceptsJson(String json, String fileId) {
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
             var node = mapper.readTree(json);
 
-            List<AiStudyContentDocument.ConceptItem> concepts = new ArrayList<>();
-            node.get("concepts").forEach(c -> concepts.add(
-                    AiStudyContentDocument.ConceptItem.builder()
-                            .term(c.get("term").asText())
-                            .explanation(c.get("explanation").asText())
-                            .build()));
+            List<AiConceptsDocument.ConceptItem> concepts = new ArrayList<>();
+            if (node.has("concepts") && node.get("concepts").isArray()) {
+                node.get("concepts").forEach(c -> concepts.add(
+                        AiConceptsDocument.ConceptItem.builder()
+                                .term(c.path("term").asText(""))
+                                .explanation(c.path("explanation").asText(""))
+                                .build()));
+            }
 
-            List<AiStudyContentDocument.FlashcardItem> flashcards = new ArrayList<>();
-            node.get("flashcards").forEach(f -> flashcards.add(
-                    AiStudyContentDocument.FlashcardItem.builder()
-                            .question(f.get("question").asText())
-                            .answer(f.get("answer").asText())
-                            .build()));
-
-            return AiStudyContentDocument.builder()
+            return AiConceptsDocument.builder()
                     .fileId(fileId)
-                    .summary(node.get("summary").asText())
                     .concepts(concepts)
-                    .flashcards(flashcards)
                     .generatedAt(LocalDateTime.now())
-                    .modelUsed("gemini-2.5-flash")
                     .build();
         } catch (Exception e) {
-            throw new RuntimeException("Không thể xử lý phản hồi từ AI: " + e.getMessage(), e);
+            throw new RuntimeException("Không thể xử lý phản hồi khái niệm từ AI: " + e.getMessage(), e);
         }
     }
 
-    private AiStudyContentDTO toDTO(AiStudyContentDocument doc) {
-        return AiStudyContentDTO.builder()
-                .summary(doc.getSummary())
+    private ConceptsResponseDTO toConceptsDTO(AiConceptsDocument doc) {
+        return ConceptsResponseDTO.builder()
                 .concepts(doc.getConcepts().stream()
-                        .map(c -> new AiStudyContentDTO.ConceptDTO(c.getTerm(), c.getExplanation()))
-                        .toList())
-                .flashcards(doc.getFlashcards().stream()
-                        .map(f -> new AiStudyContentDTO.FlashcardDTO(f.getQuestion(), f.getAnswer()))
+                        .map(c -> new ConceptsResponseDTO.ConceptDTO(c.getTerm(), c.getExplanation()))
                         .toList())
                 .build();
     }
 
+    public List<FlashcardSetSummaryDTO> listFlashcardSets(String fileId, String clerkId) {
+        requireUnlockedFile(fileId, clerkId);
+        return aiFlashcardSetRepository.findByFileIdAndClerkIdOrderByCreatedAtDesc(fileId, clerkId).stream()
+                .map(this::toSummaryDTO)
+                .toList();
+    }
+
+    public FlashcardSetDetailDTO getFlashcardSetDetail(String fileId, String clerkId, String setId) {
+        requireUnlockedFile(fileId, clerkId);
+        AiFlashcardSetDocument set = findOwnedSet(fileId, clerkId, setId);
+        return toDetailDTO(set);
+    }
+
+    public FlashcardSetDetailDTO generateFlashcardSet(String fileId, String clerkId, String language, int numCards) {
+        FileMetadataDocument file = requireUnlockedFile(fileId, clerkId);
+        String lang = normalizeLanguage(language);
+        int count = Math.max(5, Math.min(numCards, 30)); // giới hạn an toàn
+
+        AiFlashcardSetDocument set = AiFlashcardSetDocument.builder()
+                .fileId(fileId)
+                .clerkId(clerkId)
+                .language(lang)
+                .numCards(count)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        try {
+            byte[] pdfBytes = downloadPdfBytes(file);
+
+            Map<String, Object> schema = Map.of(
+                    "type", "OBJECT",
+                    "properties", Map.of(
+                            "flashcards", Map.of("type", "ARRAY", "items", Map.of(
+                                    "type", "OBJECT",
+                                    "properties", Map.of(
+                                            "front", Map.of("type", "STRING", "maxLength", 150),
+                                            "back", Map.of("type", "STRING", "maxLength", 300)
+                                    ),
+                                    "required", List.of("front", "back")
+                            ))
+                    )
+            );
+
+            Map<String, Object> result = geminiClientService.generateJsonFromPdf(
+                    pdfBytes, buildFlashcardPrompt(lang, count), schema);
+            String json = geminiClientService.extractText(result);
+
+            set.setCards(parseFlashcardCards(json));
+            set.setStatus("ready");
+        } catch (Exception e) {
+            set.setCards(new ArrayList<>());
+            set.setStatus("error");
+            set.setErrorMessage(e.getMessage());
+        }
+
+        aiFlashcardSetRepository.save(set);
+
+        if ("error".equals(set.getStatus())) {
+            throw new RuntimeException(set.getErrorMessage());
+        }
+        return toDetailDTO(set);
+    }
+
+    private String buildFlashcardPrompt(String lang, int count) {
+        String langInstruction = "en".equals(lang) ? "in English" : "bằng tiếng Việt";
+        return """
+    Bạn là trợ lý học tập. Đọc tài liệu PDF đính kèm và tạo đúng %d flashcard dạng câu hỏi-đáp
+    để ôn tập, %s.
+
+    YÊU CẦU BẮT BUỘC cho mỗi flashcard:
+    - "front": CHỈ hỏi về ĐÚNG MỘT khái niệm/công thức cụ thể, dưới 25 từ.
+    - "back": ngắn gọn, tối đa 2-3 câu, dưới 60 từ.
+    - TUYỆT ĐỐI KHÔNG được gộp nhiều câu hỏi con lại thành 1 "front" duy nhất,
+      kể cả khi tài liệu gốc trình bày chúng liền nhau trong cùng 1 đoạn hay 1 dấu ngoặc.
+    - Nếu 1 đoạn tài liệu chứa nhiều ý (ví dụ nhiều câu hỏi lồng trong ngoặc đơn),
+      hãy TÁCH RIÊNG từng ý thành 1 flashcard độc lập, không được gộp.
+
+    Ví dụ ĐÚNG:
+    {"front": "Mô hình Client-Server dùng công nghệ gì cho Frontend?", "back": "ReactJS."}
+    {"front": "Vai trò của mô hình Client-Server là gì?", "back": "Tách biệt Frontend và Backend, đảm bảo tính tường minh và an toàn dữ liệu."}
+
+    Ví dụ SAI (không được làm như này — gộp nhiều câu hỏi vào 1 front):
+    {"front": "Mô hình là gì, dùng công nghệ nào, có vai trò gì, áp dụng kiến trúc nào...", "back": ""}
+
+    Chỉ trả JSON đúng schema, không thêm text nào khác.
+    """.formatted(count, langInstruction);
+    }
+
+    private List<AiFlashcardSetDocument.CardItem> parseFlashcardCards(String json) {
+        try {
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            var node = mapper.readTree(json);
+            List<AiFlashcardSetDocument.CardItem> cards = new ArrayList<>();
+            if (node.has("flashcards") && node.get("flashcards").isArray()) {
+                node.get("flashcards").forEach(f -> {
+                    String front = f.path("front").asText("").trim();
+                    String back = f.path("back").asText("").trim();
+
+                    if (front.isEmpty() || back.isEmpty() || front.length() > 200) {
+                        System.err.println(">>> [Flashcard] Bỏ qua thẻ lỗi/gộp: " + front);
+                        return;
+                    }
+
+                    cards.add(AiFlashcardSetDocument.CardItem.builder()
+                            .id(java.util.UUID.randomUUID().toString())
+                            .front(front)
+                            .back(back)
+                            .known(false)
+                            .build());
+                });
+            }
+            return cards;
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể xử lý phản hồi flashcard từ AI: " + e.getMessage(), e);
+        }
+    }
+
+    public FlashcardSetDetailDTO markCardKnown(String fileId, String clerkId, String setId, String cardId, boolean known) {
+        requireUnlockedFile(fileId, clerkId);
+        AiFlashcardSetDocument set = findOwnedSet(fileId, clerkId, setId);
+
+        set.getCards().stream()
+                .filter(c -> c.getId().equals(cardId))
+                .findFirst()
+                .ifPresent(c -> c.setKnown(known));
+
+        aiFlashcardSetRepository.save(set);
+        return toDetailDTO(set);
+    }
+
+    public void resetFlashcardSetProgress(String fileId, String clerkId, String setId) {
+        requireUnlockedFile(fileId, clerkId);
+        AiFlashcardSetDocument set = findOwnedSet(fileId, clerkId, setId);
+        set.getCards().forEach(c -> c.setKnown(false));
+        aiFlashcardSetRepository.save(set);
+    }
+
+    public void deleteFlashcardSet(String fileId, String clerkId, String setId) {
+        requireUnlockedFile(fileId, clerkId);
+        aiFlashcardSetRepository.delete(findOwnedSet(fileId, clerkId, setId));
+    }
+
+    private AiFlashcardSetDocument findOwnedSet(String fileId, String clerkId, String setId) {
+        AiFlashcardSetDocument set = aiFlashcardSetRepository.findByIdAndClerkId(setId, clerkId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ flashcard"));
+        if (!set.getFileId().equals(fileId)) {
+            throw new SecurityException("Bộ flashcard không thuộc tài liệu này.");
+        }
+        return set;
+    }
+
+    private FlashcardSetSummaryDTO toSummaryDTO(AiFlashcardSetDocument set) {
+        int known = set.getCards() == null ? 0 :
+                (int) set.getCards().stream().filter(AiFlashcardSetDocument.CardItem::isKnown).count();
+        return FlashcardSetSummaryDTO.builder()
+                .id(set.getId())
+                .numCards(set.getCards() == null ? set.getNumCards() : set.getCards().size())
+                .language(set.getLanguage())
+                .status(set.getStatus())
+                .errorMessage(set.getErrorMessage())
+                .createdAt(set.getCreatedAt())
+                .knownCount(known)
+                .build();
+    }
+
+    private FlashcardSetDetailDTO toDetailDTO(AiFlashcardSetDocument set) {
+        return FlashcardSetDetailDTO.builder()
+                .id(set.getId())
+                .language(set.getLanguage())
+                .status(set.getStatus())
+                .createdAt(set.getCreatedAt())
+                .cards(set.getCards() == null ? List.of() : set.getCards().stream()
+                        .map(c -> new FlashcardSetDetailDTO.CardDTO(c.getId(), c.getFront(), c.getBack(), c.isKnown()))
+                        .toList())
+                .build();
+    }
     public ChatResponseDTO chatWithDocument(String fileId, String clerkId, String userMessage) {
         FileMetadataDocument file = requireUnlockedFile(fileId, clerkId);
-        byte[] pdfBytes = downloadPdfBytes(file);
 
         AiChatSessionDocument session = aiChatSessionRepository.findByFileIdAndClerkId(fileId, clerkId)
                 .orElseGet(() -> AiChatSessionDocument.builder()
                         .fileId(fileId).clerkId(clerkId)
                         .messages(new ArrayList<>())
                         .build());
+
+        boolean isFirstMessage = session.getMessages().isEmpty();
+        byte[] pdfBytes = isFirstMessage ? downloadPdfBytes(file) : null;
 
         List<Map<String, Object>> historyContents = session.getMessages().stream()
                 .map(m -> (Map<String, Object>) Map.<String, Object>of(
