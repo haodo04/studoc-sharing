@@ -390,14 +390,41 @@ public class AiStudioService {
                         .toList())
                 .build();
     }
-    public ChatResponseDTO chatWithDocument(String fileId, String clerkId, String userMessage) {
-        FileMetadataDocument file = requireUnlockedFile(fileId, clerkId);
 
-        AiChatSessionDocument session = aiChatSessionRepository.findByFileIdAndClerkId(fileId, clerkId)
-                .orElseGet(() -> AiChatSessionDocument.builder()
-                        .fileId(fileId).clerkId(clerkId)
-                        .messages(new ArrayList<>())
-                        .build());
+    public List<ChatSessionSummaryDTO> listChatSessions(String fileId, String clerkId) {
+        requireUnlockedFile(fileId, clerkId);
+        return aiChatSessionRepository.findByFileIdAndClerkIdOrderByUpdatedAtDesc(fileId, clerkId).stream()
+                .map(this::toChatSummaryDTO)
+                .toList();
+    }
+
+    public ChatSessionDetailDTO createChatSession(String fileId, String clerkId) {
+        requireUnlockedFile(fileId, clerkId);
+        AiChatSessionDocument session = AiChatSessionDocument.builder()
+                .fileId(fileId)
+                .clerkId(clerkId)
+                .title("Cuộc trò chuyện mới")
+                .messages(new ArrayList<>())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        aiChatSessionRepository.save(session);
+        return toChatDetailDTO(session);
+    }
+
+    public ChatSessionDetailDTO getChatSessionDetail(String fileId, String clerkId, String sessionId) {
+        requireUnlockedFile(fileId, clerkId);
+        return toChatDetailDTO(findOwnedSession(fileId, clerkId, sessionId));
+    }
+
+    public void deleteChatSession(String fileId, String clerkId, String sessionId) {
+        requireUnlockedFile(fileId, clerkId);
+        aiChatSessionRepository.delete(findOwnedSession(fileId, clerkId, sessionId));
+    }
+
+    public ChatSessionDetailDTO sendMessage(String fileId, String clerkId, String sessionId, String userMessage) {
+        FileMetadataDocument file = requireUnlockedFile(fileId, clerkId);
+        AiChatSessionDocument session = findOwnedSession(fileId, clerkId, sessionId);
 
         boolean isFirstMessage = session.getMessages().isEmpty();
         byte[] pdfBytes = isFirstMessage ? downloadPdfBytes(file) : null;
@@ -414,13 +441,45 @@ public class AiStudioService {
                 .role("user").content(userMessage).timestamp(LocalDateTime.now()).build());
         session.getMessages().add(AiChatSessionDocument.ChatTurn.builder()
                 .role("model").content(reply).timestamp(LocalDateTime.now()).build());
+
+        if (isFirstMessage) {
+            session.setTitle(buildAutoTitle(userMessage));
+        }
         session.setUpdatedAt(LocalDateTime.now());
         aiChatSessionRepository.save(session);
 
-        return ChatResponseDTO.builder()
-                .reply(reply)
-                .history(session.getMessages().stream()
-                        .map(m -> new ChatResponseDTO.ChatTurnDTO(m.getRole(), m.getContent()))
+        return toChatDetailDTO(session);
+    }
+
+    private String buildAutoTitle(String firstMessage) {
+        String trimmed = firstMessage.trim().replaceAll("\\s+", " ");
+        return trimmed.length() > 40 ? trimmed.substring(0, 40) + "..." : trimmed;
+    }
+
+    private AiChatSessionDocument findOwnedSession(String fileId, String clerkId, String sessionId) {
+        AiChatSessionDocument session = aiChatSessionRepository.findByIdAndClerkId(sessionId, clerkId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cuộc trò chuyện"));
+        if (!session.getFileId().equals(fileId)) {
+            throw new SecurityException("Cuộc trò chuyện không thuộc tài liệu này.");
+        }
+        return session;
+    }
+
+    private ChatSessionSummaryDTO toChatSummaryDTO(AiChatSessionDocument s) {
+        return ChatSessionSummaryDTO.builder()
+                .id(s.getId())
+                .title(s.getTitle())
+                .updatedAt(s.getUpdatedAt())
+                .messageCount(s.getMessages() == null ? 0 : s.getMessages().size())
+                .build();
+    }
+
+    private ChatSessionDetailDTO toChatDetailDTO(AiChatSessionDocument s) {
+        return ChatSessionDetailDTO.builder()
+                .id(s.getId())
+                .title(s.getTitle())
+                .messages(s.getMessages() == null ? List.of() : s.getMessages().stream()
+                        .map(m -> new ChatSessionDetailDTO.ChatTurnDTO(m.getRole(), m.getContent()))
                         .toList())
                 .build();
     }

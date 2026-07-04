@@ -28,6 +28,18 @@ export const aiStudioApi = {
   deleteFlashcardSet: (fileId, setId, token) =>
     axios.delete(apiEndpoints.DELETE_FLASHCARD_SET(fileId, setId), authHeaders(token)),
 
-  chat: (fileId, message, token) =>
-    axios.post(apiEndpoints.POST_AI_CHAT(fileId), { message }, authHeaders(token)),
+  listChatSessions: (fileId, token) =>
+    axios.get(apiEndpoints.GET_AI_CHAT_SESSIONS(fileId), authHeaders(token)),
+
+  createChatSession: (fileId, token) =>
+    axios.post(apiEndpoints.CREATE_AI_CHAT_SESSION(fileId), {}, authHeaders(token)),
+
+  getChatSessionDetail: (fileId, sessionId, token) =>
+    axios.get(apiEndpoints.GET_AI_CHAT_SESSION_DETAIL(fileId, sessionId), authHeaders(token)),
+
+  sendChatMessage: (fileId, sessionId, message, token) =>
+    axios.post(apiEndpoints.SEND_AI_CHAT_MESSAGE(fileId, sessionId), { message }, authHeaders(token)),
+
+  deleteChatSession: (fileId, sessionId, token) =>
+    axios.delete(apiEndpoints.DELETE_AI_CHAT_SESSION(fileId, sessionId), authHeaders(token)),
 };

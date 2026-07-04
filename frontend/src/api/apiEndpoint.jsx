@@ -18,7 +18,16 @@ const apiEndpoints = {
     GET_AI_SUMMARY: (fileId, lang = "vi", regenerate = false) =>
         `${BASE_URL}/files/${fileId}/ai-studio/summary?lang=${lang}&regenerate=${regenerate}`,
     GET_AI_CONCEPTS: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/concepts`,
-    POST_AI_CHAT: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/chat`,
+
+    // AI Studio - Chat
+    GET_AI_CHAT_SESSIONS: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/chat/sessions`,
+    CREATE_AI_CHAT_SESSION: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/chat/sessions`,
+    GET_AI_CHAT_SESSION_DETAIL: (fileId, sessionId) =>
+        `${BASE_URL}/files/${fileId}/ai-studio/chat/sessions/${sessionId}`,
+    SEND_AI_CHAT_MESSAGE: (fileId, sessionId) =>
+        `${BASE_URL}/files/${fileId}/ai-studio/chat/sessions/${sessionId}/messages`,
+    DELETE_AI_CHAT_SESSION: (fileId, sessionId) =>
+        `${BASE_URL}/files/${fileId}/ai-studio/chat/sessions/${sessionId}`,
 
     // AI Studio - Flashcards
     GET_AI_FLASHCARD_SETS: (fileId) => `${BASE_URL}/files/${fileId}/ai-studio/flashcards/sets`,

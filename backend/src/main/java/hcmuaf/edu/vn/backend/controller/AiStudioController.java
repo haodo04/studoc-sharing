@@ -120,13 +120,58 @@ public class AiStudioController {
         }
     }
 
-    @PostMapping("/chat")
-    public ResponseEntity<?> chat(@PathVariable String id, @RequestBody ChatRequestDTO req, Principal principal) {
+    @GetMapping("/chat/sessions")
+    public ResponseEntity<?> listChatSessions(@PathVariable String id, Principal principal) {
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         try {
-            return ResponseEntity.ok(aiStudioService.chatWithDocument(id, principal.getName(), req.getMessage()));
+            return ResponseEntity.ok(aiStudioService.listChatSessions(id, principal.getName()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/chat/sessions")
+    public ResponseEntity<?> createChatSession(@PathVariable String id, Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            return ResponseEntity.ok(aiStudioService.createChatSession(id, principal.getName()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/chat/sessions/{sessionId}")
+    public ResponseEntity<?> getChatSession(@PathVariable String id, @PathVariable String sessionId, Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            return ResponseEntity.ok(aiStudioService.getChatSessionDetail(id, principal.getName(), sessionId));
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/chat/sessions/{sessionId}/messages")
+    public ResponseEntity<?> sendMessage(
+            @PathVariable String id, @PathVariable String sessionId,
+            @RequestBody ChatRequestDTO req, Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            return ResponseEntity.ok(aiStudioService.sendMessage(id, principal.getName(), sessionId, req.getMessage()));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/chat/sessions/{sessionId}")
+    public ResponseEntity<?> deleteChatSession(@PathVariable String id, @PathVariable String sessionId, Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            aiStudioService.deleteChatSession(id, principal.getName(), sessionId);
+            return ResponseEntity.ok(Map.of("message", "Đã xoá cuộc trò chuyện"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
         }

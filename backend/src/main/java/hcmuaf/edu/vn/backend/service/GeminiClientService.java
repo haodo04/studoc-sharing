@@ -87,21 +87,37 @@ public class GeminiClientService {
             } catch (org.springframework.web.client.HttpServerErrorException e) {
                 boolean isOverloaded = e.getStatusCode().value() == 503
                         || (e.getResponseBodyAsString() != null && e.getResponseBodyAsString().contains("UNAVAILABLE"));
-
                 if (isOverloaded && attempt < maxRetries) {
-                    System.err.println(">>> [Gemini] Quá tải (lần " + attempt + "/" + maxRetries + "), thử lại sau " + delayMs + "ms...");
-                    try {
-                        Thread.sleep(delayMs);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
+                    sleepBackoff(attempt, delayMs);
                     delayMs *= 2;
                     continue;
                 }
                 throw new IllegalStateException("Gemini hiện đang quá tải, vui lòng thử lại sau ít phút.", e);
+
+            } catch (org.springframework.web.client.HttpClientErrorException e) {
+                if (e.getStatusCode().value() == 429) {
+                    if (attempt < maxRetries) {
+                        System.err.println(">>> [Gemini] Vượt quota (lần " + attempt + "/" + maxRetries + "), thử lại sau " + delayMs + "ms...");
+                        sleepBackoff(attempt, delayMs);
+                        delayMs *= 2;
+                        continue;
+                    }
+                    throw new IllegalStateException(
+                            "Hệ thống AI đang có quá nhiều người dùng cùng lúc (đã vượt giới hạn miễn phí của Gemini). " +
+                                    "Vui lòng thử lại sau ít phút.", e);
+                }
+                throw e;
             }
         }
         throw new IllegalStateException("Gemini hiện đang quá tải, vui lòng thử lại sau ít phút.");
+    }
+
+    private void sleepBackoff(int attempt, long delayMs) {
+        try {
+            Thread.sleep(delayMs);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -122,7 +138,18 @@ public class GeminiClientService {
         if (parts == null || parts.isEmpty()) {
             throw new IllegalStateException("Gemini trả về nội dung rỗng.");
         }
-        return (String) parts.get(0).get("text");
+        String text = (String) parts.get(0).get("text");
+        return stripMarkdownJsonFence(text);
+    }
+
+    private String stripMarkdownJsonFence(String text) {
+        if (text == null) return null;
+        String trimmed = text.trim();
+        if (trimmed.startsWith("```")) {
+            trimmed = trimmed.replaceFirst("^```(json)?\\s*", "");
+            trimmed = trimmed.replaceFirst("\\s*```$", "");
+        }
+        return trimmed.trim();
     }
 
     public String generateText(byte[] pdfBytes, String prompt, double temperature) {

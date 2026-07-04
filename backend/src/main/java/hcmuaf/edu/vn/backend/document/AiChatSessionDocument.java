@@ -7,16 +7,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Document(collection = "ai_chat_sessions")
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-@Data
+@AllArgsConstructor @NoArgsConstructor @Builder @Data
 public class AiChatSessionDocument {
     @Id
     private String id;
     private String fileId;
     private String clerkId;
+    private String title;
     private List<ChatTurn> messages;
+    private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
