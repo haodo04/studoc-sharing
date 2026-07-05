@@ -1,99 +1,112 @@
-import React from 'react';
-import {
-    FileText,
-    FileSpreadsheet,
-    Presentation,
-    File,
-    Eye,
-    Download,
-    User
-} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Star, Heart, Download } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import AddToCollectionButton from "../ui/AddToCollectionButton";
 
-const DocumentCard = ({
-    title,
-    author,
-    fileType = 'pdf',
-    views = 0,
-    downloads = 0,
-    cost = 1,
-    date = 'Vừa xong',
-    onDownload
-}) => {
+const ThumbnailImage = ({ src, alt, className }) => {
+  const [imgSrc, setImgSrc] = useState(src);
+  useEffect(() => {
+    setImgSrc(src);
+  }, [src]);
 
-    const getFileIcon = (type) => {
-        switch (type?.toLowerCase()) {
-            case 'pdf':
-                return <FileText className="text-red-500 w-7 h-7" />;
-            case 'word':
-            case 'doc':
-            case 'docx':
-                return <FileText className="text-blue-500 w-7 h-7" />;
-            case 'excel':
-            case 'xls':
-            case 'xlsx':
-                return <FileSpreadsheet className="text-emerald-500 w-7 h-7" />;
-            case 'powerpoint':
-            case 'ppt':
-            case 'pptx':
-                return <Presentation className="text-orange-500 w-7 h-7" />;
-            default:
-                return <File className="text-slate-500 w-7 h-7" />;
-        }
-    };
-
-    return (
-        <div className="group bg-white border border-slate-200/70 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-200/80 transition-all duration-200 flex flex-col justify-between h-[190px] w-full">
-
-            {/* Phần trên: Icon file, Tên tài liệu & Người đăng */}
-            <div>
-                <div className="flex items-start gap-3.5">
-                    <div className="p-2.5 bg-slate-50 rounded-xl group-hover:bg-indigo-50/50 transition-colors shrink-0">
-                        {getFileIcon(fileType)}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                        <h4
-                            className="text-[14px] font-semibold text-slate-900 leading-snug break-words line-clamp-2 group-hover:text-indigo-600 transition-colors"
-                            title={title}
-                        >
-                            {title}
-                        </h4>
-
-                        <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
-                            <User size={12} className="text-slate-400 shrink-0" />
-                            <span className="truncate max-w-[110px]" title={author}>
-                                {author}
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span className="shrink-0">{date}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Phần dưới: Thống kê (Views/Downloads) & Nút Tải về */}
-            <div className="flex items-center justify-between border-t border-slate-100 pt-3.5">
-                <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
-                    <div className="flex items-center gap-1" title="Lượt xem">
-                        <Eye size={14} className="text-slate-400" />
-                        <span>{views}</span>
-                    </div>
-                    <div className="flex items-center gap-1" title="Lượt tải về">
-                        <Download size={14} className="text-slate-400" />
-                        <span>{downloads}</span>
-                    </div>
-                </div>
-
-                <button
-                    onClick={onDownload}
-                    className="flex items-center gap-1 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200/70 px-3 py-1.5 rounded-xl shadow-sm transition-all duration-200 active:scale-95 text-xs font-bold text-amber-700"
-                >
-                    <Download size={13} className="stroke-[2.5]" />
-                    <span>{cost === 0 ? "Miễn phí" : `-${cost} lượt`}</span>
-                </button>
-            </div>
-        </div>
-    );
+  return (
+    <img
+      src={
+        imgSrc ||
+        "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60"
+      }
+      alt={alt}
+      className={className}
+      onError={() => {
+        setImgSrc(
+          "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&auto=format&fit=crop&q=60"
+        );
+      }}
+    />
+  );
 };
 
-export default DocumentCard;
+export default function DocumentCard({ doc, isFavorited, onToggleFavorite }) {
+  const navigate = useNavigate();
+  const fileId = doc.id || doc._id;
+
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (onToggleFavorite) {
+      onToggleFavorite(fileId);
+    }
+  };
+
+  return (
+    <div
+      onClick={() => {
+        navigate(`/document/${fileId}`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }}
+      className="group bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer relative"
+    >
+      <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
+        <ThumbnailImage
+          src={doc.thumbnailUrl}
+          alt={doc.title || doc.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+
+        <span className="absolute top-2 left-2 bg-slate-800/80 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 flex items-center gap-1">
+          <span>{doc.docType || "Tài liệu"}</span>
+        </span>
+
+        <span className="absolute bottom-2 right-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10">
+          {doc.creditCost === 0 ? "Miễn phí" : `${doc.creditCost} Xu`}
+        </span>
+
+        {/* Nút yêu thích + bộ sưu tập */}
+        <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+          <div className="p-1.5 rounded-full bg-slate-800/50 hover:bg-slate-800/80 backdrop-blur-sm transition-all [&_svg]:text-white [&_svg:hover]:text-indigo-300">
+            <AddToCollectionButton fileId={fileId} variant="bare" />
+          </div>
+          <button
+            onClick={handleFavoriteClick}
+            className="p-1.5 rounded-full bg-slate-800/50 hover:bg-slate-800/80 backdrop-blur-sm transition-all"
+            title={isFavorited ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+          >
+            <Heart
+              className={`w-4 h-4 transition-colors ${
+                isFavorited ? "text-pink-500 fill-pink-500" : "text-white"
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase text-slate-500">
+            <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
+              {doc.universityId === "OTHER_UNI" ? doc.customUniversity : doc.universityId}
+            </span>
+            <span className="truncate max-w-[120px]">{doc.subjectCode}</span>
+          </div>
+
+          <h3 className="font-bold text-[13px] text-slate-900 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
+            {doc.title || doc.name}
+          </h3>
+        </div>
+
+        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+          <div className="flex items-center gap-1">
+            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            <span className="text-slate-800">
+              {typeof doc.rating === "number" ? doc.rating.toFixed(1) : doc.rating || "0.0"}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Download className="w-3.5 h-3.5 text-slate-400" />
+            <span>{doc.downloadCount || 0}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

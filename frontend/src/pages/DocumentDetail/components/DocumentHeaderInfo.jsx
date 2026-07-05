@@ -1,10 +1,12 @@
 import React from 'react';
 import { Landmark, Eye, Download, Star, Heart } from 'lucide-react';
+import AddToCollectionButton from '../../../components/ui/AddToCollectionButton';
 
 export default function DocumentHeaderInfo({ documentData, isFavorited, onToggleFavorite }) {
   if (!documentData) return null;
   const data = documentData.documentData ? documentData.documentData : documentData;
-  
+
+  const fileId = documentData.id || data.id;
   const authorName = documentData.authorName || data.authorName || documentData.author || "Thành viên StuDoc";
   const authorAvatar = documentData.authorAvatar || data.authorAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100";
 
@@ -28,18 +30,23 @@ export default function DocumentHeaderInfo({ documentData, isFavorited, onToggle
             <Landmark className="w-3.5 h-3.5" /> {data.universityId || "Đang cập nhật"}
           </span>
         </div>
-        <button
-          onClick={onToggleFavorite}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-            isFavorited 
-              ? "bg-pink-50 border-pink-200 text-pink-700" 
-              : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-          }`}
-          title={isFavorited ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
-        >
-          <Heart className={`w-4 h-4 ${isFavorited ? "fill-pink-500 text-pink-500" : ""}`} />
-          <span className="hidden sm:inline">{isFavorited ? "Đã lưu" : "Lưu lại"}</span>
-        </button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <AddToCollectionButton fileId={fileId} variant="full" />
+
+          <button
+            onClick={onToggleFavorite}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+              isFavorited 
+                ? "bg-pink-50 border-pink-200 text-pink-700" 
+                : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+            }`}
+            title={isFavorited ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+          >
+            <Heart className={`w-4 h-4 ${isFavorited ? "fill-pink-500 text-pink-500" : ""}`} />
+            <span className="hidden sm:inline">{isFavorited ? "Đã thích" : "Yêu thích"}</span>
+          </button>
+        </div>
       </div>
 
       <h1 className="text-lg md:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">

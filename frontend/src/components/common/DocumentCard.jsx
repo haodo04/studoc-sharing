@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Star, Heart, Download, FileText, Presentation, Archive, File } from "lucide-react";
+import { Star, Heart, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import AddToCollectionButton from "../ui/AddToCollectionButton"; 
 
 const ThumbnailImage = ({ src, alt, className }) => {
   const [imgSrc, setImgSrc] = useState(src);
@@ -27,31 +28,20 @@ const ThumbnailImage = ({ src, alt, className }) => {
 
 export default function DocumentCard({ doc, isFavorited, onToggleFavorite }) {
   const navigate = useNavigate();
-
-  const getFileIcon = (docType) => {
-    const type = docType?.toLowerCase();
-    if (type === "pdf") return <FileText className="w-4 h-4 text-red-500" />;
-    if (type === "docx" || type === "doc")
-      return <FileText className="w-4 h-4 text-blue-500" />;
-    if (type === "pptx" || type === "ppt")
-      return <Presentation className="w-4 h-4 text-orange-500" />;
-    if (type === "zip" || type === "rar")
-      return <Archive className="w-4 h-4 text-emerald-500" />;
-    return <File className="w-4 h-4 text-slate-500" />;
-  };
+  const fileId = doc.id || doc._id;
 
   const handleFavoriteClick = (e) => {
     e.stopPropagation();
     e.preventDefault();
     if (onToggleFavorite) {
-      onToggleFavorite(doc.id || doc._id);
+      onToggleFavorite(fileId);
     }
   };
 
   return (
     <div
       onClick={() => {
-        navigate(`/document/${doc.id || doc._id}`);
+        navigate(`/document/${fileId}`);
         window.scrollTo({ top: 0, behavior: "smooth" });
       }}
       className="group bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer relative"
@@ -64,7 +54,6 @@ export default function DocumentCard({ doc, isFavorited, onToggleFavorite }) {
         />
 
         <span className="absolute top-2 left-2 bg-slate-800/80 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 flex items-center gap-1">
-          {getFileIcon(doc.docType)}
           <span>{doc.docType || "Tài liệu"}</span>
         </span>
 
@@ -72,27 +61,30 @@ export default function DocumentCard({ doc, isFavorited, onToggleFavorite }) {
           {doc.creditCost === 0 ? "Miễn phí" : `${doc.creditCost} Xu`}
         </span>
 
-        {/* Nút yêu thích */}
-        <button
-          onClick={handleFavoriteClick}
-          className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-800/50 hover:bg-slate-800/80 backdrop-blur-sm transition-all z-10"
-          title={isFavorited ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
-        >
-          <Heart
-            className={`w-4 h-4 transition-colors ${
-              isFavorited ? "text-pink-500 fill-pink-500" : "text-white"
-            }`}
-          />
-        </button>
+        {/* Nút yêu thích + bộ sưu tập */}
+        <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+          <div className="p-1.5 rounded-full bg-slate-800/50 hover:bg-slate-800/80 backdrop-blur-sm transition-all [&_svg]:text-white [&_svg:hover]:text-indigo-300">
+            <AddToCollectionButton fileId={fileId} variant="bare" />
+          </div>
+          <button
+            onClick={handleFavoriteClick}
+            className="p-1.5 rounded-full bg-slate-800/50 hover:bg-slate-800/80 backdrop-blur-sm transition-all"
+            title={isFavorited ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+          >
+            <Heart
+              className={`w-4 h-4 transition-colors ${
+                isFavorited ? "text-pink-500 fill-pink-500" : "text-white"
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase text-slate-500">
             <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
-              {doc.universityId === "OTHER_UNI"
-                ? doc.customUniversity
-                : doc.universityId}
+              {doc.universityId === "OTHER_UNI" ? doc.customUniversity : doc.universityId}
             </span>
             <span className="truncate max-w-[120px]">{doc.subjectCode}</span>
           </div>
@@ -105,7 +97,9 @@ export default function DocumentCard({ doc, isFavorited, onToggleFavorite }) {
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
           <div className="flex items-center gap-1">
             <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-            <span className="text-slate-800">{typeof doc.rating === 'number' ? doc.rating.toFixed(1) : (doc.rating || "0.0")}</span>
+            <span className="text-slate-800">
+              {typeof doc.rating === "number" ? doc.rating.toFixed(1) : doc.rating || "0.0"}
+            </span>
           </div>
           <div className="flex items-center gap-1">
             <Download className="w-3.5 h-3.5 text-slate-400" />

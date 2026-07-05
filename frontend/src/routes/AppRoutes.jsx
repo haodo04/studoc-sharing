@@ -17,6 +17,8 @@ import UploadPage from "../pages/Upload/Upload";
 import PremiumPage from "../pages/Premium/PremiumPage";
 import History from "../pages/Dashboard/components/History";
 import AiStudioPage from "../pages/AiStudio/AiStudioPage";
+import Collections from "../pages/Dashboard/components/Collections";
+import CollectionDetail from "../pages/Dashboard/components/CollectionDetail";
 
 const ProtectedLayout = ({ children }) => {
   return (
@@ -49,6 +51,8 @@ const AppRoutes = () => {
       <Route path="/user/history" element={<ProtectedLayout><History /></ProtectedLayout>} />
       <Route path="/user/transactions" element={<ProtectedLayout><Transaction /></ProtectedLayout>} />
       <Route path="/user/favorites" element={<ProtectedLayout><FavoritesPage /></ProtectedLayout>} />
+      <Route path="/user/collections" element={<ProtectedLayout><Collections /></ProtectedLayout>} />
+      <Route path="/user/collections/:collectionId" element={<ProtectedLayout><CollectionDetail /></ProtectedLayout>} />
 
       <Route path="/*" element={<Navigate to="/home" replace />} />
     </Routes>
