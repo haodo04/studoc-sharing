@@ -61,6 +61,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/files/{id}/related").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/{id}").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/discussions/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/discussions/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/discussions/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/discussions/**").authenticated()
+
                         .requestMatchers("/comments/**", "/webhooks/**", "/register").permitAll()
                         .requestMatchers("/api/payment/vnpay_return").permitAll()
                         .requestMatchers("/payments/**").permitAll()

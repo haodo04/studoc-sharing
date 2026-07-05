@@ -47,8 +47,9 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
         boolean isMetadataPublic = lowerURI.contains("/metadata/");
         boolean isBasePublic = lowerURI.contains("/webhooks") || lowerURI.contains("/register") || lowerURI.contains("/uploads");
         boolean isPublicFiles = lowerURI.contains("/files/public/");
-        boolean isGetComments = lowerURI.contains("/comments") && "GET".equalsIgnoreCase(method);
         boolean isDocumentsPublic = lowerURI.contains("/documents/");
+        boolean isGetComments = (lowerURI.contains("/comments") || lowerURI.contains("/discussions"))
+                && "GET".equalsIgnoreCase(method);
 
         boolean isGetDocumentDetail = "GET".equalsIgnoreCase(method) &&
                 (lowerURI.contains("/related") || (lowerURI.contains("/files/")
