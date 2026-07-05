@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
 import { FileText, Coins, Sparkles, UploadIcon, LayoutDashboard } from 'lucide-react'; 
 import { useUserCredits } from '../../context/UserCreditsContext';
+import NotificationBell from './NotificationBell';
 
 const NavbarPage = () => {
   const navigate = useNavigate();
@@ -103,6 +104,8 @@ const NavbarPage = () => {
               {credits ?? 0} Xu
             </span>
           </div>
+
+          <NotificationBell />
 
           <div className="h-6 w-px bg-slate-200" />
 

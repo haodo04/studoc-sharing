@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   SignedIn,
   SignedOut,
@@ -61,6 +61,9 @@ export default function DocumentDetailPage() {
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [searchParams] = useSearchParams();
+  const highlightDiscussionId = searchParams.get("highlight");
 
   // kiểm tra trạng thái tài liệu mở khóa chưa
   const [hasUnlockedFull, setHasUnlockedFull] = useState(false);
@@ -716,7 +719,7 @@ export default function DocumentDetailPage() {
             </div>
 
             {/* HỎI ĐÁP */}
-            <DiscussionSection fileId={id} />
+            <DiscussionSection fileId={id} highlightId={highlightDiscussionId}/>
           </div>
         </div>
 

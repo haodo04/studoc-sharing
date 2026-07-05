@@ -70,6 +70,12 @@ const apiEndpoints = {
     GET_COMMUNITY_HISTORY: (roomId = "general", limit = 50) =>
     `${BASE_URL}/community/messages?roomId=${encodeURIComponent(roomId)}&limit=${limit}`,
     WS_ENDPOINT: `http://localhost:8080/api/v1.0/ws`, 
+
+    // thông báo
+    GET_NOTIFICATIONS: (limit = 20) => `${BASE_URL}/notifications?limit=${limit}`,
+    GET_UNREAD_COUNT: `${BASE_URL}/notifications/unread-count`,
+    MARK_NOTIFICATION_READ: (id) => `${BASE_URL}/notifications/${id}/read`,
+    MARK_ALL_NOTIFICATIONS_READ: `${BASE_URL}/notifications/read-all`,
 };
 
 export default apiEndpoints;

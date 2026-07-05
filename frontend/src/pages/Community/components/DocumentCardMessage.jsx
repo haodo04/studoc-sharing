@@ -3,7 +3,6 @@ import { FileText, Coins, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { documentApi } from "../../../api/documentApi";
 
-// cache đơn giản trong bộ nhớ tab hiện tại, tránh gọi lại API cho cùng 1 fileId nhiều lần
 const docInfoCache = new Map();
 
 export default function DocumentCardMessage({ fileId }) {
@@ -45,7 +44,7 @@ export default function DocumentCardMessage({ fileId }) {
 
   return (
     <button
-      onClick={() => navigate(`/documents/${fileId}`)}
+      onClick={() => navigate(`/document/${fileId}`)}
       className="w-64 flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md transition-all text-left group"
     >
       <img
