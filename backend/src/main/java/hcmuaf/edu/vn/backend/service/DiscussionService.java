@@ -16,6 +16,7 @@ public class DiscussionService {
 
     private final DiscussionRepository discussionRepository;
     private final FileMetadataRepository fileMetadataRepository;
+    private final NotificationService notificationService;
 
     public List<DiscussionDocument> getByFile(String fileId) {
         return discussionRepository.findByFileIdOrderByCreatedAtAsc(fileId);
@@ -52,7 +53,18 @@ public class DiscussionService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return discussionRepository.save(doc);
+        DiscussionDocument saved = discussionRepository.save(doc);
+
+        if (parentId != null) {
+            discussionRepository.findById(parentId).ifPresent(parent -> {
+                notificationService.notifyDiscussionReply(
+                        parent.getClerkId(), fileId, saved.getId(),
+                        clerkId, fullName, photoUrl
+                );
+            });
+        }
+
+        return saved;
     }
 
     public DiscussionDocument update(String id, String clerkId, String newContent) {
