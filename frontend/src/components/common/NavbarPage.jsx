@@ -24,6 +24,8 @@ const NavbarPage = () => {
       isActive = currentPath === '/category' || currentPath.startsWith('/category/');
     } else if (tabName === 'premium') {
       isActive = currentPath === '/premium';
+    } else if (tabName === 'cong-dong') {
+      isActive = currentPath === '/community';
     }
 
     if (isActive) {
@@ -66,7 +68,9 @@ const NavbarPage = () => {
             Tài liệu
           </span>
 
-          <span className="text-slate-600 hover:text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-transparent hover:border-indigo-600">
+          <span 
+            className={getTabClass('cong-dong')}
+            onClick={() => navigate('/community')}>
             Cộng đồng
           </span>
 

@@ -65,6 +65,11 @@ const apiEndpoints = {
     CREATE_DISCUSSION: (fileId) => `${BASE_URL}/discussions/file/${fileId}`,
     UPDATE_DISCUSSION: (id) => `${BASE_URL}/discussions/${id}`,
     DELETE_DISCUSSION: (id) => `${BASE_URL}/discussions/${id}`,
+
+    // cộng đồng (chat real-time)
+    GET_COMMUNITY_HISTORY: (roomId = "general", limit = 50) =>
+    `${BASE_URL}/community/messages?roomId=${encodeURIComponent(roomId)}&limit=${limit}`,
+    WS_ENDPOINT: `http://localhost:8080/api/v1.0/ws`, 
 };
 
 export default apiEndpoints;
