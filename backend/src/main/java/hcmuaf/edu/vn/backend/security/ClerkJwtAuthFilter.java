@@ -45,7 +45,9 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
 
         boolean isVnPayReturn = lowerURI.contains("/api/payment/vnpay_return");
         boolean isMetadataPublic = lowerURI.contains("/metadata/");
-        boolean isBasePublic = lowerURI.contains("/webhooks") || lowerURI.contains("/register") || lowerURI.contains("/uploads");
+        boolean isBasePublic = lowerURI.contains("/webhooks") || lowerURI.contains("/register")
+                || lowerURI.contains("/uploads") || lowerURI.contains("/community/messages")
+                || lowerURI.contains("/ws");
         boolean isPublicFiles = lowerURI.contains("/files/public/");
         boolean isDocumentsPublic = lowerURI.contains("/documents/");
         boolean isGetComments = (lowerURI.contains("/comments") || lowerURI.contains("/discussions"))

@@ -19,6 +19,7 @@ import History from "../pages/Dashboard/components/History";
 import AiStudioPage from "../pages/AiStudio/AiStudioPage";
 import Collections from "../pages/Dashboard/components/Collections";
 import CollectionDetail from "../pages/Dashboard/components/CollectionDetail";
+import CommunityPage from "../pages/Community/CommunityPage";
 
 const ProtectedLayout = ({ children }) => {
   return (
@@ -45,6 +46,7 @@ const AppRoutes = () => {
       <Route path="/document/:id" element={<ProtectedLayout><DocumentDetailPage /></ProtectedLayout>} />
       <Route path="/documents/:id/ai-studio" element={<AiStudioPage />} />
       <Route path="/upload" element={<ProtectedLayout><UploadPage /></ProtectedLayout>} />
+      <Route path="/community" element={<CommunityPage />} />
 
       <Route path="/user/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
       <Route path="/user/my-files" element={<ProtectedLayout><MyFiles /></ProtectedLayout>} />

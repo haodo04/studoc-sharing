@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
 import { FileText, Coins, Sparkles, UploadIcon, LayoutDashboard } from 'lucide-react'; 
 import { useUserCredits } from '../../context/UserCreditsContext';
+import NotificationBell from './NotificationBell';
 
 const NavbarPage = () => {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ const NavbarPage = () => {
       isActive = currentPath === '/category' || currentPath.startsWith('/category/');
     } else if (tabName === 'premium') {
       isActive = currentPath === '/premium';
+    } else if (tabName === 'cong-dong') {
+      isActive = currentPath === '/community';
     }
 
     if (isActive) {
@@ -66,7 +69,9 @@ const NavbarPage = () => {
             Tài liệu
           </span>
 
-          <span className="text-slate-600 hover:text-indigo-600 cursor-pointer transition-colors py-5 border-b-2 border-transparent hover:border-indigo-600">
+          <span 
+            className={getTabClass('cong-dong')}
+            onClick={() => navigate('/community')}>
             Cộng đồng
           </span>
 
@@ -99,6 +104,8 @@ const NavbarPage = () => {
               {credits ?? 0} Xu
             </span>
           </div>
+
+          <NotificationBell />
 
           <div className="h-6 w-px bg-slate-200" />
 

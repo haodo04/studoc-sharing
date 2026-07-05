@@ -18,6 +18,7 @@ export default function DiscussionItem({
   fileId,
   depth,
   currentUser,
+  highlightId,
   onReplyAdded,
   onUpdated,
   onDeleted,
@@ -33,6 +34,7 @@ export default function DiscussionItem({
   const isOwner = isSignedIn && userId === node.clerkId;
   const indentPx = Math.min(depth, MAX_INDENT_DEPTH) * 20;
   const hasChildren = node.children && node.children.length > 0;
+  const isHighlighted = highlightId === node.id;
 
   const handleReply = async (e) => {
     e.preventDefault();
@@ -108,7 +110,7 @@ export default function DiscussionItem({
         </div>
       ),
       {
-        duration: 3000, 
+        duration: 3000,
       },
     );
   };
@@ -128,7 +130,13 @@ export default function DiscussionItem({
   };
 
   return (
-    <div style={{ marginLeft: indentPx }} className="text-xs">
+    <div
+      id={`discussion-${node.id}`}
+      style={{ marginLeft: indentPx }}
+      className={`text-xs rounded-xl transition-colors duration-1000 ${
+        isHighlighted ? "bg-amber-50 ring-2 ring-amber-300 p-2 -m-2" : ""
+      }`}
+    >
       <div className="flex items-start gap-2">
         <img
           src={
@@ -272,6 +280,7 @@ export default function DiscussionItem({
               fileId={fileId}
               depth={depth + 1}
               currentUser={currentUser}
+              highlightId={highlightId}
               onReplyAdded={onReplyAdded}
               onUpdated={onUpdated}
               onDeleted={onDeleted}

@@ -5,7 +5,6 @@ import toast from "react-hot-toast";
 import { discussionApi } from "../../../api/discussionApi";
 import DiscussionItem from "./DiscussionItem";
 
-// dựng cây từ list phẳng (parentId)
 function buildTree(flatList) {
   const map = new Map();
   flatList.forEach((item) => map.set(item.id, { ...item, children: [] }));
@@ -14,24 +13,28 @@ function buildTree(flatList) {
     if (item.parentId && map.has(item.parentId)) {
       map.get(item.parentId).children.push(item);
     } else {
-      roots.push(item); 
+      roots.push(item);
     }
   });
   return roots;
 }
 
-export default function DiscussionSection({ fileId }) {
+export default function DiscussionSection({ fileId, highlightId }) {
   const { getToken, isSignedIn } = useAuth();
   const { user } = useUser();
 
+  const [activeHighlight, setActiveHighlight] = useState(highlightId || null);
   const [flatList, setFlatList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [newContent, setNewContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentUser = useMemo(
-    () => ({ fullName: user?.fullName || "Người dùng", imageUrl: user?.imageUrl || "" }),
-    [user]
+    () => ({
+      fullName: user?.fullName || "Người dùng",
+      imageUrl: user?.imageUrl || "",
+    }),
+    [user],
   );
 
   const fetchDiscussions = useCallback(async () => {
@@ -54,6 +57,39 @@ export default function DiscussionSection({ fileId }) {
   const tree = useMemo(() => buildTree(flatList), [flatList]);
   const visibleCount = flatList.filter((c) => !c.deleted).length;
 
+  useEffect(() => {
+    setActiveHighlight(highlightId || null);
+  }, [highlightId]);
+
+  useEffect(() => {
+    if (!activeHighlight || flatList.length === 0) return;
+
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`discussion-${activeHighlight}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        toast.error("Bình luận này không còn tồn tại hoặc đã bị xóa.");
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [activeHighlight, flatList]);
+
+  useEffect(() => {
+    if (!activeHighlight) return;
+
+    const handleClickOutside = (e) => {
+      const el = document.getElementById(`discussion-${activeHighlight}`);
+      if (el && !el.contains(e.target)) {
+        setActiveHighlight(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [activeHighlight]);
+
   const handlePostRoot = async (e) => {
     e.preventDefault();
     if (!isSignedIn) {
@@ -67,8 +103,13 @@ export default function DiscussionSection({ fileId }) {
       const token = await getToken();
       const created = await discussionApi.create(
         fileId,
-        { content: newContent, parentId: null, ...currentUser, userPhotoUrl: currentUser.imageUrl },
-        token
+        {
+          content: newContent,
+          parentId: null,
+          ...currentUser,
+          userPhotoUrl: currentUser.imageUrl,
+        },
+        token,
       );
       setFlatList((prev) => [...prev, created]);
       setNewContent("");
@@ -80,8 +121,8 @@ export default function DiscussionSection({ fileId }) {
     }
   };
 
-  // mọi thao tác con (reply/sửa/xóa) đều update lại state tại chỗ, không fetch lại toàn bộ cây
-  const handleReplyAdded = (created) => setFlatList((prev) => [...prev, created]);
+  const handleReplyAdded = (created) =>
+    setFlatList((prev) => [...prev, created]);
 
   const handleUpdated = (updated) =>
     setFlatList((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
@@ -89,7 +130,9 @@ export default function DiscussionSection({ fileId }) {
   const handleDeleted = (id, wasSoftDeleted) => {
     if (wasSoftDeleted) {
       setFlatList((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, deleted: true, content: null } : c))
+        prev.map((c) =>
+          c.id === id ? { ...c, deleted: true, content: null } : c,
+        ),
       );
     } else {
       setFlatList((prev) => prev.filter((c) => c.id !== id));
@@ -106,7 +149,11 @@ export default function DiscussionSection({ fileId }) {
         <textarea
           rows={2}
           className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-          placeholder={isSignedIn ? "Đặt câu hỏi về tài liệu này..." : "Đăng nhập để đặt câu hỏi..."}
+          placeholder={
+            isSignedIn
+              ? "Đặt câu hỏi về tài liệu này..."
+              : "Đăng nhập để đặt câu hỏi..."
+          }
           value={newContent}
           onChange={(e) => setNewContent(e.target.value)}
           disabled={!isSignedIn || isSubmitting}
@@ -124,7 +171,9 @@ export default function DiscussionSection({ fileId }) {
 
       <div className="space-y-4 max-h-[520px] overflow-y-auto pr-1">
         {isLoading ? (
-          <p className="text-slate-400 text-center py-2 text-[11px]">Đang tải thảo luận...</p>
+          <p className="text-slate-400 text-center py-2 text-[11px]">
+            Đang tải thảo luận...
+          </p>
         ) : tree.length === 0 ? (
           <p className="text-slate-400 text-center py-2 text-[11px]">
             Chưa có câu hỏi nào. Hãy là người đầu tiên đặt câu hỏi!
@@ -137,6 +186,7 @@ export default function DiscussionSection({ fileId }) {
               fileId={fileId}
               depth={0}
               currentUser={currentUser}
+              highlightId={activeHighlight}
               onReplyAdded={handleReplyAdded}
               onUpdated={handleUpdated}
               onDeleted={handleDeleted}
