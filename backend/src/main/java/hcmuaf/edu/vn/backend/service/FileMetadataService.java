@@ -505,4 +505,9 @@ public class FileMetadataService {
             return dto;
         }).collect(Collectors.toList());
     }
+
+    public List<FileMetadataDTO> getFilesByIds(List<String> fileIds) {
+        List<FileMetadataDocument> docs = fileMetadataRepository.findAllById(fileIds);
+        return docs.stream().map(this::mapToDTO).toList();
+    }
 }
