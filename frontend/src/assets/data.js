@@ -1,4 +1,16 @@
-import { LayoutDashboard, Upload, Files, CreditCard, Receipt, Star, Trash2, Share, Compass, Download } from "lucide-react";
+import {
+  LayoutDashboard,
+  Upload,
+  Files,
+  CreditCard,
+  Receipt,
+  Star,
+  Trash2,
+  Share,
+  Compass,
+  Download,
+  Layers,
+} from "lucide-react";
 
 export const features = [
   {
@@ -147,5 +159,11 @@ export const SIDE_MENU_DATA = [
     label: "Yêu thích",
     icon: Star,
     path: "/user/favorites",
+  },
+  {
+    id: "06",
+    label: "Bộ sưu tập",
+    icon: Layers,
+    path: "/user/collections",
   },
 ];
