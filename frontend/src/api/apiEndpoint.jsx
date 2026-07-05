@@ -59,6 +59,12 @@ const apiEndpoints = {
     GET_COLLECTIONS_CONTAINING_FILE: (fileId) => `${BASE_URL}/collections/containing/${fileId}`,
     ADD_FILE_TO_COLLECTION: (collectionId, fileId) => `${BASE_URL}/collections/${collectionId}/files/${fileId}`,
     REMOVE_FILE_FROM_COLLECTION: (collectionId, fileId) => `${BASE_URL}/collections/${collectionId}/files/${fileId}`,
+
+    // thảo luận / hỏi đáp 
+    GET_DISCUSSIONS: (fileId) => `${BASE_URL}/discussions/file/${fileId}`,
+    CREATE_DISCUSSION: (fileId) => `${BASE_URL}/discussions/file/${fileId}`,
+    UPDATE_DISCUSSION: (id) => `${BASE_URL}/discussions/${id}`,
+    DELETE_DISCUSSION: (id) => `${BASE_URL}/discussions/${id}`,
 };
 
 export default apiEndpoints;

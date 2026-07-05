@@ -47,6 +47,8 @@ import {
   useUserCredits,
 } from "../../context/UserCreditsContext";
 import AiAnalysisCard from "./components/AiAnalysisCard";
+import DiscussionItem from "./components/DiscussionItem";
+import DiscussionSection from "./components/DiscussionSection";
 
 export default function DocumentDetailPage() {
   const navigate = useNavigate();
@@ -712,6 +714,9 @@ export default function DocumentDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* HỎI ĐÁP */}
+            <DiscussionSection fileId={id} />
           </div>
         </div>
 
