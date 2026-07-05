@@ -49,7 +49,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/community/**").permitAll()
                         .requestMatchers("/files/interaction/**").authenticated()
                         .requestMatchers("/files/manage/**").authenticated()
                         .requestMatchers("/favorites/**").authenticated()
