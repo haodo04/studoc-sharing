@@ -136,7 +136,12 @@ public class GeminiClientService {
         }
         List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
         if (parts == null || parts.isEmpty()) {
-            throw new IllegalStateException("Gemini trả về nội dung rỗng.");
+            Object finishReason = candidates.get(0).get("finishReason");
+            System.err.println(">>> [Gemini] parts rỗng, finishReason=" + finishReason + ", full candidate=" + candidates.get(0));
+            if ("MAX_TOKENS".equals(finishReason)) {
+                throw new IllegalStateException("Gemini bị cắt do vượt giới hạn max_output_tokens trước khi tạo được nội dung. Hãy tăng max_output_tokens.");
+            }
+            throw new IllegalStateException("Gemini trả về nội dung rỗng, finishReason=" + finishReason);
         }
         String text = (String) parts.get(0).get("text");
         return stripMarkdownJsonFence(text);
@@ -168,5 +173,24 @@ public class GeminiClientService {
 
         Map<String, Object> result = callGemini(body);
         return extractText(result);
+    }
+
+    public Map<String, Object> generateWithTools(List<Map<String, Object>> contents,
+                                                 List<Map<String, Object>> tools,
+                                                 String systemInstruction) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("contents", contents);
+        if (tools != null) {
+            body.put("tools", tools);
+        }
+        if (systemInstruction != null) {
+            body.put("system_instruction", Map.of(
+                    "parts", List.of(Map.of("text", systemInstruction))
+            ));
+        }
+        body.put("generationConfig", Map.of(
+                "max_output_tokens", 2048
+        ));
+        return callGemini(body);
     }
 }

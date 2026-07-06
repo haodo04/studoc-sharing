@@ -27,4 +27,6 @@ public interface FileMetadataRepository extends MongoRepository<FileMetadataDocu
     List<FileMetadataDocument> findByCategoryIdAndIsPublicTrueAndIdNot(String categoryId, String id, Pageable pageable);
 
     List<FileMetadataDocument> findByClerkIdOrderByUploadedAtDesc(String clerkId);
+
+    List<FileMetadataDocument> findByTitleContainingIgnoreCaseAndIsPublicTrue(String keyword);
 }
