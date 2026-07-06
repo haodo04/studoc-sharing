@@ -11,9 +11,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class UserCreditsService {
+
+    public static final String PLAN_BASIC = "BASIC";
+    public static final String PLAN_PREMIUM_MONTH = "Premium Tháng";
+    public static final String PLAN_PREMIUM_YEAR = "Premium Năm";
 
     private final UserCreditsRepository userCreditsRepository;
     private final ProfileService profileService;
@@ -25,7 +31,7 @@ public class UserCreditsService {
                     UserCredits initialCredits = UserCredits.builder()
                             .clerkId(clerkId)
                             .credits(5)
-                            .plan("BASIC")
+                            .plan(PLAN_BASIC)
                             .build();
 
                     return userCreditsRepository.save(initialCredits);
@@ -91,10 +97,32 @@ public class UserCreditsService {
                             UserCredits newCredits = UserCredits.builder()
                                     .clerkId(clerkId)
                                     .credits(amount)
-                                    .plan("BASIC")
+                                    .plan(PLAN_BASIC)
                                     .build();
                             userCreditsRepository.save(newCredits);
                         }
                 );
+    }
+
+    @Transactional
+    public String getEffectivePlan(String clerkId) {
+        UserCredits userCredits = getUserCredits(clerkId);
+        String plan = userCredits.getPlan();
+        LocalDateTime expiresAt = userCredits.getPlanExpiresAt();
+
+        boolean isTimeLimitedPlan = PLAN_PREMIUM_MONTH.equals(plan) || PLAN_PREMIUM_YEAR.equals(plan);
+        boolean isExpired = isTimeLimitedPlan && expiresAt != null && expiresAt.isBefore(LocalDateTime.now());
+
+        if (isExpired) {
+            userCredits.setPlan(PLAN_BASIC);
+            userCredits.setPlanExpiresAt(null);
+            userCreditsRepository.save(userCredits);
+            return PLAN_BASIC;
+        }
+        return plan != null ? plan : PLAN_BASIC;
+    }
+
+    public boolean isPremiumYearActive(String clerkId) {
+        return PLAN_PREMIUM_YEAR.equals(getEffectivePlan(clerkId));
     }
 }

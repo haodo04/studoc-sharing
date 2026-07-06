@@ -57,7 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/users/credits").authenticated()
 
                         .requestMatchers("/files/*/ai-studio/**").authenticated()
-
+                        .requestMatchers("/assistant/**").permitAll()
                         .requestMatchers("/files/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/{id}/related").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/{id}").permitAll()

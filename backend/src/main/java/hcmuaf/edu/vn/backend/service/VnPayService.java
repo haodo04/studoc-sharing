@@ -113,15 +113,25 @@ public class VnPayService {
             Update update = new Update();
 
             if ("COIN".equals(tx.getPackageType())) {
-                int bonusCoins = 0;
-                if ("coin-1".equals(tx.getPackageId())) bonusCoins = 5;
-                else if ("coin-2".equals(tx.getPackageId())) bonusCoins = 15;
-                else if ("coin-3".equals(tx.getPackageId())) bonusCoins = 50;
+                int bonusCoins = switch (tx.getPackageId()) {
+                    case "coin-1" -> 5;
+                    case "coin-2" -> 15 + 3;
+                    case "coin-3" -> 50 + 20;
+                    default -> 0;
+                };
 
                 update.inc("credits", bonusCoins);
             } else if ("PREMIUM".equals(tx.getPackageType())) {
-                String planName = "sub-month".equals(tx.getPackageId()) ? "Premium Tháng" : "Premium Năm";
+                boolean isYearly = "sub-year".equals(tx.getPackageId());
+                String planName = isYearly ? hcmuaf.edu.vn.backend.service.UserCreditsService.PLAN_PREMIUM_YEAR
+                        : hcmuaf.edu.vn.backend.service.UserCreditsService.PLAN_PREMIUM_MONTH;
+
+                LocalDateTime expiresAt = isYearly
+                        ? LocalDateTime.now().plusYears(1)
+                        : LocalDateTime.now().plusMonths(1);
+
                 update.set("plan", planName);
+                update.set("planExpiresAt", expiresAt);
             }
 
             mongoTemplate.updateFirst(queryUser, update, UserCredits.class);

@@ -345,6 +345,8 @@ public class FileMetadataService {
         return mapToDTO(fileMetadataRepository.save(document));
     }
 
+    private static final double UPLOADER_REVENUE_SHARE = 0.5;
+
     public void unlockDocument(String fileId, String clerkId) {
         FileMetadataDocument document = fileMetadataRepository.findById(fileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu cần mở khóa."));
@@ -363,6 +365,15 @@ public class FileMetadataService {
 
         if (cost > 0) {
             userCreditsService.deductCreditsForDownload(clerkId, cost);
+
+            // Chia % xu cho uploader (chủ sở hữu tài liệu) như phần thưởng nội dung được ưa chuộng.
+            String uploaderClerkId = document.getClerkId();
+            if (StringUtils.hasText(uploaderClerkId)) {
+                int uploaderShare = (int) Math.floor(cost * UPLOADER_REVENUE_SHARE);
+                if (uploaderShare > 0) {
+                    userCreditsService.addCredits(uploaderClerkId, uploaderShare);
+                }
+            }
         }
 
         UnlockHistoryDocument unlockRecord = UnlockHistoryDocument.builder()

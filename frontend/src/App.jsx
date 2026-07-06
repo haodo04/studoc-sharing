@@ -7,13 +7,13 @@ import { UserCreditsProvider } from "./context/UserCreditsContext";
 import { CollectionModalProvider } from "./context/CollectionModalContext";
 import AddToCollectionModal from "./components/ui/AddToCollectionModal";
 import GlobalBanner from "./components/ui/GlobalBanner";
+import AssistantWidget from "./components/common/AssistantWidget";
 
 function App() {
   return (
     <UserCreditsProvider>
       <CollectionModalProvider>
         <BrowserRouter>
-          <GlobalBanner />
           <Toaster position="top-center" reverseOrder={false} />
 
           <AppRoutes />

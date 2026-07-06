@@ -21,7 +21,11 @@ public class AiStudioService {
     private final AiFlashcardSetRepository aiFlashcardSetRepository;
     private final AiChatSessionRepository aiChatSessionRepository;
     private final GeminiClientService geminiClientService;
+<<<<<<< HEAD
     private final AiTrackingService aiTrackingService;
+=======
+    private final UserCreditsService userCreditsService;
+>>>>>>> 856f059a08f085c679b0939fd1e236445c26c550
     private final RestTemplate restTemplate = new RestTemplate();
 
     private FileMetadataDocument requireUnlockedFile(String fileId, String clerkId) {
@@ -34,6 +38,15 @@ public class AiStudioService {
         if (!allowed) {
             throw new SecurityException("Bạn cần mở khóa tài liệu bằng xu trước khi dùng Trợ lý AI!");
         }
+
+        // Trợ lý AI (tóm tắt, khái niệm, flashcard, chat) là đặc quyền riêng của thành viên
+        // Premium Năm còn hiệu lực, cộng thêm điều kiện đã mở khóa tài liệu ở trên.
+        if (!userCreditsService.isPremiumYearActive(clerkId)) {
+            throw new SecurityException(
+                    "Trợ lý AI là đặc quyền dành riêng cho thành viên gói Premium Năm. " +
+                            "Vui lòng nâng cấp gói tại trang Premium để sử dụng!");
+        }
+
         return file;
     }
 
