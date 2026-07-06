@@ -52,6 +52,7 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
         boolean isDocumentsPublic = lowerURI.contains("/documents/");
         boolean isGetComments = (lowerURI.contains("/comments") || lowerURI.contains("/discussions"))
                 && "GET".equalsIgnoreCase(method);
+        boolean isAssistant = lowerURI.contains("/assistant");
 
         boolean isGetDocumentDetail = "GET".equalsIgnoreCase(method) &&
                 (lowerURI.contains("/related") || (lowerURI.contains("/files/")
@@ -68,7 +69,7 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
         }
 
         // Nhóm 2: public nhưng cần biết user nếu có đăng nhập (
-        boolean isOptionalAuth = isGetDocumentDetail || isPublicFiles;
+        boolean isOptionalAuth = isGetDocumentDetail || isPublicFiles || isAssistant;
 
         if (isOptionalAuth) {
             String authHeader = request.getHeader("Authorization");

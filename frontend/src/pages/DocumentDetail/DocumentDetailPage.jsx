@@ -213,7 +213,7 @@ export default function DocumentDetailPage() {
     loadDocumentAndRelated();
   }, [id, fetchComments, isLoaded, isSignedIn, getToken]);
 
-  const { refreshCredits, fetchUserCredits } = useUserCredits();
+  const { refreshCredits, fetchUserCredits, isPremiumYearActive } = useUserCredits();
 
   // const handleDownload = () => {
   //   if (!documentData) return;
@@ -321,7 +321,7 @@ export default function DocumentDetailPage() {
   //     },
   //   );
   // };
-  // LUỒNG MỚI 1: Hàm kích hoạt trừ xu mở khóa tài liệu vĩnh viễn
+ 
   const onUnlockDocument = () => {
     if (!isSignedIn) {
       toast.error("Vui lòng đăng nhập để mở khóa tài liệu!");
@@ -396,6 +396,22 @@ export default function DocumentDetailPage() {
         },
       },
     );
+  };
+
+  const onAiStudioClick = () => {
+    if (!hasUnlockedFull) {
+      onUnlockDocument();
+      return;
+    }
+    if (!isPremiumYearActive) {
+      toast(
+        "Trợ lý AI là đặc quyền của gói Premium Năm. Nâng cấp ngay để mở khóa tính năng này!",
+        { icon: "✨" },
+      );
+      navigate("/premium");
+      return;
+    }
+    navigate(`/documents/${id}/ai-studio`);
   };
 
   // Hàm tải file miễn phí hoàn toàn sau khi đã mở khóa
@@ -529,13 +545,7 @@ export default function DocumentDetailPage() {
 
             {/* KHỐI PHÂN TÍCH AI */}
             <div
-              onClick={() => {
-                if (!hasUnlockedFull) {
-                  onUnlockDocument();
-                  return;
-                }
-                navigate(`/documents/${id}/ai-studio`);
-              }}
+              onClick={onAiStudioClick}
               className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl p-5 shadow-md cursor-pointer hover:shadow-lg transition-all active:scale-[0.99] flex items-center justify-between gap-4 text-white"
             >
               <div className="flex items-center gap-3 min-w-0">
@@ -547,13 +557,15 @@ export default function DocumentDetailPage() {
                     Trợ lý học tập AI
                   </h3>
                   <p className="text-[11px] md:text-xs text-indigo-100 font-medium truncate">
-                    {hasUnlockedFull
-                      ? "Tóm tắt, giải thích khái niệm, flashcard và trò chuyện với tài liệu này"
-                      : "Mở khóa tài liệu để sử dụng Trợ lý AI (tóm tắt, flashcard, chat...)"}
+                    {!hasUnlockedFull
+                      ? "Mở khóa tài liệu để sử dụng Trợ lý AI (tóm tắt, flashcard, chat...)"
+                      : !isPremiumYearActive
+                        ? "Cần nâng cấp gói Premium Năm để dùng Trợ lý AI cho tài liệu này"
+                        : "Tóm tắt, giải thích khái niệm, flashcard và trò chuyện với tài liệu này"}
                   </p>
                 </div>
               </div>
-              {hasUnlockedFull ? (
+              {hasUnlockedFull && isPremiumYearActive ? (
                 <ChevronRight className="w-5 h-5 shrink-0" />
               ) : (
                 <Lock className="w-5 h-5 shrink-0" />
@@ -658,7 +670,6 @@ export default function DocumentDetailPage() {
                 {commentsList.length})
               </h3>
 
-              {/* Giao diện danh sách các bình luận lấy từ cơ sở dữ liệu */}
               <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
                 {isLoadingComments ? (
                   <p className="text-slate-400 text-center py-2 text-[11px]">
@@ -753,7 +764,6 @@ export default function DocumentDetailPage() {
 
       {/* FOOTER */}
       <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 mt-16">
-        {/* ...Giữ nguyên cấu trúc footer sạch sẽ của bạn... */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-white">

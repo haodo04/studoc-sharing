@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast';
 import NavbarPage from '../../components/common/NavbarPage';
 
 const PremiumPage = () => {
-  const { credits, fetchUserCredits } = useUserCredits();
+  const { credits, fetchUserCredits, plan, planExpiresAt, isPremiumYearActive, isPremiumMonthActive } = useUserCredits();
   const { getToken, isSignedIn } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -133,7 +133,6 @@ const PremiumPage = () => {
       <div className="min-h-screen bg-slate-50/50 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           
-          {/* Header giới thiệu */}
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200/60 px-3 py-1 rounded-full text-indigo-700 text-xs font-bold mb-4 shadow-sm animate-pulse">
               <Sparkles size={14} className="fill-indigo-100" />
@@ -147,6 +146,23 @@ const PremiumPage = () => {
             </p>
           </div>
 
+          {(isPremiumMonthActive || isPremiumYearActive) && (
+            <div className="max-w-2xl mx-auto mb-10 bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-4 flex items-center gap-3 text-sm">
+              <Crown className="text-emerald-600 shrink-0" size={20} />
+              <p className="text-emerald-800">
+                Bạn đang là thành viên <span className="font-bold">{plan}</span>
+                {planExpiresAt && (
+                  <> — hết hạn ngày{" "}
+                    <span className="font-bold">
+                      {new Date(planExpiresAt).toLocaleDateString("vi-VN")}
+                    </span>
+                  </>
+                )}
+                .
+              </p>
+            </div>
+          )}
+
           {/* PHẦN 1: GÓI PREMIUM SUBSCRIPTIONS */}
           <div className="mb-20">
             <div className="flex items-center gap-2 justify-center mb-8">
@@ -155,7 +171,11 @@ const PremiumPage = () => {
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
-              {premiumPackages.map((pkg) => (
+              {premiumPackages.map((pkg) => {
+                const isCurrentPlan =
+                  (pkg.id === "sub-month" && isPremiumMonthActive) ||
+                  (pkg.id === "sub-year" && isPremiumYearActive);
+                return (
                 <div 
                   key={pkg.id} 
                   className={`relative bg-white rounded-3xl p-8 border flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
@@ -164,7 +184,11 @@ const PremiumPage = () => {
                       : 'border-slate-200 shadow-sm'
                   }`}
                 >
-                  {pkg.popular && (
+                  {isCurrentPlan ? (
+                    <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-600 text-white font-bold text-xs px-4 py-1 rounded-full shadow-md">
+                      GÓI HIỆN TẠI CỦA BẠN
+                    </span>
+                  ) : pkg.popular && (
                     <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-xs px-4 py-1 rounded-full shadow-md">
                       ĐƯỢC YÊU THÍCH NHẤT
                     </span>
@@ -196,16 +220,18 @@ const PremiumPage = () => {
                   <button
                     onClick={() => handleBuyPackage(pkg, 'Gói Premium')}
                     className={`w-full py-3.5 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-150 active:scale-95 ${
-                      pkg.popular
+                      isCurrentPlan
+                        ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                        : pkg.popular
                         ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
                     }`}
                   >
-                    <span>{pkg.buttonText}</span>
+                    <span>{isCurrentPlan ? "Gia hạn thêm" : pkg.buttonText}</span>
                     <ArrowRight size={16} />
                   </button>
                 </div>
-              ))}
+              );})}
             </div>
           </div>
 

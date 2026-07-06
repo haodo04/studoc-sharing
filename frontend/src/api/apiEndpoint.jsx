@@ -76,6 +76,13 @@ const apiEndpoints = {
     GET_UNREAD_COUNT: `${BASE_URL}/notifications/unread-count`,
     MARK_NOTIFICATION_READ: (id) => `${BASE_URL}/notifications/${id}/read`,
     MARK_ALL_NOTIFICATIONS_READ: `${BASE_URL}/notifications/read-all`,
+
+    // trợ lý AI toàn site
+    GET_ASSISTANT_SESSIONS: `${BASE_URL}/assistant/sessions`,
+    CREATE_ASSISTANT_SESSION: `${BASE_URL}/assistant/sessions`,
+    GET_ASSISTANT_SESSION_DETAIL: (sessionId) => `${BASE_URL}/assistant/sessions/${sessionId}`,
+    SEND_ASSISTANT_MESSAGE: (sessionId) => `${BASE_URL}/assistant/sessions/${sessionId}/messages`,
+    DELETE_ASSISTANT_SESSION: (sessionId) => `${BASE_URL}/assistant/sessions/${sessionId}`,
 };
 
 export default apiEndpoints;

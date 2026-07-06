@@ -8,6 +8,8 @@ export const UserCreditsContext = createContext();
 
 export const UserCreditsProvider = ({children}) => {
     const [credits, setCredits] = useState(5);
+    const [plan, setPlan] = useState("BASIC");
+    const [planExpiresAt, setPlanExpiresAt] = useState(null);
     const [loading, setLoading] = useState(false);
     const {getToken, isSignedIn} = useAuth();
 
@@ -21,6 +23,8 @@ export const UserCreditsProvider = ({children}) => {
             const response = await axios.get(apiEndpoints.GET_CREDITS, {headers: {Authorization: `Bearer ${token}`}});
             if (response.status === 200) {
                 setCredits(response.data.credits);
+                setPlan(response.data.plan || "BASIC");
+                setPlanExpiresAt(response.data.planExpiresAt || null);
             } else {
                 toast.error('Unable to get the user credits.');
             }
@@ -40,10 +44,20 @@ export const UserCreditsProvider = ({children}) => {
         console.log('Updating the credits', newCredits);
         setCredits(newCredits);
     }, []);
+    
+    const isPremiumYearActive =
+        plan === "Premium Năm" && (!planExpiresAt || new Date(planExpiresAt) > new Date());
+
+    const isPremiumMonthActive =
+        plan === "Premium Tháng" && (!planExpiresAt || new Date(planExpiresAt) > new Date());
 
     const contextValue = {
         credits,
         setCredits,
+        plan,
+        planExpiresAt,
+        isPremiumYearActive,
+        isPremiumMonthActive,
         fetchUserCredits,
         updateCredits,
         loading 
