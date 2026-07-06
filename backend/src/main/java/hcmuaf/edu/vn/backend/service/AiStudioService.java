@@ -21,6 +21,7 @@ public class AiStudioService {
     private final AiFlashcardSetRepository aiFlashcardSetRepository;
     private final AiChatSessionRepository aiChatSessionRepository;
     private final GeminiClientService geminiClientService;
+    private final AiTrackingService aiTrackingService;
     private final RestTemplate restTemplate = new RestTemplate();
 
     private FileMetadataDocument requireUnlockedFile(String fileId, String clerkId) {
@@ -84,6 +85,8 @@ public class AiStudioService {
         byte[] pdfBytes = downloadPdfBytes(file);
         String prompt = buildSummaryPrompt(lang);
         String summaryText = geminiClientService.generateText(pdfBytes, prompt, regenerate ? 1.0 : 0.7);
+
+        aiTrackingService.logAction(clerkId, fileId, "SUMMARY", "Generated " + lang + " summary");
 
         AiSummaryDocument doc = aiSummaryRepository.findByFileIdAndLanguage(fileId, lang)
                 .map(existing -> {
@@ -168,6 +171,8 @@ public class AiStudioService {
 
         Map<String, Object> result = geminiClientService.generateJsonFromPdf(pdfBytes, prompt, schema);
         String json = geminiClientService.extractText(result);
+
+        aiTrackingService.logAction(file.getClerkId(), fileId, "CONCEPTS", "Generated concepts");
 
         AiConceptsDocument doc = parseConceptsJson(json, fileId);
 
@@ -263,6 +268,8 @@ public class AiStudioService {
 
             set.setCards(parseFlashcardCards(json));
             set.setStatus("ready");
+
+            aiTrackingService.logAction(clerkId, fileId, "FLASHCARD", "Generated " + count + " " + lang + " cards");
         } catch (Exception e) {
             set.setCards(new ArrayList<>());
             set.setStatus("error");
@@ -436,6 +443,8 @@ public class AiStudioService {
                 .toList();
 
         String reply = geminiClientService.chat(pdfBytes, historyContents, userMessage);
+
+        aiTrackingService.logAction(clerkId, fileId, "CHAT", "User sent a message");
 
         session.getMessages().add(AiChatSessionDocument.ChatTurn.builder()
                 .role("user").content(userMessage).timestamp(LocalDateTime.now()).build());
