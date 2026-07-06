@@ -21,11 +21,8 @@ public class AiStudioService {
     private final AiFlashcardSetRepository aiFlashcardSetRepository;
     private final AiChatSessionRepository aiChatSessionRepository;
     private final GeminiClientService geminiClientService;
-<<<<<<< HEAD
     private final AiTrackingService aiTrackingService;
-=======
     private final UserCreditsService userCreditsService;
->>>>>>> 856f059a08f085c679b0939fd1e236445c26c550
     private final RestTemplate restTemplate = new RestTemplate();
 
     private FileMetadataDocument requireUnlockedFile(String fileId, String clerkId) {
