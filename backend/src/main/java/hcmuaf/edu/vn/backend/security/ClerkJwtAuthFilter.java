@@ -29,6 +29,7 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
     private String clerkIssuer;
 
     private final ClerkJwksProvider jwksProvider;
+    private final hcmuaf.edu.vn.backend.repository.ProfileRepository profileRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -44,12 +45,12 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
         String lowerURI = requestURI.toLowerCase();
 
         boolean isVnPayReturn = lowerURI.contains("/api/payment/vnpay_return");
-        boolean isMetadataPublic = lowerURI.contains("/metadata/");
-        boolean isBasePublic = lowerURI.contains("/webhooks") || lowerURI.contains("/register")
+        boolean isMetadataPublic = lowerURI.contains("/metadata/") || (lowerURI.contains("/categories") && "GET".equalsIgnoreCase(method)) || (lowerURI.contains("/universities") && "GET".equalsIgnoreCase(method));
+        boolean isBasePublic = lowerURI.contains("/webhooks") || lowerURI.contains("/register") || (lowerURI.contains("/settings") && "GET".equalsIgnoreCase(method))
                 || lowerURI.contains("/uploads") || lowerURI.contains("/community/messages")
                 || lowerURI.contains("/ws");
         boolean isPublicFiles = lowerURI.contains("/files/public/");
-        boolean isDocumentsPublic = lowerURI.contains("/documents/");
+        boolean isDocumentsPublic = lowerURI.contains("/documents/") && !lowerURI.contains("/admin/") && "GET".equalsIgnoreCase(method);
         boolean isGetComments = (lowerURI.contains("/comments") || lowerURI.contains("/discussions"))
                 && "GET".equalsIgnoreCase(method);
 
@@ -93,6 +94,20 @@ public class ClerkJwtAuthFilter extends OncePerRequestFilter {
 
         try {
             authenticate(authHeader.substring(7), request);
+            
+            // Ban check
+            if (!lowerURI.contains("/users/me/status")) {
+                String clerkId = (String) request.getAttribute("clerkId");
+                if (clerkId != null) {
+                    hcmuaf.edu.vn.backend.document.ProfileDocument p = profileRepository.findByClerkId(clerkId);
+                    boolean isBanned = p != null && Boolean.TRUE.equals(p.getIsBanned());
+                    if (isBanned) {
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN, "User is banned");
+                        return;
+                    }
+                }
+            }
+
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             System.err.println("JWT validation failed: " + e.getClass().getName() + " - " + e.getMessage());

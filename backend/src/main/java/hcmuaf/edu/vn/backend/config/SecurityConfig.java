@@ -61,6 +61,9 @@ public class SecurityConfig {
                         .requestMatchers("/files/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/{id}/related").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/universities/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/settings").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/discussions/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/discussions/**").authenticated()
