@@ -1,6 +1,7 @@
 const BASE_URL = 'http://localhost:8080/api/v1.0';
 
 const apiEndpoints = {
+    API_BASE_URL: BASE_URL,
     // quản lý file
     FETCH_FILES: (clerkId) => `${BASE_URL}/files/manage/user/${clerkId}`,
     PUBLIC_VIEW_FILE: (fileId) => `${BASE_URL}/files/${fileId}`, 

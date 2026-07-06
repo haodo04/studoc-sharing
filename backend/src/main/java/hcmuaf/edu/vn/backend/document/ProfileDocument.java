@@ -24,6 +24,7 @@ public class ProfileDocument {
     private String email;
     private String firstName;
     private String lastName;
+    private Boolean isBanned;
 //    private Integer credits;
     private String photoUrl;
     @CreatedDate

@@ -1,12 +1,18 @@
 import { assets } from "../../../assets/assets";
-import { useClerk, SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
+import { useClerk, SignedIn, SignedOut, UserButton, useUser, useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import { LogIn, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import axios from "axios";
+import apiEndpoints from "../../../api/apiEndpoint";
 
 const HeroSection = () => {
-    const { openSignIn, openSignUp } = useClerk();
-    const { user } = useUser(); // Chỉ dùng để lấy thông tin tên hiển thị
+    const { openSignIn, openSignUp, signOut } = useClerk();
+    const { user } = useUser();
+    const { getToken } = useAuth();
     const navigate = useNavigate();
+    const [showBanPopup, setShowBanPopup] = useState(false);
+    const [isChecking, setIsChecking] = useState(false);
 
     // Hàm xử lý mở modal đăng ký (khi CHƯA đăng nhập)
     const handleSignUpClick = () => {
@@ -24,6 +30,32 @@ const HeroSection = () => {
             afterSignUpUrl: "/",
             redirectUrl: "/"
         });
+    };
+
+    const handleStartClick = async () => {
+        const isAdmin = user?.primaryEmailAddress?.emailAddress === "manager1713181827328@gmail.com";
+        if (isAdmin) {
+            navigate("/admin/dashboard");
+            return;
+        }
+
+        try {
+            setIsChecking(true);
+            const token = await getToken();
+            const res = await axios.get(`${apiEndpoints.API_BASE_URL}/users/me/status`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.data.isBanned) {
+                setShowBanPopup(true);
+            } else {
+                navigate("/home");
+            }
+        } catch (error) {
+            console.error("Failed to check ban status", error);
+            navigate("/home");
+        } finally {
+            setIsChecking(false);
+        }
     };
 
     return (
@@ -94,10 +126,11 @@ const HeroSection = () => {
 
                         <SignedIn>
                             <button 
-                                onClick={() => navigate("/home")}
-                                className="w-full sm:w-auto flex items-center justify-center px-10 py-4 border border-transparent text-base font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-all duration-200 shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 hover:-translate-y-0.5"
+                                onClick={handleStartClick}
+                                disabled={isChecking}
+                                className={`w-full sm:w-auto flex items-center justify-center px-10 py-4 border border-transparent text-base font-semibold rounded-xl text-white transition-all duration-200 shadow-lg ${isChecking ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 shadow-indigo-600/20 hover:shadow-indigo-600/30 hover:-translate-y-0.5'}`}
                             >
-                                Bắt đầu
+                                {isChecking ? 'Đang kiểm tra...' : 'Bắt đầu'}
                             </button>
                         </SignedIn>
                     </div>
@@ -114,6 +147,30 @@ const HeroSection = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Banned User Popup */}
+            {showBanPopup && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-fade-in-up text-center">
+                        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertTriangle size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">Tài khoản bị khóa</h3>
+                        <p className="text-slate-600 mb-6">
+                            Bạn đã bị cấm vì vi phạm chính sách của web. Mọi tính năng và dữ liệu của bạn tạm thời không thể truy cập.
+                        </p>
+                        <button 
+                            onClick={() => {
+                                setShowBanPopup(false);
+                                signOut(); // Log them out so they return to initial state
+                            }}
+                            className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl hover:bg-slate-800 transition-colors"
+                        >
+                            Đóng
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
