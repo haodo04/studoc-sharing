@@ -4,6 +4,10 @@ import hcmuaf.edu.vn.backend.dto.CategoryDTO;
 import hcmuaf.edu.vn.backend.dto.UniversityDTO;
 import hcmuaf.edu.vn.backend.dto.response.DocumentResponseDTO;
 import hcmuaf.edu.vn.backend.document.FileMetadataDocument;
+import hcmuaf.edu.vn.backend.document.ReportDocument;
+import hcmuaf.edu.vn.backend.dto.document.ReportRequestDTO;
+import hcmuaf.edu.vn.backend.repository.DocumentRepository;
+import hcmuaf.edu.vn.backend.repository.ReportRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -11,6 +15,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,6 +25,12 @@ public class DocumentService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private ReportRepository reportRepository;
+
+    @Autowired
+    private DocumentRepository documentRepository;
 
     public Page<DocumentResponseDTO> searchAndFilterDocuments(
             String keyword, String explore, String categoryId,
@@ -83,6 +94,22 @@ public class DocumentService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(dtoList, pageable, totalCount);
+    }
+
+    public void createReport(String documentId, String reporterClerkId, ReportRequestDTO request) {
+        if (!documentRepository.existsById(documentId)) {
+            throw new RuntimeException("Document not found");
+        }
+
+        ReportDocument report = ReportDocument.builder()
+                .documentId(documentId)
+                .reporterClerkId(reporterClerkId)
+                .reason(request.getReason())
+                .detail(request.getDetail())
+                .status("PENDING")
+                .createdAt(Instant.now())
+                .build();
+        reportRepository.save(report);
     }
 
     private DocumentResponseDTO convertToDTO(FileMetadataDocument doc) {

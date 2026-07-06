@@ -1,8 +1,11 @@
-import React from 'react';
-import { Landmark, Eye, Download, Star, Heart } from 'lucide-react';
+import React, { useState } from 'react';
+import { Landmark, Eye, Download, Star, Heart, Flag } from 'lucide-react';
 import AddToCollectionButton from '../../../components/ui/AddToCollectionButton';
+import ReportModal from './ReportModal';
 
 export default function DocumentHeaderInfo({ documentData, isFavorited, onToggleFavorite }) {
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
   if (!documentData) return null;
   const data = documentData.documentData ? documentData.documentData : documentData;
 
@@ -46,6 +49,14 @@ export default function DocumentHeaderInfo({ documentData, isFavorited, onToggle
             <Heart className={`w-4 h-4 ${isFavorited ? "fill-pink-500 text-pink-500" : ""}`} />
             <span className="hidden sm:inline">{isFavorited ? "Đã thích" : "Yêu thích"}</span>
           </button>
+
+          <button
+            onClick={() => setIsReportModalOpen(true)}
+            className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition-colors"
+            title="Báo cáo vi phạm"
+          >
+            <Flag className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -82,6 +93,13 @@ export default function DocumentHeaderInfo({ documentData, isFavorited, onToggle
           </span>
         </div>
       </div>
+
+      <ReportModal 
+        isOpen={isReportModalOpen} 
+        onClose={() => setIsReportModalOpen(false)} 
+        documentId={fileId}
+        documentTitle={data.title || data.name}
+      />
     </div>
   );
 }

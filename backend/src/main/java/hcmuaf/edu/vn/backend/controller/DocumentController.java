@@ -3,6 +3,7 @@ package hcmuaf.edu.vn.backend.controller;
 import hcmuaf.edu.vn.backend.dto.response.DocumentResponseDTO;
 import hcmuaf.edu.vn.backend.dto.CategoryDTO;
 import hcmuaf.edu.vn.backend.dto.UniversityDTO;
+import hcmuaf.edu.vn.backend.dto.document.ReportRequestDTO;
 import hcmuaf.edu.vn.backend.service.DocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/documents")
@@ -33,6 +35,16 @@ public class DocumentController {
                 keyword, explore, categoryId, universityId, sortBy, page, size
         );
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/{documentId}/report")
+    public ResponseEntity<Void> createReport(@PathVariable String documentId, @RequestBody ReportRequestDTO request, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String clerkId = principal.getName();
+        documentService.createReport(documentId, clerkId, request);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/categories")

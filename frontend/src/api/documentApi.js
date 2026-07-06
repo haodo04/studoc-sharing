@@ -27,6 +27,25 @@ export const documentApi = {
         }
     },
 
+    reportDocument: async (id, reason, detail, token) => {
+        try {
+            const response = await axios.post(
+                `${apiEndpoints.API_BASE_URL}/documents/${id}/report`,
+                { reason, detail },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Lỗi khi report tài liệu:', error);
+            throw error;
+        }
+    },
+
     // 3. LẤY DANH SÁCH NGÀNH HỌC 
     getCategories: async () => {
         try {
