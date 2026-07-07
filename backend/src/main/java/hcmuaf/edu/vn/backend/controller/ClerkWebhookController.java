@@ -12,6 +12,12 @@ import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
+
 @RestController
 @RequestMapping("/webhooks")
 @RequiredArgsConstructor
@@ -113,6 +119,30 @@ public class ClerkWebhookController {
     }
 
     private boolean verifyWebhookSignature(String svixId, String svixTimestamp, String svixSignature, String payload) {
-        return true;
+        try {
+            String secret = webhookSecret.startsWith("whsec_") ? webhookSecret.substring(6) : webhookSecret;
+            byte[] secretBytes = Base64.getDecoder().decode(secret);
+
+            String signedContent = svixId + "." + svixTimestamp + "." + payload;
+
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secretBytes, "HmacSHA256"));
+            byte[] computedHash = mac.doFinal(signedContent.getBytes(StandardCharsets.UTF_8));
+            String expectedSignature = Base64.getEncoder().encodeToString(computedHash);
+
+            for (String versioned : svixSignature.split(" ")) {
+                String[] parts = versioned.split(",", 2);
+                if (parts.length == 2 && "v1".equals(parts[0])
+                        && MessageDigest.isEqual(
+                        parts[1].getBytes(StandardCharsets.UTF_8),
+                        expectedSignature.getBytes(StandardCharsets.UTF_8))) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            System.err.println(">>> [ClerkWebhook] Lỗi xác thực chữ ký: " + e.getMessage());
+            return false;
+        }
     }
 }

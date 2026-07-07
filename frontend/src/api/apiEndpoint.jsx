@@ -45,6 +45,7 @@ const apiEndpoints = {
     // tài khoản và ví xu
     GET_CREDITS: `${BASE_URL}/users/credits`,
     GET_PAYMENT_HISTORY: (clerkId) => `${BASE_URL}/payments/history/${clerkId}`,
+    GET_MY_PROFILE: `${BASE_URL}/profile/me`,
 
     // yêu thích
     GET_FAVORITES: `${BASE_URL}/favorites`,

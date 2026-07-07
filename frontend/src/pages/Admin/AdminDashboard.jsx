@@ -35,7 +35,7 @@ const AdminDashboard = () => {
         const data = await getDashboardStats(token);
         setStats(data);
       } catch (error) {
-        console.error("Failed to fetch admin stats", error);
+        console.error("Lỗi khi tải số liệu thống kê admin", error);
       } finally {
         setLoading(false);
       }
@@ -43,11 +43,16 @@ const AdminDashboard = () => {
     fetchStats();
   }, []);
 
+  const formatCurrency = (amount) => {
+    if (!amount) return '0đ';
+    return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
+  };
+
   const statCards = [
-    { title: 'Total Users', value: stats.totalUsers.toLocaleString(), change: '+0%', isPositive: true, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { title: 'Total Documents', value: stats.totalDocuments.toLocaleString(), change: '+0%', isPositive: true, icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-100' },
-    { title: 'New Uploads', value: stats.recentUploads.length, change: 'Recent', isPositive: true, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100' },
-    { title: 'Total Revenue', value: `$${(stats.totalRevenue).toLocaleString()}`, change: '+0%', isPositive: true, icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+    { title: 'Tổng người dùng', value: stats.totalUsers.toLocaleString('vi-VN'), icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
+    { title: 'Tổng tài liệu', value: stats.totalDocuments.toLocaleString('vi-VN'), icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-100' },
+    { title: 'Tải lên gần đây', value: stats.recentUploads.length, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100' },
+    { title: 'Tổng doanh thu', value: formatCurrency(stats.totalRevenue), icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-100' },
   ];
 
   const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
@@ -61,11 +66,11 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
-          <p className="text-slate-500 mt-1 text-sm">Welcome back, here's what's happening today.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Tổng quan hệ thống</h1>
+          <p className="text-slate-500 mt-1 text-sm">Chào mừng trở lại, đây là tình hình hoạt động hôm nay.</p>
         </div>
         <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
-          Generate Report
+          Xuất báo cáo
         </button>
       </div>
 
@@ -90,7 +95,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Line Chart */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-800 mb-4">User Growth</h3>
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Tăng trưởng người dùng</h3>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={stats.userGrowth} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
@@ -101,7 +106,7 @@ const AdminDashboard = () => {
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '3 3' }}
                 />
-                <Line type="monotone" dataKey="value" name="Users" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="value" name="Người dùng" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -109,7 +114,7 @@ const AdminDashboard = () => {
 
         {/* Pie Chart */}
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-          <h3 className="text-lg font-bold text-slate-800 mb-4">Documents by Category</h3>
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Tài liệu theo danh mục</h3>
           <div className="h-64 w-full flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -144,23 +149,23 @@ const AdminDashboard = () => {
       {/* Recent Activity Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-slate-800">Recent Uploads</h3>
-          <button className="text-sm text-blue-600 font-medium hover:text-blue-700">View All</button>
+          <h3 className="text-lg font-bold text-slate-800">Tài liệu tải lên gần đây</h3>
+          <button className="text-sm text-blue-600 font-medium hover:text-blue-700">Xem tất cả</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                <th className="px-6 py-3 font-medium">Document Info</th>
-                <th className="px-6 py-3 font-medium">Category</th>
-                <th className="px-6 py-3 font-medium">Time</th>
-                <th className="px-6 py-3 font-medium text-right">Actions</th>
+                <th className="px-6 py-3 font-medium">Thông tin tài liệu</th>
+                <th className="px-6 py-3 font-medium">Danh mục</th>
+                <th className="px-6 py-3 font-medium">Thời gian</th>
+                <th className="px-6 py-3 font-medium text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="text-sm">
               {stats.recentUploads.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No recent uploads found.</td>
+                  <td colSpan="4" className="px-6 py-8 text-center text-slate-500">Chưa có tài liệu nào được tải lên.</td>
                 </tr>
               ) : stats.recentUploads.map((doc) => (
                 <tr key={doc.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
@@ -178,11 +183,11 @@ const AdminDashboard = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-500">
-                    {new Date(doc.uploadedAt).toLocaleDateString()}
+                    {new Date(doc.uploadedAt).toLocaleDateString('vi-VN')}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors" title="Preview">
+                      <button className="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors" title="Xem trước">
                         <Eye size={18} />
                       </button>
                     </div>

@@ -44,7 +44,7 @@ public class AdminDashboardService {
 
         // Calculate total revenue
         List<PaymentTransaction> successfulTxns = paymentTransactionRepository.findAll().stream()
-                .filter(t -> "00".equals(t.getStatus()))
+                .filter(t -> "SUCCESS".equals(t.getStatus()))
                 .collect(Collectors.toList());
         long totalRevenue = successfulTxns.stream().mapToLong(t -> t.getAmount() != null ? t.getAmount() : 0L).sum();
 

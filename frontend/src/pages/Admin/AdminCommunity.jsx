@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   MessageSquare, 
   Search, 
-  Filter, 
   Trash2, 
   AlertTriangle,
   Star,
-  MessageCircle,
   HelpCircle
 } from 'lucide-react';
 import { 
@@ -20,9 +18,8 @@ const AdminCommunity = () => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('ALL'); // ALL, COMMENT, DISCUSSION
+  const [filterType, setFilterType] = useState('ALL'); 
   
-  // States for Delete Confirmation Modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -38,7 +35,7 @@ const AdminCommunity = () => {
       const data = await getAdminCommunityActivities(token);
       setActivities(data);
     } catch (error) {
-      console.error("Failed to fetch community activities", error);
+      console.error("Lỗi khi tải hoạt động cộng đồng", error);
     } finally {
       setLoading(false);
     }
@@ -58,10 +55,8 @@ const AdminCommunity = () => {
       await deleteAdminCommunityActivity(activityToDelete.type, activityToDelete.id, token);
       
       if (activityToDelete.type === 'COMMENT') {
-        // Hard delete
         setActivities(activities.filter(a => a.id !== activityToDelete.id));
       } else {
-        // Soft delete (update state)
         setActivities(activities.map(a => 
           a.id === activityToDelete.id ? { ...a, isDeleted: true } : a
         ));
@@ -70,7 +65,7 @@ const AdminCommunity = () => {
       setShowDeleteModal(false);
       setActivityToDelete(null);
     } catch (error) {
-      console.error("Failed to delete activity", error);
+      console.error("Lỗi khi xóa nội dung", error);
       alert("Đã xảy ra lỗi khi xóa nội dung này.");
     } finally {
       setIsDeleting(false);
@@ -95,9 +90,9 @@ const AdminCommunity = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <MessageSquare className="text-blue-600" />
-            Community Management
+            Quản lý cộng đồng
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">Monitor user reviews and Q&A discussions.</p>
+          <p className="text-slate-500 mt-1 text-sm">Theo dõi đánh giá và thảo luận hỏi đáp của người dùng.</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -106,15 +101,15 @@ const AdminCommunity = () => {
             onChange={(e) => setFilterType(e.target.value)}
             className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
           >
-            <option value="ALL">All Types</option>
-            <option value="COMMENT">Reviews (Comments)</option>
-            <option value="DISCUSSION">Q&A (Discussions)</option>
+            <option value="ALL">Tất cả loại</option>
+            <option value="COMMENT">Đánh giá (Bình luận)</option>
+            <option value="DISCUSSION">Hỏi đáp (Thảo luận)</option>
           </select>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
-              placeholder="Search content or users..." 
+              placeholder="Tìm nội dung hoặc người dùng..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full sm:w-64"
@@ -129,10 +124,10 @@ const AdminCommunity = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                <th className="px-6 py-4 font-medium w-1/4">User & Date</th>
-                <th className="px-6 py-4 font-medium w-1/6">Type / Target</th>
-                <th className="px-6 py-4 font-medium w-1/2">Content</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-6 py-4 font-medium w-1/4">Người dùng & Ngày</th>
+                <th className="px-6 py-4 font-medium w-1/6">Loại / Đối tượng</th>
+                <th className="px-6 py-4 font-medium w-1/2">Nội dung</th>
+                <th className="px-6 py-4 font-medium text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -144,7 +139,7 @@ const AdminCommunity = () => {
                 </tr>
               ) : filteredActivities.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No community activity found.</td>
+                  <td colSpan="4" className="px-6 py-8 text-center text-slate-500">Không có hoạt động cộng đồng nào.</td>
                 </tr>
               ) : filteredActivities.map((activity) => (
                 <tr key={activity.id} className={`border-b border-slate-100 transition-colors ${activity.isDeleted ? 'bg-red-50/50' : 'hover:bg-slate-50'}`}>
@@ -161,7 +156,7 @@ const AdminCommunity = () => {
                       </div>
                       <div>
                         <div className="font-medium text-slate-800">{activity.authorName}</div>
-                        <div className="text-xs text-slate-500">{new Date(activity.createdAt).toLocaleString()}</div>
+                        <div className="text-xs text-slate-500">{new Date(activity.createdAt).toLocaleString('vi-VN')}</div>
                       </div>
                     </div>
                   </td>
@@ -170,20 +165,20 @@ const AdminCommunity = () => {
                       <div className="flex flex-col gap-1">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 w-max">
                           <Star size={12} className="fill-amber-500 text-amber-500" />
-                          Review ({activity.rating}/5)
+                          Đánh giá ({activity.rating}/5)
                         </span>
                         <span className="text-xs text-slate-500 truncate max-w-[150px]" title={activity.documentTitle}>
-                          On: {activity.documentTitle}
+                          Trên: {activity.documentTitle}
                         </span>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-1">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 w-max">
                           <HelpCircle size={12} />
-                          Q&A
+                          Hỏi đáp
                         </span>
                         <span className="text-xs text-slate-500 truncate max-w-[150px]" title={activity.documentTitle}>
-                          On: {activity.documentTitle}
+                          Trên: {activity.documentTitle}
                         </span>
                       </div>
                     )}
@@ -191,7 +186,7 @@ const AdminCommunity = () => {
                   <td className="px-6 py-4 align-top">
                     <div className="text-slate-700 max-h-24 overflow-y-auto pr-2 custom-scrollbar whitespace-pre-wrap text-sm leading-relaxed">
                       {activity.isDeleted ? (
-                        <span className="italic text-slate-400">Nội dung này đã bị xóa (Soft Deleted).</span>
+                        <span className="italic text-slate-400">Nội dung này đã bị xóa (Ẩn mềm).</span>
                       ) : (
                         activity.content
                       )}
@@ -203,7 +198,7 @@ const AdminCommunity = () => {
                         <button 
                           onClick={() => confirmDelete(activity)}
                           className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Delete Content"
+                          title="Xóa nội dung"
                         >
                           <Trash2 size={18} />
                         </button>

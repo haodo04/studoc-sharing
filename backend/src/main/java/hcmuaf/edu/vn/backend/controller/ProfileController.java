@@ -1,5 +1,6 @@
 package hcmuaf.edu.vn.backend.controller;
 
+import hcmuaf.edu.vn.backend.document.ProfileDocument;
 import hcmuaf.edu.vn.backend.dto.ProfileDTO;
 import hcmuaf.edu.vn.backend.service.ProfileService;
 import hcmuaf.edu.vn.backend.service.UserCreditsService;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,5 +34,20 @@ public class ProfileController {
     public ResponseEntity<?> getAllProfiles() {
         List<ProfileDTO> profiles = profileService.getAllProfiles();
         return ResponseEntity.ok(profiles);
+    }
+
+    @GetMapping("/profile/me")
+    public ResponseEntity<?> getMyProfile() {
+        try {
+            ProfileDocument profile = profileService.getCurrentProfile();
+            boolean isAdmin = profileService.isAdmin(profile);
+            return ResponseEntity.ok(Map.of(
+                    "clerkId", profile.getClerkId(),
+                    "email", profile.getEmail(),
+                    "role", isAdmin ? ProfileService.ROLE_ADMIN : ProfileService.ROLE_USER
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", e.getMessage()));
+        }
     }
 }

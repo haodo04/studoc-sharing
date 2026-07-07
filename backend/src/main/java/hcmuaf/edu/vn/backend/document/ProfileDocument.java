@@ -25,8 +25,11 @@ public class ProfileDocument {
     private String firstName;
     private String lastName;
     private Boolean isBanned;
-//    private Integer credits;
     private String photoUrl;
+
+    @Builder.Default
+    private String role = "USER";
+
     @CreatedDate
     private Instant createdAt;
 }

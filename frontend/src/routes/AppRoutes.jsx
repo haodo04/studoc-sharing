@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/clerk-react";
+import { useUserCredits } from "../context/UserCreditsContext";
 import CategoryPage from "../pages/Category/CategoryPage";
 import Landing from "../pages/Landing/Landing";
 import Dashboard from "../pages/Dashboard/Dashboard";
@@ -41,15 +42,14 @@ const ProtectedLayout = ({ children }) => {
   );
 };
 
-// Tài khoản Admin cố định
-export const ADMIN_EMAIL = "manager1713181827328@gmail.com";
-
+// Việc phân quyền admin THẬT SỰ nằm ở backend (AdminAuthGuard + ProfileService.isAdmin()).
+// Check ở đây chỉ để quyết định hiện/ẩn giao diện — không có tác dụng bảo mật.
 const AdminRoute = ({ children }) => {
-  const { isLoaded, isSignedIn, user } = useUser();
-  if (!isLoaded) return null;
-  if (!isSignedIn) return <RedirectToSignIn />;
+  const { isLoaded, isSignedIn } = useUser();
+  const { isAdmin, roleLoading } = useUserCredits();
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
+  if (!isLoaded || roleLoading) return null;
+  if (!isSignedIn) return <RedirectToSignIn />;
   if (!isAdmin) return <Navigate to="/home" replace />;
 
   return children;

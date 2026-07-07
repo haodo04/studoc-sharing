@@ -22,7 +22,6 @@ const AdminDocuments = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // States for Delete Confirmation Modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -38,7 +37,7 @@ const AdminDocuments = () => {
       const data = await getAdminDocuments(token);
       setDocuments(data);
     } catch (error) {
-      console.error("Failed to fetch documents", error);
+      console.error("Lỗi khi tải danh sách tài liệu", error);
     } finally {
       setLoading(false);
     }
@@ -52,7 +51,7 @@ const AdminDocuments = () => {
         doc.id === id ? { ...doc, isPublic: !doc.isPublic } : doc
       ));
     } catch (error) {
-      console.error("Failed to toggle visibility", error);
+      console.error("Lỗi khi cập nhật trạng thái hiển thị", error);
       alert("Đã xảy ra lỗi khi cập nhật trạng thái hiển thị.");
     }
   };
@@ -74,8 +73,8 @@ const AdminDocuments = () => {
       setShowDeleteModal(false);
       setDocumentToDelete(null);
     } catch (error) {
-      console.error("Failed to delete document", error);
-      alert("Đã xảy ra lỗi khi xóa tài liệu. Tài liệu này có thể đã bị xóa.");
+      console.error("Lỗi khi xóa tài liệu", error);
+      alert("Đã xảy ra lỗi khi xóa tài liệu. Tài liệu này có thể đã bị xóa trước đó.");
     } finally {
       setIsDeleting(false);
     }
@@ -94,9 +93,9 @@ const AdminDocuments = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <FileText className="text-blue-600" />
-            Document Management
+            Quản lý tài liệu
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">Review, manage visibility, and delete uploaded documents.</p>
+          <p className="text-slate-500 mt-1 text-sm">Kiểm duyệt, quản lý hiển thị và xóa tài liệu đã tải lên.</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -104,7 +103,7 @@ const AdminDocuments = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
-              placeholder="Search documents..." 
+              placeholder="Tìm kiếm tài liệu..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full sm:w-64"
@@ -112,7 +111,7 @@ const AdminDocuments = () => {
           </div>
           <button className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
             <Filter size={16} />
-            <span className="hidden sm:inline">Filter</span>
+            <span className="hidden sm:inline">Bộ lọc</span>
           </button>
         </div>
       </div>
@@ -123,11 +122,11 @@ const AdminDocuments = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                <th className="px-6 py-4 font-medium">Document Info</th>
-                <th className="px-6 py-4 font-medium">Uploader</th>
-                <th className="px-6 py-4 font-medium text-center">Views / DLs</th>
-                <th className="px-6 py-4 font-medium text-center">Status</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-6 py-4 font-medium">Thông tin tài liệu</th>
+                <th className="px-6 py-4 font-medium">Người tải lên</th>
+                <th className="px-6 py-4 font-medium text-center">Lượt xem / Tải</th>
+                <th className="px-6 py-4 font-medium text-center">Trạng thái</th>
+                <th className="px-6 py-4 font-medium text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -139,7 +138,7 @@ const AdminDocuments = () => {
                 </tr>
               ) : filteredDocuments.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500">No documents found.</td>
+                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500">Không tìm thấy tài liệu nào.</td>
                 </tr>
               ) : filteredDocuments.map((doc) => (
                 <tr key={doc.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
@@ -154,7 +153,7 @@ const AdminDocuments = () => {
                         </span>
                         <span className="truncate max-w-[150px]">{doc.subjectName}</span>
                         <span>•</span>
-                        <span>{new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                        <span>{new Date(doc.uploadedAt).toLocaleDateString('vi-VN')}</span>
                       </div>
                     </div>
                   </td>
@@ -166,20 +165,20 @@ const AdminDocuments = () => {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex flex-col items-center">
-                      <span className="font-medium text-slate-700">{doc.viewCount} views</span>
-                      <span className="text-xs text-slate-500">{doc.downloadCount} dl</span>
+                      <span className="font-medium text-slate-700">{doc.viewCount} lượt xem</span>
+                      <span className="text-xs text-slate-500">{doc.downloadCount} lượt tải</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-center">
                     {doc.isPublic ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
                         <Eye size={14} />
-                        Public
+                        Công khai
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                         <EyeOff size={14} />
-                        Hidden
+                        Đã ẩn
                       </span>
                     )}
                   </td>
@@ -190,7 +189,7 @@ const AdminDocuments = () => {
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="View File"
+                        title="Xem tài liệu"
                       >
                         <ExternalLink size={18} />
                       </a>
@@ -201,14 +200,14 @@ const AdminDocuments = () => {
                           ? 'text-slate-400 hover:text-amber-600 hover:bg-amber-50' 
                           : 'text-amber-600 bg-amber-50 hover:bg-amber-100'
                         }`}
-                        title={doc.isPublic ? "Hide Document" : "Make Public"}
+                        title={doc.isPublic ? "Ẩn tài liệu" : "Công khai tài liệu"}
                       >
                         {doc.isPublic ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                       <button 
                         onClick={() => confirmDelete(doc)}
                         className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        title="Delete Document"
+                        title="Xóa tài liệu"
                       >
                         <Trash2 size={18} />
                       </button>

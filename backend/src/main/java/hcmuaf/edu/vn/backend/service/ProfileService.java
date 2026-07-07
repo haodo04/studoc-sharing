@@ -20,11 +20,23 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
+
+    public static final String ROLE_ADMIN = "ADMIN";
+    public static final String ROLE_USER = "USER";
+
+    public static final String BOOTSTRAP_ADMIN_EMAIL = "manager1713181827328@gmail.com";
+
     private final ProfileRepository profileRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${clerk.secret.key}")
     private String clerkSecretKey;
+
+    public boolean isAdmin(ProfileDocument profile) {
+        if (profile == null) return false;
+        return ROLE_ADMIN.equals(profile.getRole())
+                || (profile.getEmail() != null && BOOTSTRAP_ADMIN_EMAIL.equalsIgnoreCase(profile.getEmail()));
+    }
 
     public ProfileDTO createProfile(ProfileDTO profileDTO) {
         if (profileRepository.existsByClerkId(profileDTO.getClerkId())) {
@@ -38,6 +50,8 @@ public class ProfileService {
                 .lastName(profileDTO.getLastName())
                 .photoUrl(profileDTO.getPhotoUrl())
 //                .credits(5)
+                .role(profileDTO.getEmail() != null && BOOTSTRAP_ADMIN_EMAIL.equalsIgnoreCase(profileDTO.getEmail())
+                        ? ROLE_ADMIN : ROLE_USER)
                 .createdAt(Instant.now())
                 .build();
 

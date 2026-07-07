@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   Users, 
   FileText, 
-  Library, 
   ShieldAlert, 
   CreditCard,
   Settings,
@@ -15,15 +14,15 @@ import {
 
 const AdminSidebar = () => {
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
-    { icon: Users, label: 'Users', path: '/admin/users' },
-    { icon: FileText, label: 'Documents', path: '/admin/documents' },
-    { icon: Tag, label: 'Categories', path: '/admin/categories' },
-    { icon: CreditCard, label: 'Transactions', path: '/admin/transactions' },
-    { icon: MessageSquare, label: 'Community', path: '/admin/community' },
-    { icon: BrainCircuit, label: 'AI Tracking', path: '/admin/ai-tracking' },
-    { icon: ShieldAlert, label: 'Reports', path: '/admin/reports' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' },
+    { icon: LayoutDashboard, label: 'Tổng quan', path: '/admin/dashboard' },
+    { icon: Users, label: 'Người dùng', path: '/admin/users' },
+    { icon: FileText, label: 'Tài liệu', path: '/admin/documents' },
+    { icon: Tag, label: 'Danh mục', path: '/admin/categories' },
+    { icon: CreditCard, label: 'Giao dịch', path: '/admin/transactions' },
+    { icon: MessageSquare, label: 'Cộng đồng', path: '/admin/community' },
+    { icon: BrainCircuit, label: 'Theo dõi AI', path: '/admin/ai-tracking' },
+    { icon: ShieldAlert, label: 'Báo cáo vi phạm', path: '/admin/reports' },
+    { icon: Settings, label: 'Cài đặt', path: '/admin/settings' },
   ];
 
   return (

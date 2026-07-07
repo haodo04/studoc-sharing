@@ -10,8 +10,10 @@ export const UserCreditsProvider = ({children}) => {
     const [credits, setCredits] = useState(5);
     const [plan, setPlan] = useState("BASIC");
     const [planExpiresAt, setPlanExpiresAt] = useState(null);
+    const [role, setRole] = useState(null);
+    const [roleLoading, setRoleLoading] = useState(true);
     const [loading, setLoading] = useState(false);
-    const {getToken, isSignedIn} = useAuth();
+    const {getToken, isSignedIn, isLoaded} = useAuth();   
 
     const fetchUserCredits = useCallback(async () => {
         if (!isSignedIn) return;
@@ -35,21 +37,50 @@ export const UserCreditsProvider = ({children}) => {
         }
     }, [getToken, isSignedIn]);
 
+    const fetchMyRole = useCallback(async () => {
+        if (!isSignedIn) {
+            setRole(null);
+            setRoleLoading(false);
+            return;
+        }
+
+        setRoleLoading(true);
+        try {
+            const token = await getToken();
+            const response = await axios.get(apiEndpoints.GET_MY_PROFILE, {headers: {Authorization: `Bearer ${token}`}});
+            setRole(response.data.role || "USER");
+        } catch (error) {
+            console.error('Error fetching current profile/role', error);
+            setRole("USER");
+        } finally {
+            setRoleLoading(false);
+        }
+    }, [getToken, isSignedIn]);
+
     useEffect(() => {
-        if (isSignedIn) 
+        if (!isLoaded) return;   
+
+        if (isSignedIn) {
             fetchUserCredits();
-    }, [fetchUserCredits, isSignedIn]);
+            fetchMyRole();
+        } else {
+            setRole(null);
+            setRoleLoading(false);
+        }
+    }, [fetchUserCredits, fetchMyRole, isSignedIn, isLoaded]);  
 
     const updateCredits = useCallback(newCredits => {
         console.log('Updating the credits', newCredits);
         setCredits(newCredits);
     }, []);
-    
+
     const isPremiumYearActive =
         plan === "Premium Năm" && (!planExpiresAt || new Date(planExpiresAt) > new Date());
 
     const isPremiumMonthActive =
         plan === "Premium Tháng" && (!planExpiresAt || new Date(planExpiresAt) > new Date());
+
+    const isAdmin = role === "ADMIN";
 
     const contextValue = {
         credits,
@@ -58,7 +89,11 @@ export const UserCreditsProvider = ({children}) => {
         planExpiresAt,
         isPremiumYearActive,
         isPremiumMonthActive,
+        role,
+        roleLoading,
+        isAdmin,
         fetchUserCredits,
+        fetchMyRole,
         updateCredits,
         loading 
     }

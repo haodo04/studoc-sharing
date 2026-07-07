@@ -3,7 +3,6 @@ import {
   Users, 
   Search, 
   Filter, 
-  MoreVertical,
   ShieldAlert,
   ShieldCheck,
   Ban,
@@ -29,7 +28,7 @@ const AdminUsers = () => {
       const data = await getAdminUsers(token);
       setUsers(data);
     } catch (error) {
-      console.error("Failed to fetch users", error);
+      console.error("Lỗi khi tải danh sách người dùng", error);
     } finally {
       setLoading(false);
     }
@@ -39,12 +38,11 @@ const AdminUsers = () => {
     try {
       const token = await getToken();
       await toggleUserBan(clerkId, token);
-      // Update local state to reflect change without full refetch
       setUsers(users.map(u => 
         u.clerkId === clerkId ? { ...u, banned: !u.banned } : u
       ));
     } catch (error) {
-      console.error("Failed to toggle user ban status", error);
+      console.error("Lỗi khi cập nhật trạng thái người dùng", error);
       alert("Đã xảy ra lỗi khi cập nhật trạng thái người dùng.");
     }
   };
@@ -61,9 +59,9 @@ const AdminUsers = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <Users className="text-blue-600" />
-            User Management
+            Quản lý người dùng
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">Manage user accounts and access permissions.</p>
+          <p className="text-slate-500 mt-1 text-sm">Quản lý tài khoản và quyền truy cập của người dùng.</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -71,7 +69,7 @@ const AdminUsers = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
-              placeholder="Search users..." 
+              placeholder="Tìm kiếm người dùng..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full sm:w-64"
@@ -79,7 +77,7 @@ const AdminUsers = () => {
           </div>
           <button className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
             <Filter size={16} />
-            <span className="hidden sm:inline">Filter</span>
+            <span className="hidden sm:inline">Bộ lọc</span>
           </button>
         </div>
       </div>
@@ -90,12 +88,12 @@ const AdminUsers = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                <th className="px-6 py-4 font-medium">User Info</th>
-                <th className="px-6 py-4 font-medium">Joined Date</th>
-                <th className="px-6 py-4 font-medium text-center">Uploads</th>
-                <th className="px-6 py-4 font-medium text-center">Downloads</th>
-                <th className="px-6 py-4 font-medium text-center">Status</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-6 py-4 font-medium">Thông tin người dùng</th>
+                <th className="px-6 py-4 font-medium">Ngày tham gia</th>
+                <th className="px-6 py-4 font-medium text-center">Đã tải lên</th>
+                <th className="px-6 py-4 font-medium text-center">Lượt tải xuống</th>
+                <th className="px-6 py-4 font-medium text-center">Trạng thái</th>
+                <th className="px-6 py-4 font-medium text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -107,7 +105,7 @@ const AdminUsers = () => {
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-slate-500">No users found.</td>
+                  <td colSpan="6" className="px-6 py-8 text-center text-slate-500">Không tìm thấy người dùng nào.</td>
                 </tr>
               ) : filteredUsers.map((user) => (
                 <tr key={user.clerkId} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
@@ -119,13 +117,13 @@ const AdminUsers = () => {
                         className="w-10 h-10 rounded-full object-cover border border-slate-200"
                       />
                       <div>
-                        <div className="font-medium text-slate-800">{user.fullName || 'Unnamed User'}</div>
+                        <div className="font-medium text-slate-800">{user.fullName || 'Chưa có tên'}</div>
                         <div className="text-slate-500 text-xs">{user.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-500">
-                    {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : 'N/A'}
+                    {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString('vi-VN') : 'Không rõ'}
                   </td>
                   <td className="px-6 py-4 text-center font-medium text-slate-700">
                     {user.totalUploads}
@@ -137,12 +135,12 @@ const AdminUsers = () => {
                     {user.banned ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
                         <ShieldAlert size={14} />
-                        Banned
+                        Đã cấm
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
                         <ShieldCheck size={14} />
-                        Active
+                        Hoạt động
                       </span>
                     )}
                   </td>
@@ -155,10 +153,10 @@ const AdminUsers = () => {
                           ? 'text-emerald-600 hover:bg-emerald-50' 
                           : 'text-red-600 hover:bg-red-50'
                         }`}
-                        title={user.banned ? "Unban User" : "Ban User"}
+                        title={user.banned ? "Bỏ cấm" : "Cấm người dùng"}
                       >
                         {user.banned ? <Unlock size={18} /> : <Ban size={18} />}
-                        <span className="hidden lg:inline">{user.banned ? "Unban" : "Ban"}</span>
+                        <span className="hidden lg:inline">{user.banned ? "Bỏ cấm" : "Cấm"}</span>
                       </button>
                     </div>
                   </td>

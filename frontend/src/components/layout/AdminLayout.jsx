@@ -6,9 +6,6 @@ import { useUser } from '@clerk/clerk-react';
 const AdminLayout = ({ children }) => {
   const { isLoaded, user } = useUser();
 
-  // Temporary pseudo-protection: 
-  // Normally you would check user.publicMetadata.role === 'admin' 
-  // but for now we just render it since we haven't set up roles yet.
   if (!isLoaded) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50">Loading...</div>;
   }
